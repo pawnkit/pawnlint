@@ -59,6 +59,11 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(suspicious.RecursiveCall{})
 	reg.MustRegister(performance.LargeLocalArray{})
 	reg.MustRegister(performance.RepeatedStrlen{})
+	reg.MustRegister(suspicious.FloatEquality{})
+	reg.MustRegister(openmp.NonPublicCallback{})
+	reg.MustRegister(openmp.InvalidSentinelComparison{})
+	reg.MustRegister(openmp.UnescapedSQLFormat{})
+	reg.MustRegister(openmp.DiscardedRepeatingTimer{})
 }
 
 func Default() *lint.Registrar {

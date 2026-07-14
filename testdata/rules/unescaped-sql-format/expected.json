@@ -1,0 +1,25 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "unescaped-sql-format",
+      "severity": "warning",
+      "message": "mysql_format uses '%s' for a non-literal argument; use '%e' to escape it",
+      "startLine": 6,
+      "startCol": 106,
+      "endLine": 6,
+      "endCol": 110
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "unescaped-sql-format",
+      "severity": "warning",
+      "message": "mysql_format uses '%s' for a non-literal argument; use '%e' to escape it",
+      "startLine": 5,
+      "startCol": 84,
+      "endLine": 5,
+      "endCol": 88
+    }
+  ],
+  "valid.pwn": []
+}

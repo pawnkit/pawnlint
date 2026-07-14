@@ -33,23 +33,29 @@ func (ForwardSignatureMismatch) Run(ctx *lint.Context) {
 	}
 	forwards := make(map[string][]*parser.Node)
 	definitions := make(map[string][]*parser.Node)
-	ctx.Walk.Iter(func(node *parser.Node) {
+	declName := func(node *parser.Node) (string, bool) {
 		if ctx.Walk.Uncertain(node) || node.Field("state") != nil {
-			return
+			return "", false
 		}
 		nameNode := node.Field("name")
 		if nameNode == nil {
+			return "", false
+		}
+		return ctx.Walk.Text(nameNode), true
+	}
+	ctx.Walk.IterKind(parser.KindFunctionDeclaration, func(node *parser.Node) {
+		name, ok := declName(node)
+		if !ok || !walk.HasChildToken(node, token.KwForward) {
 			return
 		}
-		name := ctx.Walk.Text(nameNode)
-		switch node.Kind {
-		case parser.KindFunctionDeclaration:
-			if walk.HasChildToken(node, token.KwForward) {
-				forwards[name] = append(forwards[name], node)
-			}
-		case parser.KindFunctionDefinition:
-			definitions[name] = append(definitions[name], node)
+		forwards[name] = append(forwards[name], node)
+	})
+	ctx.Walk.IterKind(parser.KindFunctionDefinition, func(node *parser.Node) {
+		name, ok := declName(node)
+		if !ok {
+			return
 		}
+		definitions[name] = append(definitions[name], node)
 	})
 	for name, declarations := range forwards {
 		defs := definitions[name]

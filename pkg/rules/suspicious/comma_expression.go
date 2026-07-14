@@ -35,10 +35,7 @@ is offered because the intended result is unknown.`
 
 func (SuspiciousCommaExpression) Run(ctx *lint.Context) {
 	m := ctx.Walk
-	m.Iter(func(n *parser.Node) {
-		if n.Kind != parser.KindExpressionList {
-			return
-		}
+	m.IterKind(parser.KindExpressionList, func(n *parser.Node) {
 		if countExpressionList(n) < 2 {
 			return
 		}

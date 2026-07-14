@@ -35,16 +35,8 @@ pair of parentheses. This rule has no fix because either meaning may be valid.`
 
 func (AssignmentInCondition) Run(ctx *lint.Context) {
 	m := ctx.Walk
-	m.Iter(func(n *parser.Node) {
-		var cond *parser.Node
-		switch n.Kind {
-		case parser.KindIfStatement, parser.KindWhileStatement:
-			cond = n.Field("condition")
-		case parser.KindDoWhileStatement:
-			cond = n.Field("condition")
-		default:
-			return
-		}
+	check := func(n *parser.Node) {
+		cond := n.Field("condition")
 		if cond == nil {
 			return
 		}
@@ -72,7 +64,10 @@ func (AssignmentInCondition) Run(ctx *lint.Context) {
 			}},
 		}
 		ctx.Report(d)
-	})
+	}
+	m.IterKind(parser.KindIfStatement, check)
+	m.IterKind(parser.KindWhileStatement, check)
+	m.IterKind(parser.KindDoWhileStatement, check)
 }
 
 func unwrapParen(n *parser.Node) *parser.Node {

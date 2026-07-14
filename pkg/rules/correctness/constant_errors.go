@@ -30,22 +30,7 @@ func (DivisionByZero) Run(ctx *lint.Context) {
 	if ctx.Semantic == nil {
 		return
 	}
-	ctx.Walk.Iter(func(node *parser.Node) {
-		var right *parser.Node
-		switch node.Kind {
-		case parser.KindBinaryExpression:
-			if node.Tok.Kind != token.Slash && node.Tok.Kind != token.Percent {
-				return
-			}
-			right = node.Field("right")
-		case parser.KindAssignmentExpression:
-			if node.Tok.Kind != token.SlashAssign && node.Tok.Kind != token.PercentAssign {
-				return
-			}
-			right = node.Field("right")
-		default:
-			return
-		}
+	check := func(right *parser.Node) {
 		if value, ok := ctx.Eval(right); !ok || value != 0 {
 			return
 		}
@@ -54,6 +39,18 @@ func (DivisionByZero) Run(ctx *lint.Context) {
 			Filename: ctx.File.Path,
 			Range:    ctx.Walk.Range(right),
 		})
+	}
+	ctx.Walk.IterKind(parser.KindBinaryExpression, func(node *parser.Node) {
+		if node.Tok.Kind != token.Slash && node.Tok.Kind != token.Percent {
+			return
+		}
+		check(node.Field("right"))
+	})
+	ctx.Walk.IterKind(parser.KindAssignmentExpression, func(node *parser.Node) {
+		if node.Tok.Kind != token.SlashAssign && node.Tok.Kind != token.PercentAssign {
+			return
+		}
+		check(node.Field("right"))
 	})
 }
 
@@ -78,10 +75,7 @@ func (InvalidShiftCount) Run(ctx *lint.Context) {
 	if ctx.Semantic == nil {
 		return
 	}
-	ctx.Walk.Iter(func(node *parser.Node) {
-		if node.Kind != parser.KindBinaryExpression && node.Kind != parser.KindAssignmentExpression {
-			return
-		}
+	check := func(node *parser.Node) {
 		switch node.Tok.Kind {
 		case token.Shl, token.Shr, token.Ushr, token.ShlAssign, token.ShrAssign, token.UshrAssign:
 		default:
@@ -97,7 +91,9 @@ func (InvalidShiftCount) Run(ctx *lint.Context) {
 			Filename: ctx.File.Path,
 			Range:    ctx.Walk.Range(right),
 		})
-	})
+	}
+	ctx.Walk.IterKind(parser.KindBinaryExpression, check)
+	ctx.Walk.IterKind(parser.KindAssignmentExpression, check)
 }
 
 type InvalidArraySize struct{}

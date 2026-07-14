@@ -29,10 +29,7 @@ func (ConstantCondition) Run(ctx *lint.Context) {
 	if ctx.Semantic == nil {
 		return
 	}
-	ctx.Walk.Iter(func(node *parser.Node) {
-		if node.Kind != parser.KindIfStatement && node.Kind != parser.KindTernaryExpression {
-			return
-		}
+	check := func(node *parser.Node) {
 		condition := node.Field("condition")
 		value, ok := ctx.Eval(condition)
 		if !ok {
@@ -47,7 +44,9 @@ func (ConstantCondition) Run(ctx *lint.Context) {
 			Filename: ctx.File.Path,
 			Range:    ctx.Walk.Range(condition),
 		})
-	})
+	}
+	ctx.Walk.IterKind(parser.KindIfStatement, check)
+	ctx.Walk.IterKind(parser.KindTernaryExpression, check)
 }
 
 type DuplicateSwitchCase struct{}

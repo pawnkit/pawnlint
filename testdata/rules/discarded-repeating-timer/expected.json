@@ -1,0 +1,34 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "discarded-repeating-timer",
+      "severity": "warning",
+      "message": "repeating timer created by \"SetTimer\" is discarded; store its handle for KillTimer",
+      "startLine": 5,
+      "startCol": 6,
+      "endLine": 5,
+      "endCol": 34
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "discarded-repeating-timer",
+      "severity": "warning",
+      "message": "repeating timer created by \"SetTimer\" is discarded; store its handle for KillTimer",
+      "startLine": 3,
+      "startCol": 5,
+      "endLine": 3,
+      "endCol": 33
+    },
+    {
+      "ruleId": "discarded-repeating-timer",
+      "severity": "warning",
+      "message": "repeating timer created by \"SetTimerEx\" is discarded; store its handle for KillTimer",
+      "startLine": 4,
+      "startCol": 5,
+      "endLine": 4,
+      "endCol": 43
+    }
+  ],
+  "valid.pwn": []
+}

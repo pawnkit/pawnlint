@@ -37,10 +37,7 @@ the intended action is unknown.`
 
 func (DiscardedExpression) Run(ctx *lint.Context) {
 	m := ctx.Walk
-	m.Iter(func(n *parser.Node) {
-		if n.Kind != parser.KindExpressionStatement {
-			return
-		}
+	m.IterKind(parser.KindExpressionStatement, func(n *parser.Node) {
 		expr := n.Field("expression")
 		if expr == nil {
 			return

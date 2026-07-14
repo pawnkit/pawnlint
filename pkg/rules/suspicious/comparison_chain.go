@@ -40,10 +40,7 @@ No fix is offered because complex expressions may need manual changes.`
 
 func (ComparisonChain) Run(ctx *lint.Context) {
 	m := ctx.Walk
-	m.Iter(func(n *parser.Node) {
-		if n.Kind != parser.KindBinaryExpression {
-			return
-		}
+	m.IterKind(parser.KindBinaryExpression, func(n *parser.Node) {
 		if !isRelational(n.Tok.Kind) {
 			return
 		}

@@ -1,0 +1,34 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "invalid-sentinel-comparison",
+      "severity": "error",
+      "message": "\"GetPlayerCameraTargetVehicle\" returns a value invalidated by \"INVALID_VEHICLE_ID\", not \"INVALID_ACTOR_ID\"",
+      "startLine": 8,
+      "startCol": 9,
+      "endLine": 8,
+      "endCol": 62
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "invalid-sentinel-comparison",
+      "severity": "error",
+      "message": "\"GetPlayerVehicleID\" returns a value invalidated by \"INVALID_VEHICLE_ID\", not \"INVALID_PLAYER_ID\"",
+      "startLine": 4,
+      "startCol": 9,
+      "endLine": 4,
+      "endCol": 39
+    },
+    {
+      "ruleId": "invalid-sentinel-comparison",
+      "severity": "error",
+      "message": "\"CreateActor\" returns a value invalidated by \"INVALID_ACTOR_ID\", not \"INVALID_OBJECT_ID\"",
+      "startLine": 8,
+      "startCol": 9,
+      "endLine": 8,
+      "endCol": 37
+    }
+  ],
+  "valid.pwn": []
+}

@@ -38,22 +38,7 @@ removes the semicolon.`
 
 func (EmptyConditionBody) Run(ctx *lint.Context) {
 	m := ctx.Walk
-	m.Iter(func(n *parser.Node) {
-		var body *parser.Node
-		kw := ""
-		switch n.Kind {
-		case parser.KindIfStatement:
-			body = n.Field("consequence")
-			kw = "if"
-		case parser.KindWhileStatement:
-			body = n.Field("body")
-			kw = "while"
-		case parser.KindForStatement:
-			body = n.Field("body")
-			kw = "for"
-		default:
-			return
-		}
+	check := func(n *parser.Node, body *parser.Node, kw string) {
 		if body == nil || body.Kind != parser.KindEmptyStatement {
 			return
 		}
@@ -85,5 +70,8 @@ func (EmptyConditionBody) Run(ctx *lint.Context) {
 			}},
 		}
 		ctx.Report(d)
-	})
+	}
+	m.IterKind(parser.KindIfStatement, func(n *parser.Node) { check(n, n.Field("consequence"), "if") })
+	m.IterKind(parser.KindWhileStatement, func(n *parser.Node) { check(n, n.Field("body"), "while") })
+	m.IterKind(parser.KindForStatement, func(n *parser.Node) { check(n, n.Field("body"), "for") })
 }

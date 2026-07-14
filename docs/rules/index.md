@@ -13,6 +13,7 @@ Generated from rule metadata. Do not edit by hand.
 | [`deprecated-function`](deprecated-function.md) | openmp | warning | off | no | Reports deprecated compatibility functions in open.mp |
 | [`deprecated-native`](deprecated-native.md) | openmp | warning | off | no | Reports calls to natives deprecated by the selected API |
 | [`discarded-expression`](discarded-expression.md) | suspicious | warning | on | no | A standalone expression with no side effects does nothing |
+| [`discarded-repeating-timer`](discarded-repeating-timer.md) | correctness | warning | off | no | Reports repeating SetTimer/SetTimerEx handles discarded before they can be killed |
 | [`discarded-resource-handle`](discarded-resource-handle.md) | correctness | warning | off | no | Reports resource handles discarded before they can be released |
 | [`division-by-zero`](division-by-zero.md) | correctness | error | on | no | Reports division or remainder by a constant zero |
 | [`duplicate-condition`](duplicate-condition.md) | suspicious | warning | off | no | Reports repeated pure conditions in an if and else-if chain |
@@ -20,9 +21,11 @@ Generated from rule metadata. Do not edit by hand.
 | [`duplicate-global-definition`](duplicate-global-definition.md) | correctness | error | on | no | Reports global variables defined more than once in one include graph |
 | [`duplicate-switch-case`](duplicate-switch-case.md) | correctness | error | on | no | Reports repeated constant values in one switch statement |
 | [`empty-condition-body`](empty-condition-body.md) | correctness | error | on | yes | Accidental semicolon after an if/while/for condition makes the following block unconditional |
+| [`float-equality`](float-equality.md) | suspicious | warning | off | no | Reports Float values compared with == or != |
 | [`format-argument-count`](format-argument-count.md) | correctness | error | off | no | Reports literal format strings whose placeholders and arguments differ |
 | [`forward-signature-mismatch`](forward-signature-mismatch.md) | correctness | error | on | no | Reports definitions that do not match their forward declaration |
 | [`identical-branches`](identical-branches.md) | suspicious | warning | off | no | Reports if and ternary branches with identical code |
+| [`invalid-sentinel-comparison`](invalid-sentinel-comparison.md) | correctness | error | off | no | Reports a native's result compared against the wrong INVALID_* constant |
 | [`invalid-shift-count`](invalid-shift-count.md) | correctness | error | on | no | Reports constant shift counts outside the 32-bit cell width |
 | [`large-local-array`](large-local-array.md) | performance | warning | off | no | Reports large automatic arrays allocated on the Pawn stack |
 | [`legacy-include`](legacy-include.md) | openmp | warning | off | no | Reports official SA-MP wrapper includes when targeting open.mp |
@@ -31,6 +34,7 @@ Generated from rule metadata. Do not edit by hand.
 | [`misspelled-callback`](misspelled-callback.md) | suspicious | warning | off | no | Reports public functions one edit away from a target callback |
 | [`native-argument-count`](native-argument-count.md) | correctness | error | off | no | Reports calls with an impossible number of arguments for a known native |
 | [`negative-or-zero-array-size`](negative-or-zero-array-size.md) | correctness | error | on | no | Reports array dimensions that evaluate to zero or less |
+| [`non-public-callback`](non-public-callback.md) | correctness | warning | off | no | Reports functions named exactly like a callback but missing the public qualifier |
 | [`out-of-bounds-constant-index`](out-of-bounds-constant-index.md) | correctness | error | on | no | Reports constant indexes outside a known array dimension |
 | [`overwritten-resource-handle`](overwritten-resource-handle.md) | correctness | warning | off | no | Reports resource handles overwritten before any use or release |
 | [`possibly-uninitialized`](possibly-uninitialized.md) | correctness | warning | off | no | Reports local variables read before an explicit assignment on every path |
@@ -43,6 +47,7 @@ Generated from rule metadata. Do not edit by hand.
 | [`suspicious-negation`](suspicious-negation.md) | suspicious | warning | on | no | '!' binds tighter than &/\|/^/==/!=, so !x & y is (!x) & y |
 | [`target-constant-availability`](target-constant-availability.md) | openmp | error | off | no | Reports open.mp-only constants when targeting SA-MP |
 | [`target-native-availability`](target-native-availability.md) | openmp | error | off | no | Reports open.mp-only native calls when targeting SA-MP |
+| [`unescaped-sql-format`](unescaped-sql-format.md) | correctness | warning | off | no | Reports mysql_format calls using %s for a non-literal string argument |
 | [`unimplemented-function`](unimplemented-function.md) | openmp | error | off | no | Reports legacy API calls intentionally not implemented by open.mp |
 | [`unknown-suppression`](unknown-suppression.md) | maintainability | warning | on | no | Reports unknown, malformed, or unused pawnlint suppression directives |
 | [`unparenthesized-macro`](unparenthesized-macro.md) | correctness | warning | on | yes | Reports function-like macros whose replacement list or parameters lack protective parentheses |

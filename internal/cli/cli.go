@@ -12,6 +12,8 @@ import (
 	"github.com/pawnkit/pawnlint/internal/output"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 	"github.com/pawnkit/pawnlint/pkg/rules"
+	"github.com/posener/complete"
+	"github.com/willabides/kongplete"
 )
 
 const (
@@ -22,8 +24,8 @@ const (
 )
 
 type cli struct {
-	Paths      []string         `arg:"" optional:"" name:"path" help:"files or directories to lint"`
-	Config     string           `help:"path to a pawnlint.toml config file"`
+	Paths      []string         `arg:"" optional:"" name:"path" help:"files or directories to lint" predictor:"path"`
+	Config     string           `help:"path to a pawnlint.toml config file" predictor:"path"`
 	Profile    string           `help:"rule profile (recommended|strict|all)"`
 	Target     string           `help:"target dialect (openmp|samp)"`
 	Enable     []string         `help:"enable a rule by id (repeatable)"`
@@ -122,6 +124,7 @@ func parse(args []string, stdout, stderr io.Writer) (opts *cli, code int, done b
 		}
 		panic(r)
 	}()
+	kongplete.Complete(parser, kongplete.WithPredictor("path", complete.PredictFiles("*")))
 	if _, err := parser.Parse(args); err != nil {
 		_, _ = fmt.Fprintf(stderr, "pawnlint: %v\n", err)
 		return opts, exitUsage, true

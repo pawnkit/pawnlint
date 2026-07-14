@@ -1,0 +1,52 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "float-equality",
+      "severity": "warning",
+      "message": "Float values compared with '=='; rounding error makes this unreliable",
+      "startLine": 3,
+      "startCol": 9,
+      "endLine": 3,
+      "endCol": 15
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "float-equality",
+      "severity": "warning",
+      "message": "Float values compared with '=='; rounding error makes this unreliable",
+      "startLine": 10,
+      "startCol": 9,
+      "endLine": 10,
+      "endCol": 24
+    },
+    {
+      "ruleId": "float-equality",
+      "severity": "warning",
+      "message": "Float values compared with '!='; rounding error makes this unreliable",
+      "startLine": 13,
+      "startCol": 9,
+      "endLine": 13,
+      "endCol": 27
+    },
+    {
+      "ruleId": "float-equality",
+      "severity": "warning",
+      "message": "Float values compared with '=='; rounding error makes this unreliable",
+      "startLine": 16,
+      "startCol": 9,
+      "endLine": 16,
+      "endCol": 27
+    },
+    {
+      "ruleId": "float-equality",
+      "severity": "warning",
+      "message": "Float values compared with '=='; rounding error makes this unreliable",
+      "startLine": 19,
+      "startCol": 9,
+      "endLine": 19,
+      "endCol": 26
+    }
+  ],
+  "valid.pwn": []
+}

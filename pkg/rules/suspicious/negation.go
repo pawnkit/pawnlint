@@ -36,10 +36,7 @@ offered because the intended grouping cannot be known.`
 
 func (SuspiciousNegation) Run(ctx *lint.Context) {
 	m := ctx.Walk
-	m.Iter(func(n *parser.Node) {
-		if n.Kind != parser.KindBinaryExpression {
-			return
-		}
+	m.IterKind(parser.KindBinaryExpression, func(n *parser.Node) {
 		if !misnegOp(n.Tok.Kind) {
 			return
 		}
