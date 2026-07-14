@@ -11,3 +11,5 @@ require (
 require golang.org/x/sync v0.22.0
 
 require gopkg.in/yaml.v3 v3.0.1
+
+require go.uber.org/automaxprocs v1.6.0 // indirect

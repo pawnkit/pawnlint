@@ -1,6 +1,8 @@
 package correctness
 
 import (
+	"sort"
+
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
@@ -73,30 +75,28 @@ func hasMacroPrefix(ctx *lint.Context, expr *parser.Node) bool {
 	if ctx == nil || ctx.File == nil || ctx.File.Parsed == nil || expr == nil {
 		return false
 	}
-	for index := range ctx.File.Parsed.Tokens {
-		current := &ctx.File.Parsed.Tokens[index]
-		if current.Start.Offset < expr.Start {
-			continue
-		}
-		if index == 0 {
-			return false
-		}
-		for previousIndex := index - 1; previousIndex >= 0; previousIndex-- {
-			previous := &ctx.File.Parsed.Tokens[previousIndex]
-			if previous.End.Line != current.Start.Line {
-				break
-			}
-			if previous.Kind == token.ColonColon || previous.Kind == token.KwEnum {
-				return true
-			}
-			if previous.Kind == token.Identifier && previous.Text(ctx.File.Source) == "stop" {
-				return true
-			}
-			if previous.Kind == token.Semicolon || previous.Kind == token.LBrace || previous.Kind == token.RBrace {
-				break
-			}
-		}
+	tokens := ctx.File.Parsed.Tokens
+	index := sort.Search(len(tokens), func(i int) bool {
+		return tokens[i].Start.Offset >= expr.Start
+	})
+	if index <= 0 || index >= len(tokens) {
 		return false
+	}
+	current := &tokens[index]
+	for previousIndex := index - 1; previousIndex >= 0; previousIndex-- {
+		previous := &tokens[previousIndex]
+		if previous.End.Line != current.Start.Line {
+			break
+		}
+		if previous.Kind == token.ColonColon || previous.Kind == token.KwEnum {
+			return true
+		}
+		if previous.Kind == token.Identifier && previous.Text(ctx.File.Source) == "stop" {
+			return true
+		}
+		if previous.Kind == token.Semicolon || previous.Kind == token.LBrace || previous.Kind == token.RBrace {
+			break
+		}
 	}
 	return false
 }

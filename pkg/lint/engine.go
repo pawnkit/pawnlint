@@ -115,8 +115,8 @@ func (e *Engine) LintFile(path string, src []byte, maxLevel AnalysisLevel, ruleS
 		if !ok {
 			continue
 		}
-		meta := rl.Metadata()
-		if !levelAllowed(meta.AnalysisLevel, maxLevel) {
+		meta, ok := e.Reg.Lookup(id)
+		if !ok || !levelAllowed(meta.AnalysisLevel, maxLevel) {
 			continue
 		}
 		ctx := &Context{
