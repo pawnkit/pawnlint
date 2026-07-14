@@ -1,0 +1,24 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "callback-signature",
+      "severity": "error",
+      "message": "callback \"OnPlayerConnect\" does not match the open.mp API: parameter 1 name differs",
+      "startLine": 1,
+      "startCol": 8,
+      "endLine": 1,
+      "endCol": 23
+    },
+    {
+      "ruleId": "callback-signature",
+      "severity": "error",
+      "message": "callback \"OnPlayerDeath\" does not match the open.mp API: parameter 3 tag differs",
+      "startLine": 6,
+      "startCol": 8,
+      "endLine": 6,
+      "endCol": 21
+    }
+  ],
+  "valid.pwn": []
+}

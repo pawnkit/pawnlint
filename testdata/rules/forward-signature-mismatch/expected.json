@@ -1,0 +1,186 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "forward-signature-mismatch",
+      "severity": "error",
+      "message": "definition of 'CountMismatch' does not match its forward declaration: parameter count differs (1 declared, 2 defined)",
+      "startLine": 3,
+      "startCol": 1,
+      "endLine": 3,
+      "endCol": 14,
+      "notes": [
+        {
+          "message": "forward declaration is here",
+          "startLine": 1,
+          "startCol": 9,
+          "endLine": 1,
+          "endCol": 22
+        }
+      ]
+    },
+    {
+      "ruleId": "forward-signature-mismatch",
+      "severity": "error",
+      "message": "definition of 'ReturnTag' does not match its forward declaration: return tag differs",
+      "startLine": 9,
+      "startCol": 1,
+      "endLine": 9,
+      "endCol": 10,
+      "notes": [
+        {
+          "message": "forward declaration is here",
+          "startLine": 7,
+          "startCol": 15,
+          "endLine": 7,
+          "endCol": 24
+        }
+      ]
+    },
+    {
+      "ruleId": "forward-signature-mismatch",
+      "severity": "error",
+      "message": "definition of 'ParamTag' does not match its forward declaration: parameter 1 tag differs",
+      "startLine": 15,
+      "startCol": 1,
+      "endLine": 15,
+      "endCol": 9,
+      "notes": [
+        {
+          "message": "forward declaration is here",
+          "startLine": 13,
+          "startCol": 9,
+          "endLine": 13,
+          "endCol": 17
+        }
+      ]
+    },
+    {
+      "ruleId": "forward-signature-mismatch",
+      "severity": "error",
+      "message": "definition of 'ArrayRank' does not match its forward declaration: parameter 1 array rank differs",
+      "startLine": 21,
+      "startCol": 1,
+      "endLine": 21,
+      "endCol": 10,
+      "notes": [
+        {
+          "message": "forward declaration is here",
+          "startLine": 19,
+          "startCol": 9,
+          "endLine": 19,
+          "endCol": 18
+        }
+      ]
+    },
+    {
+      "ruleId": "forward-signature-mismatch",
+      "severity": "error",
+      "message": "definition of 'Varargs' does not match its forward declaration: parameter 2 variadic form differs",
+      "startLine": 27,
+      "startCol": 1,
+      "endLine": 27,
+      "endCol": 8,
+      "notes": [
+        {
+          "message": "forward declaration is here",
+          "startLine": 25,
+          "startCol": 9,
+          "endLine": 25,
+          "endCol": 16
+        }
+      ]
+    },
+    {
+      "ruleId": "forward-signature-mismatch",
+      "severity": "error",
+      "message": "definition of 'NameMismatch' does not match its forward declaration: parameter 1 name differs",
+      "startLine": 33,
+      "startCol": 1,
+      "endLine": 33,
+      "endCol": 13,
+      "notes": [
+        {
+          "message": "forward declaration is here",
+          "startLine": 31,
+          "startCol": 9,
+          "endLine": 31,
+          "endCol": 21
+        }
+      ]
+    },
+    {
+      "ruleId": "forward-signature-mismatch",
+      "severity": "error",
+      "message": "definition of 'ConstMismatch' does not match its forward declaration: parameter 1 const qualifier differs",
+      "startLine": 39,
+      "startCol": 1,
+      "endLine": 39,
+      "endCol": 14,
+      "notes": [
+        {
+          "message": "forward declaration is here",
+          "startLine": 37,
+          "startCol": 9,
+          "endLine": 37,
+          "endCol": 22
+        }
+      ]
+    },
+    {
+      "ruleId": "forward-signature-mismatch",
+      "severity": "error",
+      "message": "definition of 'ReferenceMismatch' does not match its forward declaration: parameter 1 reference form differs",
+      "startLine": 45,
+      "startCol": 1,
+      "endLine": 45,
+      "endCol": 18,
+      "notes": [
+        {
+          "message": "forward declaration is here",
+          "startLine": 43,
+          "startCol": 9,
+          "endLine": 43,
+          "endCol": 26
+        }
+      ]
+    },
+    {
+      "ruleId": "forward-signature-mismatch",
+      "severity": "error",
+      "message": "definition of 'DimensionMismatch' does not match its forward declaration: parameter 1 array dimensions differ",
+      "startLine": 51,
+      "startCol": 1,
+      "endLine": 51,
+      "endCol": 18,
+      "notes": [
+        {
+          "message": "forward declaration is here",
+          "startLine": 49,
+          "startCol": 9,
+          "endLine": 49,
+          "endCol": 26
+        }
+      ]
+    },
+    {
+      "ruleId": "forward-signature-mismatch",
+      "severity": "error",
+      "message": "definition of 'DefaultMismatch' does not match its forward declaration: parameter 1 default value differs",
+      "startLine": 57,
+      "startCol": 1,
+      "endLine": 57,
+      "endCol": 16,
+      "notes": [
+        {
+          "message": "forward declaration is here",
+          "startLine": 55,
+          "startCol": 9,
+          "endLine": 55,
+          "endCol": 24
+        }
+      ]
+    }
+  ],
+  "valid.pwn": []
+}

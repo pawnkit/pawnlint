@@ -1,0 +1,61 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "dead-write",
+      "severity": "warning",
+      "message": "value assigned to \"value\" is never read",
+      "startLine": 36,
+      "startCol": 5,
+      "endLine": 36,
+      "endCol": 10
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "dead-write",
+      "severity": "warning",
+      "message": "value assigned to \"value\" is never read",
+      "startLine": 4,
+      "startCol": 5,
+      "endLine": 4,
+      "endCol": 10
+    },
+    {
+      "ruleId": "dead-write",
+      "severity": "warning",
+      "message": "value assigned to \"value\" is never read",
+      "startLine": 12,
+      "startCol": 5,
+      "endLine": 12,
+      "endCol": 10
+    },
+    {
+      "ruleId": "dead-write",
+      "severity": "warning",
+      "message": "value assigned to \"value\" is never read",
+      "startLine": 20,
+      "startCol": 9,
+      "endLine": 20,
+      "endCol": 14
+    },
+    {
+      "ruleId": "dead-write",
+      "severity": "warning",
+      "message": "value assigned to \"value\" is never read",
+      "startLine": 22,
+      "startCol": 9,
+      "endLine": 22,
+      "endCol": 14
+    },
+    {
+      "ruleId": "dead-write",
+      "severity": "warning",
+      "message": "value assigned to \"value\" is never read",
+      "startLine": 30,
+      "startCol": 9,
+      "endLine": 30,
+      "endCol": 14
+    }
+  ],
+  "valid.pwn": []
+}

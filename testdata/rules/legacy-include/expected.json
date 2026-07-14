@@ -1,0 +1,76 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "legacy-include",
+      "severity": "warning",
+      "message": "legacy include \"a_actor\" is a compatibility wrapper",
+      "startLine": 1,
+      "startCol": 10,
+      "endLine": 1,
+      "endCol": 19,
+      "suggested": "include \u003copen.mp\u003e directly"
+    },
+    {
+      "ruleId": "legacy-include",
+      "severity": "warning",
+      "message": "legacy include \"a_http\" is a compatibility wrapper",
+      "startLine": 2,
+      "startCol": 10,
+      "endLine": 2,
+      "endCol": 22,
+      "suggested": "include \u003copen.mp\u003e directly"
+    },
+    {
+      "ruleId": "legacy-include",
+      "severity": "warning",
+      "message": "legacy include \"a_objects\" is a compatibility wrapper",
+      "startLine": 3,
+      "startCol": 10,
+      "endLine": 3,
+      "endCol": 21,
+      "suggested": "include \u003copen.mp\u003e directly"
+    },
+    {
+      "ruleId": "legacy-include",
+      "severity": "warning",
+      "message": "legacy include \"a_players\" is a compatibility wrapper",
+      "startLine": 4,
+      "startCol": 10,
+      "endLine": 4,
+      "endCol": 21,
+      "suggested": "include \u003copen.mp\u003e directly"
+    },
+    {
+      "ruleId": "legacy-include",
+      "severity": "warning",
+      "message": "legacy include \"a_samp\" is a compatibility wrapper",
+      "startLine": 5,
+      "startCol": 10,
+      "endLine": 5,
+      "endCol": 18,
+      "suggested": "include \u003copen.mp\u003e directly"
+    },
+    {
+      "ruleId": "legacy-include",
+      "severity": "warning",
+      "message": "legacy include \"a_sampdb\" is a compatibility wrapper",
+      "startLine": 6,
+      "startCol": 13,
+      "endLine": 6,
+      "endCol": 23,
+      "suggested": "include \u003copen.mp\u003e directly"
+    },
+    {
+      "ruleId": "legacy-include",
+      "severity": "warning",
+      "message": "legacy include \"a_vehicles\" is a compatibility wrapper",
+      "startLine": 7,
+      "startCol": 10,
+      "endLine": 7,
+      "endCol": 22,
+      "suggested": "include \u003copen.mp\u003e directly"
+    }
+  ],
+  "valid.pwn": []
+}

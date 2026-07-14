@@ -1,0 +1,182 @@
+package walk
+
+import (
+	"strconv"
+	"strings"
+
+	parser "github.com/pawnkit/pawn-parser"
+	"github.com/pawnkit/pawn-parser/token"
+)
+
+func (m *Model) indexNodeStates() {
+	var index func(*parser.Node, bool, bool, bool)
+	index = func(node *parser.Node, conditionalUncertain, inactive, ancestorError bool) {
+		if node.HasError || conditionalUncertain || ancestorError {
+			m.uncertain[node] = true
+		}
+		if inactive {
+			m.inactive[node] = true
+		}
+		childUncertain := conditionalUncertain
+		childInactive := inactive
+		childError := ancestorError || node.HasError
+		if node.Kind == parser.KindSourceFile {
+			childError = false
+		}
+		switch node.Kind {
+		case parser.KindConditionalBranch:
+			childUncertain = childUncertain || m.branches[node] != branchActive
+			childInactive = childInactive || m.branches[node] == branchInactive
+		case parser.KindSharedConditional, parser.KindConditionalFunction,
+			parser.KindConditionalSplice:
+			childUncertain = true
+		}
+		for _, child := range node.Children {
+			index(child, childUncertain, childInactive, childError)
+		}
+	}
+	index(m.File.Root, false, false, false)
+}
+
+func (m *Model) indexConditionalStates() {
+	for _, region := range m.byKind[parser.KindConditionalRegion] {
+		reached := branchActive
+		for _, branch := range region.Children {
+			if branch.Kind != parser.KindConditionalBranch {
+				continue
+			}
+			m.branches[branch] = branchUncertain
+			directive := branch.Field("directive")
+			if directive == nil || directive.Kind == parser.KindDirectiveEndif {
+				continue
+			}
+			if reached == branchInactive {
+				m.branches[branch] = branchInactive
+				continue
+			}
+			if directive.Kind == parser.KindDirectiveElse {
+				m.branches[branch] = reached
+				reached = branchInactive
+				continue
+			}
+			value, known := m.directiveValue(directive.Field("condition"), directive.Start)
+			if !known {
+				m.branches[branch] = branchUncertain
+				reached = branchUncertain
+				continue
+			}
+			if value == 0 {
+				m.branches[branch] = branchInactive
+				continue
+			}
+			m.branches[branch] = reached
+			reached = branchInactive
+		}
+	}
+}
+
+func (m *Model) directiveValue(node *parser.Node, offset int) (int64, bool) {
+	if node == nil || node.HasError {
+		return 0, false
+	}
+	switch node.Kind {
+	case parser.KindParenthesizedExpression:
+		return m.directiveValue(node.Field("expression"), offset)
+	case parser.KindDefinedExpression:
+		name := node.Field("name")
+		if name == nil {
+			return 0, false
+		}
+		_, known := m.knownDefinesAt(offset)[m.Text(name)]
+		if known {
+			return 1, true
+		}
+		return 0, false
+	case parser.KindLiteral:
+		if node.Tok.Kind == token.KwNull {
+			return 0, true
+		}
+		if node.Tok.Kind != token.IntLiteral {
+			return 0, false
+		}
+		text := strings.ReplaceAll(node.Tok.Text(m.File.Source), "_", "")
+		value, err := strconv.ParseInt(text, 0, 32)
+		if err == nil {
+			return value, true
+		}
+		unsigned, err := strconv.ParseUint(text, 0, 32)
+		return int64(int32(uint32(unsigned))), err == nil
+	case parser.KindUnaryExpression:
+		value, ok := m.directiveValue(node.Field("expression"), offset)
+		if !ok {
+			return 0, false
+		}
+		switch node.Tok.Kind {
+		case token.Bang:
+			if value == 0 {
+				return 1, true
+			}
+			return 0, true
+		case token.Plus:
+			return value, true
+		case token.Minus:
+			return -value, true
+		default:
+			return 0, false
+		}
+	default:
+		return 0, false
+	}
+}
+
+func (m *Model) knownDefinesAt(offset int) map[string]struct{} {
+	known := make(map[string]struct{}, len(m.defines))
+	for _, name := range m.defines {
+		if name != "" {
+			known[name] = struct{}{}
+		}
+	}
+	for _, node := range m.directives {
+		if node.Start >= offset {
+			continue
+		}
+		if node.Kind != parser.KindDirectiveDefine && node.Kind != parser.KindDirectiveUndef || m.IsInsideConditionalBranch(node) {
+			continue
+		}
+		if node.Kind == parser.KindDirectiveUndef {
+			clear(known)
+			continue
+		}
+		name := node.Field("name")
+		if name != nil {
+			known[m.Text(name)] = struct{}{}
+		}
+	}
+	return known
+}
+
+func (m *Model) IsInsideConditionalBranch(n *parser.Node) bool {
+	for _, a := range m.Ancestors(n) {
+		switch a.Kind {
+		case parser.KindConditionalRegion, parser.KindConditionalBranch,
+			parser.KindSharedConditional, parser.KindConditionalFunction,
+			parser.KindConditionalSplice:
+			return true
+		}
+	}
+	return false
+}
+
+func (m *Model) Uncertain(n *parser.Node) bool {
+	if m == nil || n == nil {
+		return false
+	}
+	return m.uncertain[n]
+}
+
+func (m *Model) Inactive(n *parser.Node) bool {
+	if m == nil || n == nil {
+		return false
+	}
+	return m.inactive[n]
+}

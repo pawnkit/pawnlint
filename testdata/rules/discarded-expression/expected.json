@@ -1,0 +1,151 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "discarded-expression",
+      "severity": "warning",
+      "message": "expression has no effect; its result is discarded",
+      "startLine": 5,
+      "startCol": 5,
+      "endLine": 5,
+      "endCol": 11,
+      "notes": [
+        {
+          "message": "if this was meant to do work, assign it or call a function",
+          "startLine": 5,
+          "startCol": 5,
+          "endLine": 5,
+          "endCol": 12
+        }
+      ]
+    },
+    {
+      "ruleId": "discarded-expression",
+      "severity": "warning",
+      "message": "expression has no effect; its result is discarded",
+      "startLine": 6,
+      "startCol": 5,
+      "endLine": 6,
+      "endCol": 14,
+      "notes": [
+        {
+          "message": "if this was meant to do work, assign it or call a function",
+          "startLine": 6,
+          "startCol": 5,
+          "endLine": 6,
+          "endCol": 15
+        }
+      ]
+    },
+    {
+      "ruleId": "discarded-expression",
+      "severity": "warning",
+      "message": "expression has no effect; its result is discarded",
+      "startLine": 9,
+      "startCol": 5,
+      "endLine": 9,
+      "endCol": 9,
+      "notes": [
+        {
+          "message": "if this was meant to do work, assign it or call a function",
+          "startLine": 9,
+          "startCol": 5,
+          "endLine": 9,
+          "endCol": 10
+        }
+      ]
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "discarded-expression",
+      "severity": "warning",
+      "message": "expression has no effect; its result is discarded",
+      "startLine": 3,
+      "startCol": 5,
+      "endLine": 3,
+      "endCol": 17,
+      "notes": [
+        {
+          "message": "if this was meant to do work, assign it or call a function",
+          "startLine": 3,
+          "startCol": 5,
+          "endLine": 3,
+          "endCol": 18
+        }
+      ]
+    },
+    {
+      "ruleId": "discarded-expression",
+      "severity": "warning",
+      "message": "expression has no effect; its result is discarded",
+      "startLine": 4,
+      "startCol": 5,
+      "endLine": 4,
+      "endCol": 10,
+      "notes": [
+        {
+          "message": "if this was meant to do work, assign it or call a function",
+          "startLine": 4,
+          "startCol": 5,
+          "endLine": 4,
+          "endCol": 11
+        }
+      ]
+    },
+    {
+      "ruleId": "discarded-expression",
+      "severity": "warning",
+      "message": "expression has no effect; its result is discarded",
+      "startLine": 5,
+      "startCol": 5,
+      "endLine": 5,
+      "endCol": 11,
+      "notes": [
+        {
+          "message": "if this was meant to do work, assign it or call a function",
+          "startLine": 5,
+          "startCol": 5,
+          "endLine": 5,
+          "endCol": 12
+        }
+      ]
+    },
+    {
+      "ruleId": "discarded-expression",
+      "severity": "warning",
+      "message": "expression has no effect; its result is discarded",
+      "startLine": 6,
+      "startCol": 5,
+      "endLine": 6,
+      "endCol": 18,
+      "notes": [
+        {
+          "message": "if this was meant to do work, assign it or call a function",
+          "startLine": 6,
+          "startCol": 5,
+          "endLine": 6,
+          "endCol": 19
+        }
+      ]
+    },
+    {
+      "ruleId": "discarded-expression",
+      "severity": "warning",
+      "message": "expression has no effect; its result is discarded",
+      "startLine": 7,
+      "startCol": 5,
+      "endLine": 7,
+      "endCol": 12,
+      "notes": [
+        {
+          "message": "if this was meant to do work, assign it or call a function",
+          "startLine": 7,
+          "startCol": 5,
+          "endLine": 7,
+          "endCol": 13
+        }
+      ]
+    }
+  ],
+  "valid.pwn": []
+}

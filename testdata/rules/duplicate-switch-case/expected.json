@@ -1,0 +1,42 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "duplicate-switch-case",
+      "severity": "error",
+      "message": "switch case value 1 is duplicated",
+      "startLine": 9,
+      "startCol": 17,
+      "endLine": 9,
+      "endCol": 20,
+      "notes": [
+        {
+          "message": "first case is here",
+          "startLine": 8,
+          "startCol": 14,
+          "endLine": 8,
+          "endCol": 15
+        }
+      ]
+    },
+    {
+      "ruleId": "duplicate-switch-case",
+      "severity": "error",
+      "message": "switch case value 1 is duplicated",
+      "startLine": 10,
+      "startCol": 14,
+      "endLine": 10,
+      "endCol": 19,
+      "notes": [
+        {
+          "message": "first case is here",
+          "startLine": 8,
+          "startCol": 14,
+          "endLine": 8,
+          "endCol": 15
+        }
+      ]
+    }
+  ],
+  "valid.pwn": []
+}

@@ -1,0 +1,61 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "possibly-uninitialized",
+      "severity": "warning",
+      "message": "\"value\" may be read before an explicit assignment",
+      "startLine": 34,
+      "startCol": 9,
+      "endLine": 34,
+      "endCol": 14
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "possibly-uninitialized",
+      "severity": "warning",
+      "message": "\"value\" may be read before an explicit assignment",
+      "startLine": 9,
+      "startCol": 9,
+      "endLine": 9,
+      "endCol": 14
+    },
+    {
+      "ruleId": "possibly-uninitialized",
+      "severity": "warning",
+      "message": "\"value\" may be read before an explicit assignment",
+      "startLine": 17,
+      "startCol": 9,
+      "endLine": 17,
+      "endCol": 14
+    },
+    {
+      "ruleId": "possibly-uninitialized",
+      "severity": "warning",
+      "message": "\"value\" may be read before an explicit assignment",
+      "startLine": 27,
+      "startCol": 9,
+      "endLine": 27,
+      "endCol": 14
+    },
+    {
+      "ruleId": "possibly-uninitialized",
+      "severity": "warning",
+      "message": "\"value\" may be read before an explicit assignment",
+      "startLine": 33,
+      "startCol": 5,
+      "endLine": 33,
+      "endCol": 10
+    },
+    {
+      "ruleId": "possibly-uninitialized",
+      "severity": "warning",
+      "message": "\"value\" may be read before an explicit assignment",
+      "startLine": 38,
+      "startCol": 17,
+      "endLine": 38,
+      "endCol": 22
+    }
+  ],
+  "valid.pwn": []
+}

@@ -1,0 +1,60 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "recursive-call",
+      "severity": "warning",
+      "message": "function \"Direct\" calls itself recursively",
+      "startLine": 7,
+      "startCol": 7,
+      "endLine": 7,
+      "endCol": 13,
+      "notes": [
+        {
+          "message": "recursive call to \"Direct\" is here",
+          "startLine": 11,
+          "startCol": 10,
+          "endLine": 11,
+          "endCol": 16
+        }
+      ]
+    },
+    {
+      "ruleId": "recursive-call",
+      "severity": "warning",
+      "message": "function \"First\" participates in recursive call cycle First -\u003e Second",
+      "startLine": 16,
+      "startCol": 7,
+      "endLine": 16,
+      "endCol": 12,
+      "notes": [
+        {
+          "message": "recursive call to \"Second\" is here",
+          "startLine": 18,
+          "startCol": 2,
+          "endLine": 18,
+          "endCol": 8
+        }
+      ]
+    },
+    {
+      "ruleId": "recursive-call",
+      "severity": "warning",
+      "message": "function \"Second\" participates in recursive call cycle First -\u003e Second",
+      "startLine": 21,
+      "startCol": 7,
+      "endLine": 21,
+      "endCol": 13,
+      "notes": [
+        {
+          "message": "recursive call to \"First\" is here",
+          "startLine": 23,
+          "startCol": 2,
+          "endLine": 23,
+          "endCol": 7
+        }
+      ]
+    }
+  ],
+  "valid.pwn": []
+}

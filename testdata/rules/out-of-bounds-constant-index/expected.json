@@ -1,0 +1,42 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "out-of-bounds-constant-index",
+      "severity": "error",
+      "message": "constant index -1 is outside array size 4",
+      "startLine": 6,
+      "startCol": 12,
+      "endLine": 6,
+      "endCol": 14
+    },
+    {
+      "ruleId": "out-of-bounds-constant-index",
+      "severity": "error",
+      "message": "constant index 4 is outside array size 4",
+      "startLine": 7,
+      "startCol": 12,
+      "endLine": 7,
+      "endCol": 13
+    },
+    {
+      "ruleId": "out-of-bounds-constant-index",
+      "severity": "error",
+      "message": "constant index 5 is outside array size 4",
+      "startLine": 8,
+      "startCol": 12,
+      "endLine": 8,
+      "endCol": 17
+    },
+    {
+      "ruleId": "out-of-bounds-constant-index",
+      "severity": "error",
+      "message": "constant index 4 is outside array size 4",
+      "startLine": 11,
+      "startCol": 12,
+      "endLine": 11,
+      "endCol": 17
+    }
+  ],
+  "valid.pwn": []
+}

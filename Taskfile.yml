@@ -1,0 +1,69 @@
+version: "3"
+
+tasks:
+  default:
+    deps: [build]
+
+  build:
+    desc: Build pawnlint into bin/
+    cmds:
+      - mkdir -p bin
+      - go build -o bin/pawnlint ./cmd/pawnlint
+
+  test:
+    desc: Run unit tests
+    cmds:
+      - go test ./...
+
+  race:
+    desc: Run unit tests with the race detector
+    cmds:
+      - CGO_ENABLED=1 go test -race ./...
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run ./...
+
+  check:
+    desc: Run formatting, tests, race detection, vet, lint, and vulnerability checks
+    cmds:
+      - test -z "$(gofmt -l .)"
+      - go test ./...
+      - CGO_ENABLED=1 go test -race ./...
+      - go vet ./...
+      - golangci-lint run ./...
+      - go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
+
+  vuln:
+    desc: Scan dependencies for known vulnerabilities
+    cmds:
+      - go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
+
+  bench:
+    desc: Run benchmarks
+    cmds:
+      - go test ./internal/bench -run=^$ -bench=. -benchmem
+
+  fuzz:
+    desc: Run fuzz smoke tests
+    cmds:
+      - go test ./source/walk -run=^$ -fuzz=FuzzWalk -fuzztime=15s
+      - go test ./lint/suppress -run=^$ -fuzz=FuzzSuppression -fuzztime=15s
+      - go test ./semantic -run=^$ -fuzz=FuzzBuild -fuzztime=15s
+      - go test ./rules/correctness -run=^$ -fuzz=FuzzMalformed -fuzztime=15s
+
+  docs:
+    desc: Regenerate rule documentation
+    cmds:
+      - go run ./cmd/genruledocs -out docs/rules
+
+  tidy:
+    desc: Tidy Go modules
+    cmds:
+      - go mod tidy

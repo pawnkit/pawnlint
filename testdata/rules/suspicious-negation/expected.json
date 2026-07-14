@@ -1,0 +1,115 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "suspicious-negation",
+      "severity": "warning",
+      "message": "'!' binds tighter than '=='; did you mean to parenthesise?",
+      "startLine": 12,
+      "startCol": 9,
+      "endLine": 12,
+      "endCol": 15,
+      "notes": [
+        {
+          "message": "consider '!(true …)' or a different operator",
+          "startLine": 12,
+          "startCol": 9,
+          "endLine": 12,
+          "endCol": 23
+        }
+      ]
+    },
+    {
+      "ruleId": "suspicious-negation",
+      "severity": "warning",
+      "message": "'!' binds tighter than '\u003c\u003c'; did you mean to parenthesise?",
+      "startLine": 15,
+      "startCol": 12,
+      "endLine": 15,
+      "endCol": 17,
+      "notes": [
+        {
+          "message": "consider '!(2 …)' or a different operator",
+          "startLine": 15,
+          "startCol": 12,
+          "endLine": 15,
+          "endCol": 22
+        }
+      ]
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "suspicious-negation",
+      "severity": "warning",
+      "message": "'!' binds tighter than '\u0026'; did you mean to parenthesise?",
+      "startLine": 3,
+      "startCol": 9,
+      "endLine": 3,
+      "endCol": 15,
+      "notes": [
+        {
+          "message": "consider '!(FLAG_ADMIN …)' or a different operator",
+          "startLine": 3,
+          "startCol": 9,
+          "endLine": 3,
+          "endCol": 28
+        }
+      ]
+    },
+    {
+      "ruleId": "suspicious-negation",
+      "severity": "warning",
+      "message": "'!' binds tighter than '=='; did you mean to parenthesise?",
+      "startLine": 6,
+      "startCol": 9,
+      "endLine": 6,
+      "endCol": 15,
+      "notes": [
+        {
+          "message": "consider '!(expected …)' or a different operator",
+          "startLine": 6,
+          "startCol": 9,
+          "endLine": 6,
+          "endCol": 27
+        }
+      ]
+    },
+    {
+      "ruleId": "suspicious-negation",
+      "severity": "warning",
+      "message": "'!' binds tighter than '|'; did you mean to parenthesise?",
+      "startLine": 9,
+      "startCol": 9,
+      "endLine": 9,
+      "endCol": 11,
+      "notes": [
+        {
+          "message": "consider '!(b …)' or a different operator",
+          "startLine": 9,
+          "startCol": 9,
+          "endLine": 9,
+          "endCol": 15
+        }
+      ]
+    },
+    {
+      "ruleId": "suspicious-negation",
+      "severity": "warning",
+      "message": "'!' binds tighter than '^'; did you mean to parenthesise?",
+      "startLine": 12,
+      "startCol": 9,
+      "endLine": 12,
+      "endCol": 14,
+      "notes": [
+        {
+          "message": "consider '!(tag …)' or a different operator",
+          "startLine": 12,
+          "startCol": 9,
+          "endLine": 12,
+          "endCol": 20
+        }
+      ]
+    }
+  ],
+  "valid.pwn": []
+}

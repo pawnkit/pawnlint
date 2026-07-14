@@ -1,0 +1,60 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "discarded-resource-handle",
+      "severity": "warning",
+      "message": "resource handle returned by \"fopen\" is discarded; release it with \"fclose\"",
+      "startLine": 3,
+      "startCol": 2,
+      "endLine": 3,
+      "endCol": 21
+    },
+    {
+      "ruleId": "discarded-resource-handle",
+      "severity": "warning",
+      "message": "resource handle returned by \"ftemp\" is discarded; release it with \"fclose\"",
+      "startLine": 4,
+      "startCol": 2,
+      "endLine": 4,
+      "endCol": 9
+    },
+    {
+      "ruleId": "discarded-resource-handle",
+      "severity": "warning",
+      "message": "resource handle returned by \"db_open\" is discarded; release it with \"db_close\"",
+      "startLine": 5,
+      "startCol": 2,
+      "endLine": 5,
+      "endCol": 22
+    },
+    {
+      "ruleId": "discarded-resource-handle",
+      "severity": "warning",
+      "message": "resource handle returned by \"db_query\" is discarded; release it with \"db_free_result\"",
+      "startLine": 6,
+      "startCol": 2,
+      "endLine": 6,
+      "endCol": 28
+    },
+    {
+      "ruleId": "discarded-resource-handle",
+      "severity": "warning",
+      "message": "resource handle returned by \"DB_Open\" is discarded; release it with \"DB_Close\"",
+      "startLine": 7,
+      "startCol": 2,
+      "endLine": 7,
+      "endCol": 22
+    },
+    {
+      "ruleId": "discarded-resource-handle",
+      "severity": "warning",
+      "message": "resource handle returned by \"DB_ExecuteQuery\" is discarded; release it with \"DB_FreeResultSet\"",
+      "startLine": 8,
+      "startCol": 2,
+      "endLine": 8,
+      "endCol": 35
+    }
+  ],
+  "valid.pwn": []
+}

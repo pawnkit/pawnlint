@@ -1,0 +1,33 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "negative-or-zero-array-size",
+      "severity": "error",
+      "message": "array size must be greater than zero",
+      "startLine": 1,
+      "startCol": 10,
+      "endLine": 1,
+      "endCol": 11
+    },
+    {
+      "ruleId": "negative-or-zero-array-size",
+      "severity": "error",
+      "message": "array size must be greater than zero",
+      "startLine": 2,
+      "startCol": 14,
+      "endLine": 2,
+      "endCol": 16
+    },
+    {
+      "ruleId": "negative-or-zero-array-size",
+      "severity": "error",
+      "message": "array size must be greater than zero",
+      "startLine": 6,
+      "startCol": 20,
+      "endLine": 6,
+      "endCol": 25
+    }
+  ],
+  "valid.pwn": []
+}

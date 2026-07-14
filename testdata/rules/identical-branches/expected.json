@@ -1,0 +1,61 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "identical-branches",
+      "severity": "warning",
+      "message": "conditional branches are identical",
+      "startLine": 6,
+      "startCol": 29,
+      "endLine": 6,
+      "endCol": 38,
+      "notes": [
+        {
+          "message": "matching branch is here",
+          "startLine": 4,
+          "startCol": 9,
+          "endLine": 4,
+          "endCol": 20
+        }
+      ]
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "identical-branches",
+      "severity": "warning",
+      "message": "conditional branches are identical",
+      "startLine": 8,
+      "startCol": 5,
+      "endLine": 10,
+      "endCol": 6,
+      "notes": [
+        {
+          "message": "matching branch is here",
+          "startLine": 4,
+          "startCol": 5,
+          "endLine": 6,
+          "endCol": 6
+        }
+      ]
+    },
+    {
+      "ruleId": "identical-branches",
+      "severity": "warning",
+      "message": "conditional branches are identical",
+      "startLine": 15,
+      "startCol": 42,
+      "endLine": 15,
+      "endCol": 52,
+      "notes": [
+        {
+          "message": "matching branch is here",
+          "startLine": 15,
+          "startCol": 29,
+          "endLine": 15,
+          "endCol": 39
+        }
+      ]
+    }
+  ],
+  "valid.pwn": []
+}

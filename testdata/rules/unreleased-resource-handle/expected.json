@@ -1,0 +1,60 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "unreleased-resource-handle",
+      "severity": "warning",
+      "message": "resource handle \"file\" returned by \"fopen\" may reach function exit without being released",
+      "startLine": 3,
+      "startCol": 18,
+      "endLine": 3,
+      "endCol": 37
+    },
+    {
+      "ruleId": "unreleased-resource-handle",
+      "severity": "warning",
+      "message": "resource handle \"temporary\" returned by \"ftemp\" may reach function exit without being released",
+      "startLine": 4,
+      "startCol": 23,
+      "endLine": 4,
+      "endCol": 30
+    },
+    {
+      "ruleId": "unreleased-resource-handle",
+      "severity": "warning",
+      "message": "resource handle \"database\" returned by \"DB_Open\" may reach function exit without being released",
+      "startLine": 5,
+      "startCol": 20,
+      "endLine": 5,
+      "endCol": 40
+    },
+    {
+      "ruleId": "unreleased-resource-handle",
+      "severity": "warning",
+      "message": "resource handle \"result\" returned by \"DB_ExecuteQuery\" may reach function exit without being released",
+      "startLine": 6,
+      "startCol": 24,
+      "endLine": 6,
+      "endCol": 57
+    },
+    {
+      "ruleId": "unreleased-resource-handle",
+      "severity": "warning",
+      "message": "resource handle \"file\" returned by \"fopen\" may reach function exit without being released",
+      "startLine": 11,
+      "startCol": 18,
+      "endLine": 11,
+      "endCol": 37
+    },
+    {
+      "ruleId": "unreleased-resource-handle",
+      "severity": "warning",
+      "message": "resource handle \"file\" returned by \"fopen\" may reach function exit without being released",
+      "startLine": 22,
+      "startCol": 9,
+      "endLine": 22,
+      "endCol": 30
+    }
+  ],
+  "valid.pwn": []
+}

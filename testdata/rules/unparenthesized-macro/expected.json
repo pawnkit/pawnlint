@@ -1,0 +1,349 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "replacement list of macro \"NOARGS\" should be parenthesized to avoid operator-precedence surprises at call sites",
+      "startLine": 1,
+      "startCol": 18,
+      "endLine": 1,
+      "endCol": 23,
+      "fix": {
+        "description": "wrap the macro replacement list in parentheses",
+        "edits": [
+          {
+            "startOffset": 17,
+            "endOffset": 22,
+            "newText": "(1 + 2)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "parameter \"x\" of macro \"WRAPPED_BODY_UNSAFE_PARAM\" should be parenthesized in the replacement list",
+      "startLine": 4,
+      "startCol": 39,
+      "endLine": 4,
+      "endCol": 40,
+      "fix": {
+        "description": "wrap the macro parameter in parentheses",
+        "edits": [
+          {
+            "startOffset": 116,
+            "endOffset": 117,
+            "newText": "(x)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "parameter \"x\" of macro \"WRAPPED_BODY_UNSAFE_PARAM\" should be parenthesized in the replacement list",
+      "startLine": 4,
+      "startCol": 43,
+      "endLine": 4,
+      "endCol": 44,
+      "fix": {
+        "description": "wrap the macro parameter in parentheses",
+        "edits": [
+          {
+            "startOffset": 120,
+            "endOffset": 121,
+            "newText": "(x)"
+          }
+        ]
+      }
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "parameter \"x\" of macro \"SQUARE\" should be parenthesized in the replacement list",
+      "startLine": 1,
+      "startCol": 19,
+      "endLine": 1,
+      "endCol": 20,
+      "fix": {
+        "description": "wrap the macro parameter in parentheses",
+        "edits": [
+          {
+            "startOffset": 18,
+            "endOffset": 19,
+            "newText": "(x)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "replacement list of macro \"SQUARE\" should be parenthesized to avoid operator-precedence surprises at call sites",
+      "startLine": 1,
+      "startCol": 19,
+      "endLine": 1,
+      "endCol": 24,
+      "fix": {
+        "description": "wrap the macro replacement list in parentheses",
+        "edits": [
+          {
+            "startOffset": 18,
+            "endOffset": 23,
+            "newText": "(x * x)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "parameter \"x\" of macro \"SQUARE\" should be parenthesized in the replacement list",
+      "startLine": 1,
+      "startCol": 23,
+      "endLine": 1,
+      "endCol": 24,
+      "fix": {
+        "description": "wrap the macro parameter in parentheses",
+        "edits": [
+          {
+            "startOffset": 22,
+            "endOffset": 23,
+            "newText": "(x)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "parameter \"x\" of macro \"DOUBLE\" should be parenthesized in the replacement list",
+      "startLine": 2,
+      "startCol": 19,
+      "endLine": 2,
+      "endCol": 20,
+      "fix": {
+        "description": "wrap the macro parameter in parentheses",
+        "edits": [
+          {
+            "startOffset": 42,
+            "endOffset": 43,
+            "newText": "(x)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "replacement list of macro \"DOUBLE\" should be parenthesized to avoid operator-precedence surprises at call sites",
+      "startLine": 2,
+      "startCol": 19,
+      "endLine": 2,
+      "endCol": 24,
+      "fix": {
+        "description": "wrap the macro replacement list in parentheses",
+        "edits": [
+          {
+            "startOffset": 42,
+            "endOffset": 47,
+            "newText": "(x + x)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "parameter \"x\" of macro \"DOUBLE\" should be parenthesized in the replacement list",
+      "startLine": 2,
+      "startCol": 23,
+      "endLine": 2,
+      "endCol": 24,
+      "fix": {
+        "description": "wrap the macro parameter in parentheses",
+        "edits": [
+          {
+            "startOffset": 46,
+            "endOffset": 47,
+            "newText": "(x)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "replacement list of macro \"NEGATE\" should be parenthesized to avoid operator-precedence surprises at call sites",
+      "startLine": 3,
+      "startCol": 19,
+      "endLine": 3,
+      "endCol": 21,
+      "fix": {
+        "description": "wrap the macro replacement list in parentheses",
+        "edits": [
+          {
+            "startOffset": 66,
+            "endOffset": 68,
+            "newText": "(-x)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "parameter \"x\" of macro \"NEGATE\" should be parenthesized in the replacement list",
+      "startLine": 3,
+      "startCol": 20,
+      "endLine": 3,
+      "endCol": 21,
+      "fix": {
+        "description": "wrap the macro parameter in parentheses",
+        "edits": [
+          {
+            "startOffset": 67,
+            "endOffset": 68,
+            "newText": "(x)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "parameter \"x\" of macro \"TERNARY\" should be parenthesized in the replacement list",
+      "startLine": 4,
+      "startCol": 20,
+      "endLine": 4,
+      "endCol": 21,
+      "fix": {
+        "description": "wrap the macro parameter in parentheses",
+        "edits": [
+          {
+            "startOffset": 88,
+            "endOffset": 89,
+            "newText": "(x)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "replacement list of macro \"TERNARY\" should be parenthesized to avoid operator-precedence surprises at call sites",
+      "startLine": 4,
+      "startCol": 20,
+      "endLine": 4,
+      "endCol": 29,
+      "fix": {
+        "description": "wrap the macro replacement list in parentheses",
+        "edits": [
+          {
+            "startOffset": 88,
+            "endOffset": 97,
+            "newText": "(x ? 1 : 0)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "parameter \"x\" of macro \"INCREMENT\" should be parenthesized in the replacement list",
+      "startLine": 5,
+      "startCol": 22,
+      "endLine": 5,
+      "endCol": 23,
+      "fix": {
+        "description": "wrap the macro parameter in parentheses",
+        "edits": [
+          {
+            "startOffset": 119,
+            "endOffset": 120,
+            "newText": "(x)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "replacement list of macro \"INCREMENT\" should be parenthesized to avoid operator-precedence surprises at call sites",
+      "startLine": 5,
+      "startCol": 22,
+      "endLine": 5,
+      "endCol": 23,
+      "fix": {
+        "description": "wrap the macro replacement list in parentheses",
+        "edits": [
+          {
+            "startOffset": 119,
+            "endOffset": 120,
+            "newText": "(x)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "replacement list of macro \"MAX_HP\" should be parenthesized to avoid operator-precedence surprises at call sites",
+      "startLine": 6,
+      "startCol": 16,
+      "endLine": 6,
+      "endCol": 24,
+      "fix": {
+        "description": "wrap the macro replacement list in parentheses",
+        "edits": [
+          {
+            "startOffset": 138,
+            "endOffset": 146,
+            "newText": "(100 + 50)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "parameter \"x\" of macro \"RETURN_SUM\" should be parenthesized in the replacement list",
+      "startLine": 7,
+      "startCol": 33,
+      "endLine": 7,
+      "endCol": 34,
+      "fix": {
+        "description": "wrap the macro parameter in parentheses",
+        "edits": [
+          {
+            "startOffset": 179,
+            "endOffset": 180,
+            "newText": "(x)"
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "unparenthesized-macro",
+      "severity": "warning",
+      "message": "parameter \"y\" of macro \"RETURN_SUM\" should be parenthesized in the replacement list",
+      "startLine": 7,
+      "startCol": 37,
+      "endLine": 7,
+      "endCol": 38,
+      "fix": {
+        "description": "wrap the macro parameter in parentheses",
+        "edits": [
+          {
+            "startOffset": 183,
+            "endOffset": 184,
+            "newText": "(y)"
+          }
+        ]
+      }
+    }
+  ],
+  "valid.pwn": []
+}

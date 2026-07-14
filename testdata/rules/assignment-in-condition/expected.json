@@ -1,0 +1,60 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "assignment-in-condition",
+      "severity": "warning",
+      "message": "assignment used as a condition; did you mean '=='?",
+      "startLine": 3,
+      "startCol": 9,
+      "endLine": 3,
+      "endCol": 31,
+      "notes": [
+        {
+          "message": "wrap the assignment in an extra pair of parentheses to silence this",
+          "startLine": 3,
+          "startCol": 5,
+          "endLine": 5,
+          "endCol": 6
+        }
+      ]
+    },
+    {
+      "ruleId": "assignment-in-condition",
+      "severity": "warning",
+      "message": "assignment used as a condition; did you mean '=='?",
+      "startLine": 6,
+      "startCol": 12,
+      "endLine": 6,
+      "endCol": 26,
+      "notes": [
+        {
+          "message": "wrap the assignment in an extra pair of parentheses to silence this",
+          "startLine": 6,
+          "startCol": 5,
+          "endLine": 8,
+          "endCol": 6
+        }
+      ]
+    },
+    {
+      "ruleId": "assignment-in-condition",
+      "severity": "warning",
+      "message": "assignment used as a condition; did you mean '=='?",
+      "startLine": 9,
+      "startCol": 9,
+      "endLine": 9,
+      "endCol": 26,
+      "notes": [
+        {
+          "message": "wrap the assignment in an extra pair of parentheses to silence this",
+          "startLine": 9,
+          "startCol": 5,
+          "endLine": 11,
+          "endCol": 6
+        }
+      ]
+    }
+  ],
+  "valid.pwn": []
+}

@@ -1,0 +1,36 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "large-local-array",
+      "severity": "warning",
+      "message": "local array \"buffer\" allocates 1024 stack cells",
+      "startLine": 3,
+      "startCol": 6,
+      "endLine": 3,
+      "endCol": 12,
+      "suggested": "reduce the array below 1024 cells or move storage out of the automatic stack"
+    },
+    {
+      "ruleId": "large-local-array",
+      "severity": "warning",
+      "message": "local array \"matrix\" allocates 1200 stack cells",
+      "startLine": 4,
+      "startCol": 6,
+      "endLine": 4,
+      "endCol": 12,
+      "suggested": "reduce the array below 1024 cells or move storage out of the automatic stack"
+    },
+    {
+      "ruleId": "large-local-array",
+      "severity": "warning",
+      "message": "local array \"packed\" allocates 1024 stack cells",
+      "startLine": 5,
+      "startCol": 6,
+      "endLine": 5,
+      "endCol": 12,
+      "suggested": "reduce the array below 1024 cells or move storage out of the automatic stack"
+    }
+  ],
+  "valid.pwn": []
+}

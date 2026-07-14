@@ -1,0 +1,82 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "self-assignment",
+      "severity": "warning",
+      "message": "symbol is assigned to itself",
+      "startLine": 6,
+      "startCol": 5,
+      "endLine": 6,
+      "endCol": 18,
+      "fix": {
+        "description": "remove the redundant self-assignment",
+        "edits": [
+          {
+            "startOffset": 47,
+            "endOffset": 61,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "self-assignment",
+      "severity": "warning",
+      "message": "symbol is assigned to itself",
+      "startLine": 7,
+      "startCol": 5,
+      "endLine": 7,
+      "endCol": 32,
+      "fix": {
+        "description": "remove the redundant self-assignment",
+        "edits": [
+          {
+            "startOffset": 66,
+            "endOffset": 94,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "self-assignment",
+      "severity": "warning",
+      "message": "symbol is assigned to itself",
+      "startLine": 8,
+      "startCol": 15,
+      "endLine": 8,
+      "endCol": 28,
+      "fix": {
+        "description": "remove the redundant self-assignment",
+        "edits": [
+          {
+            "startOffset": 109,
+            "endOffset": 122,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "self-assignment",
+      "severity": "warning",
+      "message": "symbol is assigned to itself",
+      "startLine": 9,
+      "startCol": 10,
+      "endLine": 9,
+      "endCol": 23,
+      "fix": {
+        "description": "remove the redundant self-assignment",
+        "edits": [
+          {
+            "startOffset": 133,
+            "endOffset": 146,
+            "newText": "value"
+          }
+        ]
+      }
+    }
+  ],
+  "valid.pwn": []
+}

@@ -1,0 +1,25 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "suspicious-comma-expression",
+      "severity": "warning",
+      "message": "comma operator chains sub-expressions; consider separate statements",
+      "startLine": 4,
+      "startCol": 5,
+      "endLine": 4,
+      "endCol": 22
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "suspicious-comma-expression",
+      "severity": "warning",
+      "message": "comma operator chains sub-expressions; consider separate statements",
+      "startLine": 3,
+      "startCol": 12,
+      "endLine": 3,
+      "endCol": 39
+    }
+  ],
+  "valid.pwn": []
+}

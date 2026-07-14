@@ -1,0 +1,42 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "constant-condition",
+      "severity": "warning",
+      "message": "condition is always true",
+      "startLine": 3,
+      "startCol": 8,
+      "endLine": 3,
+      "endCol": 11
+    },
+    {
+      "ruleId": "constant-condition",
+      "severity": "warning",
+      "message": "condition is always false",
+      "startLine": 6,
+      "startCol": 8,
+      "endLine": 6,
+      "endCol": 15
+    },
+    {
+      "ruleId": "constant-condition",
+      "severity": "warning",
+      "message": "condition is always true",
+      "startLine": 9,
+      "startCol": 17,
+      "endLine": 9,
+      "endCol": 18
+    },
+    {
+      "ruleId": "constant-condition",
+      "severity": "warning",
+      "message": "condition is always true",
+      "startLine": 19,
+      "startCol": 8,
+      "endLine": 19,
+      "endCol": 20
+    }
+  ],
+  "valid.pwn": []
+}

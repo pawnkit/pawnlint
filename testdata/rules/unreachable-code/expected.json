@@ -1,0 +1,61 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "unreachable-code",
+      "severity": "warning",
+      "message": "unreachable code",
+      "startLine": 22,
+      "startCol": 5,
+      "endLine": 22,
+      "endCol": 16
+    },
+    {
+      "ruleId": "unreachable-code",
+      "severity": "warning",
+      "message": "unreachable code",
+      "startLine": 28,
+      "startCol": 5,
+      "endLine": 30,
+      "endCol": 6
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "unreachable-code",
+      "severity": "warning",
+      "message": "unreachable code",
+      "startLine": 4,
+      "startCol": 5,
+      "endLine": 4,
+      "endCol": 15
+    },
+    {
+      "ruleId": "unreachable-code",
+      "severity": "warning",
+      "message": "unreachable code",
+      "startLine": 14,
+      "startCol": 5,
+      "endLine": 14,
+      "endCol": 16
+    },
+    {
+      "ruleId": "unreachable-code",
+      "severity": "warning",
+      "message": "unreachable code",
+      "startLine": 20,
+      "startCol": 5,
+      "endLine": 20,
+      "endCol": 17
+    },
+    {
+      "ruleId": "unreachable-code",
+      "severity": "warning",
+      "message": "unreachable code",
+      "startLine": 30,
+      "startCol": 5,
+      "endLine": 30,
+      "endCol": 16
+    }
+  ],
+  "valid.pwn": []
+}

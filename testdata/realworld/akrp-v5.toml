@@ -1,0 +1,2 @@
+profile = "all"
+target = "openmp"

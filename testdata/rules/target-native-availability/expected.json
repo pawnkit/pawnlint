@@ -1,0 +1,24 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "target-native-availability",
+      "severity": "error",
+      "message": "native \"SetPlayerAdmin\" is only available for the open.mp target",
+      "startLine": 3,
+      "startCol": 2,
+      "endLine": 3,
+      "endCol": 16
+    },
+    {
+      "ruleId": "target-native-availability",
+      "severity": "error",
+      "message": "native \"ClearBanList\" is only available for the open.mp target",
+      "startLine": 4,
+      "startCol": 2,
+      "endLine": 4,
+      "endCol": 14
+    }
+  ],
+  "valid.pwn": []
+}

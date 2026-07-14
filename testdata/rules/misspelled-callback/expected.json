@@ -1,0 +1,24 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "misspelled-callback",
+      "severity": "warning",
+      "message": "public function \"OnPlayerConect\" looks like a misspelled callback; did you mean \"OnPlayerConnect\"?",
+      "startLine": 1,
+      "startCol": 8,
+      "endLine": 1,
+      "endCol": 22
+    },
+    {
+      "ruleId": "misspelled-callback",
+      "severity": "warning",
+      "message": "public function \"OnGameModeInt\" looks like a misspelled callback; did you mean \"OnGameModeInit\"?",
+      "startLine": 6,
+      "startCol": 8,
+      "endLine": 6,
+      "endCol": 21
+    }
+  ],
+  "valid.pwn": []
+}

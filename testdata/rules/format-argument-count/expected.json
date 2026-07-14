@@ -1,0 +1,42 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "format-argument-count",
+      "severity": "error",
+      "message": "format string requires 2 arguments, but 1 was provided",
+      "startLine": 4,
+      "startCol": 12,
+      "endLine": 4,
+      "endCol": 19
+    },
+    {
+      "ruleId": "format-argument-count",
+      "severity": "error",
+      "message": "format string requires 1 argument, but 2 were provided",
+      "startLine": 5,
+      "startCol": 12,
+      "endLine": 5,
+      "endCol": 16
+    },
+    {
+      "ruleId": "format-argument-count",
+      "severity": "error",
+      "message": "format string requires 1 argument, but 0 were provided",
+      "startLine": 6,
+      "startCol": 37,
+      "endLine": 6,
+      "endCol": 41
+    },
+    {
+      "ruleId": "format-argument-count",
+      "severity": "error",
+      "message": "format string requires 1 argument, but 0 were provided",
+      "startLine": 7,
+      "startCol": 30,
+      "endLine": 7,
+      "endCol": 40
+    }
+  ],
+  "valid.pwn": []
+}

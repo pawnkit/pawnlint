@@ -1,0 +1,9 @@
+/bin/
+/dist/
+/pawnlint
+*.exe
+*.test
+*.out
+coverage.out
+coverage.txt
+.pawnlint-cache/

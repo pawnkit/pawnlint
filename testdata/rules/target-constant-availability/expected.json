@@ -1,0 +1,24 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "target-constant-availability",
+      "severity": "error",
+      "message": "constant \"CAM_MODE_FIXED\" is only available for the open.mp target",
+      "startLine": 3,
+      "startCol": 13,
+      "endLine": 3,
+      "endCol": 27
+    },
+    {
+      "ruleId": "target-constant-availability",
+      "severity": "error",
+      "message": "constant \"CARMODTYPE_NONE\" is only available for the open.mp target",
+      "startLine": 4,
+      "startCol": 13,
+      "endLine": 4,
+      "endCol": 28
+    }
+  ],
+  "valid.pwn": []
+}

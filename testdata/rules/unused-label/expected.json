@@ -1,0 +1,25 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "unused-label",
+      "severity": "warning",
+      "message": "label \"unused\" is never used",
+      "startLine": 3,
+      "startCol": 1,
+      "endLine": 3,
+      "endCol": 7,
+      "fix": {
+        "description": "remove the unused label",
+        "edits": [
+          {
+            "startOffset": 9,
+            "endOffset": 16,
+            "newText": ""
+          }
+        ]
+      }
+    }
+  ],
+  "valid.pwn": []
+}

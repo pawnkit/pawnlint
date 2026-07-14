@@ -1,0 +1,35 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "unimplemented-function",
+      "severity": "error",
+      "message": "function \"EnableTirePopping\" is not implemented by open.mp",
+      "startLine": 3,
+      "startCol": 2,
+      "endLine": 3,
+      "endCol": 19,
+      "suggested": "Use `OnVehicleDamageStatusUpdate`."
+    },
+    {
+      "ruleId": "unimplemented-function",
+      "severity": "error",
+      "message": "function \"SetDeathDropAmount\" is not implemented by open.mp",
+      "startLine": 4,
+      "startCol": 2,
+      "endLine": 4,
+      "endCol": 20,
+      "suggested": "Use `CreatePickup`."
+    },
+    {
+      "ruleId": "unimplemented-function",
+      "severity": "error",
+      "message": "function \"SetTeamCount\" is not implemented by open.mp",
+      "startLine": 5,
+      "startCol": 2,
+      "endLine": 5,
+      "endCol": 14
+    }
+  ],
+  "valid.pwn": []
+}

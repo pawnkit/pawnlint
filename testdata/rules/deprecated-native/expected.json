@@ -1,0 +1,26 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "deprecated-native",
+      "severity": "warning",
+      "message": "native \"SendRconCommandf\" is deprecated",
+      "startLine": 3,
+      "startCol": 5,
+      "endLine": 3,
+      "endCol": 21,
+      "suggested": "Use `SendRconCommand`."
+    },
+    {
+      "ruleId": "deprecated-native",
+      "severity": "warning",
+      "message": "native \"GetRunningTimers\" is deprecated",
+      "startLine": 4,
+      "startCol": 5,
+      "endLine": 4,
+      "endCol": 21,
+      "suggested": "Use `CountRunningTimers`."
+    }
+  ],
+  "valid.pwn": []
+}

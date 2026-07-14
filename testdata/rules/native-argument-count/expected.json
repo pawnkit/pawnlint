@@ -1,0 +1,33 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "native-argument-count",
+      "severity": "error",
+      "message": "native \"Kick\" expects 1 argument, but 0 were provided",
+      "startLine": 4,
+      "startCol": 5,
+      "endLine": 4,
+      "endCol": 11
+    },
+    {
+      "ruleId": "native-argument-count",
+      "severity": "error",
+      "message": "native \"GetPlayerVersion\" expects between 2 and 3 arguments, but 4 were provided",
+      "startLine": 5,
+      "startCol": 5,
+      "endLine": 5,
+      "endCol": 40
+    },
+    {
+      "ruleId": "native-argument-count",
+      "severity": "error",
+      "message": "native \"SendRconCommand\" expects at least 1 argument, but 0 were provided",
+      "startLine": 6,
+      "startCol": 5,
+      "endLine": 6,
+      "endCol": 22
+    }
+  ],
+  "valid.pwn": []
+}

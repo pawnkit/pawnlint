@@ -1,0 +1,24 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "unused-local",
+      "severity": "warning",
+      "message": "local variable \"unused\" is never used",
+      "startLine": 3,
+      "startCol": 9,
+      "endLine": 3,
+      "endCol": 15
+    },
+    {
+      "ruleId": "unused-local",
+      "severity": "warning",
+      "message": "local variable \"second\" is never used",
+      "startLine": 4,
+      "startCol": 16,
+      "endLine": 4,
+      "endCol": 22
+    }
+  ],
+  "valid.pwn": []
+}

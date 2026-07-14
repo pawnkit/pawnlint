@@ -1,0 +1,3 @@
+OrphanedHelper() {}
+
+main() {}

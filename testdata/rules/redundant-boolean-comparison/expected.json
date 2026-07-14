@@ -1,0 +1,70 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "redundant-boolean-comparison",
+      "severity": "warning",
+      "message": "boolean comparison is redundant; use the expression directly",
+      "startLine": 4,
+      "startCol": 9,
+      "endLine": 4,
+      "endCol": 29
+    },
+    {
+      "ruleId": "redundant-boolean-comparison",
+      "severity": "warning",
+      "message": "boolean comparison is redundant; use the expression directly",
+      "startLine": 7,
+      "startCol": 9,
+      "endLine": 7,
+      "endCol": 31
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "redundant-boolean-comparison",
+      "severity": "warning",
+      "message": "boolean comparison is redundant; use the expression directly",
+      "startLine": 9,
+      "startCol": 9,
+      "endLine": 9,
+      "endCol": 21
+    },
+    {
+      "ruleId": "redundant-boolean-comparison",
+      "severity": "warning",
+      "message": "boolean comparison is redundant; use the expression directly",
+      "startLine": 12,
+      "startCol": 9,
+      "endLine": 12,
+      "endCol": 22
+    },
+    {
+      "ruleId": "redundant-boolean-comparison",
+      "severity": "warning",
+      "message": "boolean comparison is redundant; negate the expression",
+      "startLine": 15,
+      "startCol": 9,
+      "endLine": 15,
+      "endCol": 22
+    },
+    {
+      "ruleId": "redundant-boolean-comparison",
+      "severity": "warning",
+      "message": "boolean comparison is redundant; negate the expression",
+      "startLine": 18,
+      "startCol": 9,
+      "endLine": 18,
+      "endCol": 21
+    },
+    {
+      "ruleId": "redundant-boolean-comparison",
+      "severity": "warning",
+      "message": "boolean comparison is redundant; negate the expression",
+      "startLine": 21,
+      "startCol": 9,
+      "endLine": 21,
+      "endCol": 27
+    }
+  ],
+  "valid.pwn": []
+}

@@ -1,0 +1,24 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "unused-parameter",
+      "severity": "warning",
+      "message": "parameter \"right\" is never used",
+      "startLine": 1,
+      "startCol": 17,
+      "endLine": 1,
+      "endCol": 22
+    },
+    {
+      "ruleId": "unused-parameter",
+      "severity": "warning",
+      "message": "parameter \"argc\" is never used",
+      "startLine": 6,
+      "startCol": 13,
+      "endLine": 6,
+      "endCol": 17
+    }
+  ],
+  "valid.pwn": []
+}

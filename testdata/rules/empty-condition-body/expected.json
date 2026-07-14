@@ -1,0 +1,147 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "empty-condition-body",
+      "severity": "error",
+      "message": "stray ';' after if condition makes the following block unconditional",
+      "startLine": 7,
+      "startCol": 11,
+      "endLine": 7,
+      "endCol": 12,
+      "notes": [
+        {
+          "message": "this block runs unconditionally",
+          "startLine": 8,
+          "startCol": 5,
+          "endLine": 9,
+          "endCol": 6
+        }
+      ],
+      "fix": {
+        "description": "remove the stray semicolon",
+        "edits": [
+          {
+            "startOffset": 72,
+            "endOffset": 73,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "empty-condition-body",
+      "severity": "error",
+      "message": "stray ';' after for condition makes the following block unconditional",
+      "startLine": 11,
+      "startCol": 28,
+      "endLine": 11,
+      "endCol": 29,
+      "notes": [
+        {
+          "message": "this block runs unconditionally",
+          "startLine": 12,
+          "startCol": 5,
+          "endLine": 14,
+          "endCol": 6
+        }
+      ],
+      "fix": {
+        "description": "remove the stray semicolon",
+        "edits": [
+          {
+            "startOffset": 131,
+            "endOffset": 132,
+            "newText": ""
+          }
+        ]
+      }
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "empty-condition-body",
+      "severity": "error",
+      "message": "stray ';' after if condition makes the following block unconditional",
+      "startLine": 3,
+      "startCol": 37,
+      "endLine": 3,
+      "endCol": 38,
+      "notes": [
+        {
+          "message": "this block runs unconditionally",
+          "startLine": 4,
+          "startCol": 5,
+          "endLine": 6,
+          "endCol": 6
+        }
+      ],
+      "fix": {
+        "description": "remove the stray semicolon",
+        "edits": [
+          {
+            "startOffset": 45,
+            "endOffset": 46,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "empty-condition-body",
+      "severity": "error",
+      "message": "stray ';' after while condition makes the following block unconditional",
+      "startLine": 8,
+      "startCol": 20,
+      "endLine": 8,
+      "endCol": 21,
+      "notes": [
+        {
+          "message": "this block runs unconditionally",
+          "startLine": 9,
+          "startCol": 5,
+          "endLine": 11,
+          "endCol": 6
+        }
+      ],
+      "fix": {
+        "description": "remove the stray semicolon",
+        "edits": [
+          {
+            "startOffset": 103,
+            "endOffset": 104,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "empty-condition-body",
+      "severity": "error",
+      "message": "stray ';' after for condition makes the following block unconditional",
+      "startLine": 13,
+      "startCol": 13,
+      "endLine": 13,
+      "endCol": 14,
+      "notes": [
+        {
+          "message": "this block runs unconditionally",
+          "startLine": 14,
+          "startCol": 5,
+          "endLine": 16,
+          "endCol": 6
+        }
+      ],
+      "fix": {
+        "description": "remove the stray semicolon",
+        "edits": [
+          {
+            "startOffset": 149,
+            "endOffset": 150,
+            "newText": ""
+          }
+        ]
+      }
+    }
+  ],
+  "valid.pwn": []
+}

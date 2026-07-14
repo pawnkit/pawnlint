@@ -1,0 +1,42 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "shadowed-variable",
+      "severity": "warning",
+      "message": "\"value\" shadows an outer variable",
+      "startLine": 3,
+      "startCol": 12,
+      "endLine": 3,
+      "endCol": 17,
+      "notes": [
+        {
+          "message": "outer declaration is here",
+          "startLine": 1,
+          "startCol": 5,
+          "endLine": 1,
+          "endCol": 10
+        }
+      ]
+    },
+    {
+      "ruleId": "shadowed-variable",
+      "severity": "warning",
+      "message": "\"local\" shadows an outer variable",
+      "startLine": 7,
+      "startCol": 13,
+      "endLine": 7,
+      "endCol": 18,
+      "notes": [
+        {
+          "message": "outer declaration is here",
+          "startLine": 5,
+          "startCol": 9,
+          "endLine": 5,
+          "endCol": 14
+        }
+      ]
+    }
+  ],
+  "valid.pwn": []
+}

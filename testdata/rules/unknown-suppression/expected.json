@@ -1,0 +1,143 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "hint",
+      "message": "unused pawnlint suppression directive",
+      "startLine": 1,
+      "startCol": 1,
+      "endLine": 1,
+      "endCol": 72
+    },
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "hint",
+      "message": "unused pawnlint suppression directive",
+      "startLine": 6,
+      "startCol": 5,
+      "endLine": 6,
+      "endCol": 38
+    },
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "warning",
+      "message": "unmatched `pawnlint-enable` for \"discarded-expression\"",
+      "startLine": 8,
+      "startCol": 5,
+      "endLine": 8,
+      "endCol": 5
+    },
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "warning",
+      "message": "unknown suppression rule \"bogus\"",
+      "startLine": 10,
+      "startCol": 5,
+      "endLine": 10,
+      "endCol": 5
+    },
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "hint",
+      "message": "unused pawnlint suppression directive",
+      "startLine": 10,
+      "startCol": 5,
+      "endLine": 10,
+      "endCol": 55
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "warning",
+      "message": "unknown suppression rule \"bogus-rule\"",
+      "startLine": 1,
+      "startCol": 1,
+      "endLine": 1,
+      "endCol": 1
+    },
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "hint",
+      "message": "unused pawnlint suppression directive",
+      "startLine": 1,
+      "startCol": 1,
+      "endLine": 1,
+      "endCol": 41
+    },
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "warning",
+      "message": "unmatched `pawnlint-enable` for \"never-disabled\"",
+      "startLine": 6,
+      "startCol": 5,
+      "endLine": 6,
+      "endCol": 5
+    },
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "warning",
+      "message": "malformed suppression: no rule id given",
+      "startLine": 8,
+      "startCol": 5,
+      "endLine": 8,
+      "endCol": 5
+    },
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "warning",
+      "message": "unknown suppression rule \"bar\"",
+      "startLine": 10,
+      "startCol": 5,
+      "endLine": 10,
+      "endCol": 5
+    },
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "warning",
+      "message": "unknown suppression rule \"foo\"",
+      "startLine": 10,
+      "startCol": 5,
+      "endLine": 10,
+      "endCol": 5
+    },
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "hint",
+      "message": "unused pawnlint suppression directive",
+      "startLine": 10,
+      "startCol": 5,
+      "endLine": 10,
+      "endCol": 43
+    }
+  ],
+  "valid.pwn": [
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "hint",
+      "message": "unused pawnlint suppression directive",
+      "startLine": 1,
+      "startCol": 1,
+      "endLine": 1,
+      "endCol": 51
+    },
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "hint",
+      "message": "unused pawnlint suppression directive",
+      "startLine": 6,
+      "startCol": 5,
+      "endLine": 6,
+      "endCol": 45
+    },
+    {
+      "ruleId": "unknown-suppression",
+      "severity": "hint",
+      "message": "unused pawnlint suppression directive",
+      "startLine": 13,
+      "startCol": 1,
+      "endLine": 13,
+      "endCol": 34
+    }
+  ]
+}

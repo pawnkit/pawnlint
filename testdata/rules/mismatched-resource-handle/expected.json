@@ -1,0 +1,42 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "mismatched-resource-handle",
+      "severity": "error",
+      "message": "\"fclose\" releases File handles, but this argument has tag DB",
+      "startLine": 3,
+      "startCol": 9,
+      "endLine": 3,
+      "endCol": 29
+    },
+    {
+      "ruleId": "mismatched-resource-handle",
+      "severity": "error",
+      "message": "\"DB_Close\" releases DB handles, but this argument has tag File",
+      "startLine": 4,
+      "startCol": 11,
+      "endLine": 4,
+      "endCol": 30
+    },
+    {
+      "ruleId": "mismatched-resource-handle",
+      "severity": "error",
+      "message": "\"DB_FreeResultSet\" releases DBResult handles, but this argument has tag DB",
+      "startLine": 5,
+      "startCol": 19,
+      "endLine": 5,
+      "endCol": 39
+    },
+    {
+      "ruleId": "mismatched-resource-handle",
+      "severity": "error",
+      "message": "\"fclose\" releases File handles, but this argument has tag DB",
+      "startLine": 8,
+      "startCol": 9,
+      "endLine": 8,
+      "endCol": 17
+    }
+  ],
+  "valid.pwn": []
+}

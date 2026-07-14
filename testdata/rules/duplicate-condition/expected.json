@@ -1,0 +1,43 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "duplicate-condition",
+      "severity": "warning",
+      "message": "condition duplicates an earlier branch",
+      "startLine": 11,
+      "startCol": 13,
+      "endLine": 11,
+      "endCol": 20,
+      "notes": [
+        {
+          "message": "first condition is here",
+          "startLine": 5,
+          "startCol": 8,
+          "endLine": 5,
+          "endCol": 15
+        }
+      ]
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "duplicate-condition",
+      "severity": "warning",
+      "message": "condition duplicates an earlier branch",
+      "startLine": 10,
+      "startCol": 13,
+      "endLine": 10,
+      "endCol": 26,
+      "notes": [
+        {
+          "message": "first condition is here",
+          "startLine": 4,
+          "startCol": 8,
+          "endLine": 4,
+          "endCol": 19
+        }
+      ]
+    }
+  ],
+  "valid.pwn": []
+}

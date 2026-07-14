@@ -1,0 +1,42 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "invalid-shift-count",
+      "severity": "error",
+      "message": "constant shift count must be between 0 and 31",
+      "startLine": 3,
+      "startCol": 22,
+      "endLine": 3,
+      "endCol": 24
+    },
+    {
+      "ruleId": "invalid-shift-count",
+      "severity": "error",
+      "message": "constant shift count must be between 0 and 31",
+      "startLine": 4,
+      "startCol": 23,
+      "endLine": 4,
+      "endCol": 25
+    },
+    {
+      "ruleId": "invalid-shift-count",
+      "severity": "error",
+      "message": "constant shift count must be between 0 and 31",
+      "startLine": 5,
+      "startCol": 16,
+      "endLine": 5,
+      "endCol": 25
+    },
+    {
+      "ruleId": "invalid-shift-count",
+      "severity": "error",
+      "message": "constant shift count must be between 0 and 31",
+      "startLine": 8,
+      "startCol": 22,
+      "endLine": 8,
+      "endCol": 27
+    }
+  ],
+  "valid.pwn": []
+}

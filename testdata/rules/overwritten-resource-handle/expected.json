@@ -1,0 +1,52 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "overwritten-resource-handle",
+      "severity": "warning",
+      "message": "assigning resource from \"ftemp\" overwrites unreleased handle \"file\"",
+      "startLine": 5,
+      "startCol": 2,
+      "endLine": 5,
+      "endCol": 6
+    },
+    {
+      "ruleId": "overwritten-resource-handle",
+      "severity": "warning",
+      "message": "assigning resource from \"db_open\" overwrites unreleased handle \"database\"",
+      "startLine": 9,
+      "startCol": 2,
+      "endLine": 9,
+      "endCol": 10
+    },
+    {
+      "ruleId": "overwritten-resource-handle",
+      "severity": "warning",
+      "message": "assigning resource from \"DB_ExecuteQuery\" overwrites unreleased handle \"result\"",
+      "startLine": 12,
+      "startCol": 2,
+      "endLine": 12,
+      "endCol": 8
+    },
+    {
+      "ruleId": "overwritten-resource-handle",
+      "severity": "warning",
+      "message": "assigning resource from \"ftemp\" overwrites unreleased handle \"file\"",
+      "startLine": 21,
+      "startCol": 3,
+      "endLine": 21,
+      "endCol": 7
+    }
+  ],
+  "valid.pwn": [
+    {
+      "ruleId": "overwritten-resource-handle",
+      "severity": "warning",
+      "message": "assigning resource from \"DB_ExecuteQuery\" overwrites unreleased handle \"result\"",
+      "startLine": 16,
+      "startCol": 2,
+      "endLine": 16,
+      "endCol": 8
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "division-by-zero",
+      "severity": "error",
+      "message": "division or remainder by constant zero",
+      "startLine": 8,
+      "startCol": 22,
+      "endLine": 8,
+      "endCol": 23
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "division-by-zero",
+      "severity": "error",
+      "message": "division or remainder by constant zero",
+      "startLine": 5,
+      "startCol": 22,
+      "endLine": 5,
+      "endCol": 23
+    },
+    {
+      "ruleId": "division-by-zero",
+      "severity": "error",
+      "message": "division or remainder by constant zero",
+      "startLine": 6,
+      "startCol": 23,
+      "endLine": 6,
+      "endCol": 30
+    },
+    {
+      "ruleId": "division-by-zero",
+      "severity": "error",
+      "message": "division or remainder by constant zero",
+      "startLine": 7,
+      "startCol": 14,
+      "endLine": 7,
+      "endCol": 17
+    },
+    {
+      "ruleId": "division-by-zero",
+      "severity": "error",
+      "message": "division or remainder by constant zero",
+      "startLine": 8,
+      "startCol": 15,
+      "endLine": 8,
+      "endCol": 19
+    },
+    {
+      "ruleId": "division-by-zero",
+      "severity": "error",
+      "message": "division or remainder by constant zero",
+      "startLine": 11,
+      "startCol": 18,
+      "endLine": 11,
+      "endCol": 25
+    }
+  ],
+  "valid.pwn": []
+}

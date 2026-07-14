@@ -1,0 +1,26 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "repeated-strlen-in-loop",
+      "severity": "warning",
+      "message": "strlen(text) rescans an unchanged local string on every iteration",
+      "startLine": 5,
+      "startCol": 17,
+      "endLine": 5,
+      "endCol": 29,
+      "suggested": "compute the string length once before the loop"
+    },
+    {
+      "ruleId": "repeated-strlen-in-loop",
+      "severity": "warning",
+      "message": "strlen(text) rescans an unchanged local string on every iteration",
+      "startLine": 9,
+      "startCol": 26,
+      "endLine": 9,
+      "endCol": 38,
+      "suggested": "compute the string length once before the loop"
+    }
+  ],
+  "valid.pwn": []
+}
