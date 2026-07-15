@@ -88,8 +88,11 @@ type Model struct {
 	Declarations      map[string][]Declaration
 	CallGraph         *CallGraph
 	includeCycles     []IncludeCycle
+	includeDirectives []IncludeIssue
 	missingIncludes   []IncludeIssue
 	ambiguousIncludes []IncludeIssue
+	duplicateIncludes []IncludeIssue
+	unusedIncludes    []IncludeIssue
 	byCanonical       map[string]*File
 	byContext         map[string]*File
 	physical          map[string]*physicalFile
@@ -156,6 +159,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 	model.includeCycles = model.buildIncludeCycles()
 	model.buildIncludeIssues()
 	model.buildReferences()
+	model.unusedIncludes = model.buildUnusedIncludes()
 	model.CallGraph = model.buildCallGraph()
 	return model, nil
 }

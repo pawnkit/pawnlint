@@ -1,0 +1,3 @@
+{
+  "allow": ["core/**", "common.inc"]
+}

@@ -59,10 +59,10 @@ func SilentRegistrar() *lint.Registrar {
 }
 
 func RunRule(t *testing.T, path string, ruleID string, src []byte) []diagnostic.Diagnostic {
-	return runRule(t, path, ruleID, src, "")
+	return runRule(t, path, ruleID, src, "", nil, false)
 }
 
-func runRule(t *testing.T, path string, ruleID string, src []byte, target string) []diagnostic.Diagnostic {
+func runRule(t *testing.T, path string, ruleID string, src []byte, target string, options map[string]any, definesComplete bool) []diagnostic.Diagnostic {
 	t.Helper()
 	reg := rules.Default()
 	m, ok := reg.Lookup(ruleID)
@@ -77,13 +77,14 @@ func runRule(t *testing.T, path string, ruleID string, src []byte, target string
 	engine := lint.NewEngine(reg)
 	engine.Target = target
 	if m.AnalysisLevel == lint.ProjectAnalysis {
-		model, err := project.Build([]project.Source{{Path: path, Content: src}}, project.Options{})
+		model, err := project.Build([]project.Source{{Path: path, Content: src}}, project.Options{DefinesComplete: definesComplete})
 		if err != nil {
 			t.Fatalf("build project: %v", err)
 		}
 		engine.Project = model
 	}
-	diagnostics := engine.LintFile(path, src, m.AnalysisLevel, ruleSet, known, nil)
+	perRule := map[string]map[string]any{ruleID: options}
+	diagnostics := engine.LintFile(path, src, m.AnalysisLevel, ruleSet, known, perRule)
 	filtered := diagnostics[:0]
 	for _, item := range diagnostics {
 		if item.RuleID == ruleID {
@@ -106,6 +107,12 @@ func RunSnapshot(t *testing.T, ruleID, fixtureDir string) {
 	} else if !os.IsNotExist(err) {
 		t.Fatalf("read target: %v", err)
 	}
+	options := readOptions(t, filepath.Join(dir, "options.json"), ruleID)
+	_, completeErr := os.Stat(filepath.Join(dir, "defines-complete.txt"))
+	definesComplete := completeErr == nil
+	if completeErr != nil && !os.IsNotExist(completeErr) {
+		t.Fatalf("read define context: %v", completeErr)
+	}
 	got := map[string][]SnapshotEntry{}
 	for _, name := range fixtureNames {
 		full := filepath.Join(dir, name)
@@ -120,7 +127,7 @@ func RunSnapshot(t *testing.T, ruleID, fixtureDir string) {
 		if metadata, ok := rules.Default().Lookup(ruleID); ok && metadata.AnalysisLevel == lint.ProjectAnalysis {
 			inputPath = full
 		}
-		diags := runRule(t, inputPath, ruleID, src, target)
+		diags := runRule(t, inputPath, ruleID, src, target, options, definesComplete)
 		entries := make([]SnapshotEntry, 0, len(diags))
 		for _, d := range diags {
 			entry := SnapshotEntry{
@@ -188,6 +195,42 @@ func RunSnapshot(t *testing.T, ruleID, fixtureDir string) {
 		t.Fatalf("parse expected.json: %v", err)
 	}
 	compareSnapshot(t, want, got)
+}
+
+func readOptions(t *testing.T, path, ruleID string) map[string]any {
+	t.Helper()
+	source, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		t.Fatalf("read options: %v", err)
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(source, &raw); err != nil {
+		t.Fatalf("parse options: %v", err)
+	}
+	metadata, ok := rules.Default().Lookup(ruleID)
+	if !ok {
+		t.Fatalf("unknown rule %q", ruleID)
+	}
+	known := make(map[string]lint.Option, len(metadata.Options))
+	for _, option := range metadata.Options {
+		known[option.Name] = option
+	}
+	normalized := make(map[string]any, len(raw))
+	for name, value := range raw {
+		option, exists := known[name]
+		if !exists {
+			t.Fatalf("unknown option %q for %s", name, ruleID)
+		}
+		item, err := lint.NormalizeOption(option, value)
+		if err != nil {
+			t.Fatalf("option %s for %s: %v", name, ruleID, err)
+		}
+		normalized[name] = item
+	}
+	return normalized
 }
 
 func compareSnapshot(t *testing.T, want, got map[string][]SnapshotEntry) {

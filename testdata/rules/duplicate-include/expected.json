@@ -1,0 +1,15 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "duplicate-include",
+      "severity": "warning",
+      "message": "include \"shared.inc\" resolves to a file already included here",
+      "startLine": 2,
+      "startCol": 10,
+      "endLine": 2,
+      "endCol": 22
+    }
+  ],
+  "valid.pwn": []
+}

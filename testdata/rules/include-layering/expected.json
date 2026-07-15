@@ -1,0 +1,15 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "include-layering",
+      "severity": "error",
+      "message": "include \"platform/database\" is outside this layer's allowed dependencies",
+      "startLine": 1,
+      "startCol": 10,
+      "endLine": 1,
+      "endCol": 29
+    }
+  ],
+  "valid.pwn": []
+}

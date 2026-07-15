@@ -1,0 +1,24 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "forbidden-include",
+      "severity": "error",
+      "message": "include \"vendor/database\" is forbidden by pattern \"vendor/**\"",
+      "startLine": 1,
+      "startCol": 10,
+      "endLine": 1,
+      "endCol": 27
+    },
+    {
+      "ruleId": "forbidden-include",
+      "severity": "error",
+      "message": "include \"legacy.inc\" is forbidden by pattern \"legacy.inc\"",
+      "startLine": 2,
+      "startCol": 10,
+      "endLine": 2,
+      "endCol": 22
+    }
+  ],
+  "valid.pwn": []
+}

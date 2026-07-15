@@ -1,0 +1,1 @@
+#define EXPORTED_VALUE (1)

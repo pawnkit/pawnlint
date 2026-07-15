@@ -1,0 +1,15 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "unused-include",
+      "severity": "warning",
+      "message": "include \"unused.inc\" contributes no used declarations",
+      "startLine": 1,
+      "startCol": 10,
+      "endLine": 1,
+      "endCol": 22
+    }
+  ],
+  "valid.pwn": []
+}

@@ -58,3 +58,21 @@ func TestIncludeIssuesDeduplicateSharedFiles(t *testing.T) {
 		t.Fatalf("missing includes = %+v", issues)
 	}
 }
+
+func TestDuplicateIncludes(t *testing.T) {
+	dir := t.TempDir()
+	shared := filepath.Join(dir, "shared.inc")
+	if err := os.WriteFile(shared, []byte("stock Shared() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	rootPath := filepath.Join(dir, "main.pwn")
+	source := []byte("#include \"shared\"\n#include \"shared.inc\"\nmain() {}\n")
+	model, err := project.Build([]project.Source{{Path: rootPath, Content: source}}, project.Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	issues := model.DuplicateIncludes()
+	if len(issues) != 1 || issues[0].Include.Node.Start != len("#include \"shared\"\n") {
+		t.Fatalf("duplicate includes = %+v", issues)
+	}
+}

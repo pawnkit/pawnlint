@@ -21,13 +21,16 @@ Rules are stable unless their page marks them as preview.
 | [`duplicate-condition`](duplicate-condition.md) | suspicious | warning | off | no | Reports repeated pure conditions in an if and else-if chain |
 | [`duplicate-function-definition`](duplicate-function-definition.md) | correctness | error | on | no | Reports functions defined more than once in one include graph |
 | [`duplicate-global-definition`](duplicate-global-definition.md) | correctness | error | on | no | Reports global variables defined more than once in one include graph |
+| [`duplicate-include`](duplicate-include.md) | maintainability | warning | off | no | Reports a file included more than once from the same source file |
 | [`duplicate-switch-case`](duplicate-switch-case.md) | correctness | error | on | no | Reports repeated constant values in one switch statement |
 | [`empty-condition-body`](empty-condition-body.md) | correctness | error | on | yes | Accidental semicolon after an if/while/for condition makes the following block unconditional |
 | [`float-equality`](float-equality.md) | suspicious | warning | off | no | Reports Float values compared with == or != |
+| [`forbidden-include`](forbidden-include.md) | restriction | error | off | no | Reports includes denied by project policy |
 | [`format-argument-count`](format-argument-count.md) | correctness | error | off | no | Reports literal format strings whose placeholders and arguments differ |
 | [`forward-signature-mismatch`](forward-signature-mismatch.md) | correctness | error | on | no | Reports definitions that do not match their forward declaration |
 | [`identical-branches`](identical-branches.md) | suspicious | warning | off | no | Reports if and ternary branches with identical code |
 | [`include-cycle`](include-cycle.md) | correctness | error | on | no | Reports cycles in the resolved include graph |
+| [`include-layering`](include-layering.md) | restriction | error | off | no | Reports dependencies outside a source layer's allowlist |
 | [`invalid-sentinel-comparison`](invalid-sentinel-comparison.md) | correctness | error | off | no | Reports a native's result compared against the wrong INVALID_* constant |
 | [`invalid-shift-count`](invalid-shift-count.md) | correctness | error | on | no | Reports constant shift counts outside the 32-bit cell width |
 | [`large-local-array`](large-local-array.md) | performance | warning | off | no | Reports large automatic arrays allocated on the Pawn stack |
@@ -63,6 +66,7 @@ Rules are stable unless their page marks them as preview.
 | [`unreleased-resource-handle`](unreleased-resource-handle.md) | correctness | warning | off | no | Reports local resource handles that can reach function exit without release |
 | [`unused-function`](unused-function.md) | maintainability | warning | off | no | Reports internal functions unused by any translation unit |
 | [`unused-global`](unused-global.md) | maintainability | warning | off | no | Reports global variables unused by any translation unit |
+| [`unused-include`](unused-include.md) | maintainability | warning | off | no | Reports includes with no contribution to a complete build |
 | [`unused-label`](unused-label.md) | maintainability | warning | off | yes | Reports labels that are not targeted by a goto statement |
 | [`unused-local`](unused-local.md) | maintainability | warning | off | no | Reports local variables that are never referenced |
 | [`unused-parameter`](unused-parameter.md) | maintainability | warning | off | no | Reports unused parameters in non-public function definitions |

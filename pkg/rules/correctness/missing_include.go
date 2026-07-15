@@ -59,6 +59,40 @@ func (AmbiguousInclude) Metadata() lint.Metadata {
 	}
 }
 
+type DuplicateInclude struct{}
+
+func (DuplicateInclude) Metadata() lint.Metadata {
+	return lint.Metadata{
+		ID:              "duplicate-include",
+		Name:            "Duplicate include",
+		Summary:         "Reports a file included more than once from the same source file",
+		Explanation:     "Repeated directives that resolve to the same file are often redundant. The rule does not remove them because some Pawn includes intentionally support repeated expansion.",
+		Category:        diagnostic.CategoryMaintainability,
+		DefaultSeverity: diagnostic.SeverityWarning,
+		AnalysisLevel:   lint.ProjectAnalysis,
+		DefaultEnabled:  false,
+		Fixable:         false,
+		Tags:            []string{"includes", "project", "dependencies"},
+	}
+}
+
+func (DuplicateInclude) Run(ctx *lint.Context) {
+	if ctx.Project == nil {
+		return
+	}
+	current := ctx.Project.File(ctx.File.Path)
+	for _, issue := range ctx.Project.DuplicateIncludes() {
+		if current == nil || issue.Owner != current {
+			continue
+		}
+		ctx.Report(diagnostic.Diagnostic{
+			Message:  fmt.Sprintf("include %q resolves to a file already included here", issue.Include.Path),
+			Filename: issue.File.Path,
+			Range:    issue.File.Walk.Range(issue.Include.Node.Field("path")),
+		})
+	}
+}
+
 func (AmbiguousInclude) Run(ctx *lint.Context) {
 	if ctx.Project == nil {
 		return

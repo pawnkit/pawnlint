@@ -8,6 +8,13 @@ type IncludeIssue struct {
 	Include *Include
 }
 
+func (m *Model) Includes() []IncludeIssue {
+	if m == nil {
+		return nil
+	}
+	return append([]IncludeIssue(nil), m.includeDirectives...)
+}
+
 func (m *Model) MissingIncludes() []IncludeIssue {
 	if m == nil {
 		return nil
@@ -20,6 +27,13 @@ func (m *Model) AmbiguousIncludes() []IncludeIssue {
 		return nil
 	}
 	return append([]IncludeIssue(nil), m.ambiguousIncludes...)
+}
+
+func (m *Model) DuplicateIncludes() []IncludeIssue {
+	if m == nil {
+		return nil
+	}
+	return append([]IncludeIssue(nil), m.duplicateIncludes...)
 }
 
 func (m *Model) buildIncludeIssues() {
@@ -46,16 +60,19 @@ func (m *Model) buildIncludeIssues() {
 	}
 	missingSeen := make(map[string]struct{})
 	ambiguousSeen := make(map[string]struct{})
+	duplicateSeen := make(map[string]struct{})
 	for _, file := range m.Files {
 		owner := owners[file]
 		if owner == nil {
 			continue
 		}
+		resolved := make(map[string]struct{})
 		for _, include := range file.Includes {
 			if include == nil || include.Node == nil || include.Path == "" || include.Uncertain {
 				continue
 			}
 			key := file.canonical + ":" + offsetText(include)
+			m.includeDirectives = append(m.includeDirectives, IncludeIssue{Owner: owner, File: file, Include: include})
 			if include.Resolved == nil && !include.Optional {
 				if _, exists := missingSeen[key]; !exists {
 					missingSeen[key] = struct{}{}
@@ -68,10 +85,23 @@ func (m *Model) buildIncludeIssues() {
 					m.ambiguousIncludes = append(m.ambiguousIncludes, IncludeIssue{Owner: owner, File: file, Include: include})
 				}
 			}
+			if include.Resolved != nil {
+				target := include.Resolved.canonical
+				if _, exists := resolved[target]; exists {
+					if _, reported := duplicateSeen[key]; !reported {
+						duplicateSeen[key] = struct{}{}
+						m.duplicateIncludes = append(m.duplicateIncludes, IncludeIssue{Owner: owner, File: file, Include: include})
+					}
+				} else {
+					resolved[target] = struct{}{}
+				}
+			}
 		}
 	}
 	sortIncludeIssues(m.missingIncludes)
 	sortIncludeIssues(m.ambiguousIncludes)
+	sortIncludeIssues(m.duplicateIncludes)
+	sortIncludeIssues(m.includeDirectives)
 }
 
 func sortIncludeIssues(issues []IncludeIssue) {
