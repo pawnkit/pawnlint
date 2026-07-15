@@ -68,6 +68,7 @@ Rules are stable unless their page marks them as preview.
 | [`settimerex-format-argument-count`](settimerex-format-argument-count.md) | correctness | error | off | no | Reports SetTimerEx() calls whose specifier string and argument count differ |
 | [`shadowed-variable`](shadowed-variable.md) | maintainability | warning | off | no | Reports local declarations that hide an outer variable |
 | [`sscanf-format-argument-count`](sscanf-format-argument-count.md) | correctness | error | off | no | Reports sscanf() calls whose format string and argument count differ |
+| [`suppression-reason`](suppression-reason.md) | restriction | warning | off | no | Reports suppression directives without an adequate reason |
 | [`suspicious-comma-expression`](suspicious-comma-expression.md) | suspicious | warning | on | no | The comma operator chains sub-expressions; it is rarely intended in statements or returns |
 | [`suspicious-negation`](suspicious-negation.md) | suspicious | warning | on | no | '!' binds tighter than &/\|/^/==/!=, so !x & y is (!x) & y |
 | [`swapped-arguments`](swapped-arguments.md) | suspicious | warning | off | no | Reports native arguments whose tags match each other's parameters |

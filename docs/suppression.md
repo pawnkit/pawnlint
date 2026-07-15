@@ -26,6 +26,15 @@ Use comma-separated IDs for several rules or `all` for every rule:
 
 Always pair block `disable` and `enable` directives.
 
+Enable `suppression-reason` to require explanations:
+
+```toml
+[rules.suppression-reason]
+severity = "warning"
+minimum-length = 10
+pattern = "(?:[A-Z]+-[0-9]+|because)"
+```
+
 ## Invalid suppressions
 
 The `unknown-suppression` rule reports:

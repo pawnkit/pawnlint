@@ -1,0 +1,4 @@
+{
+  "minimum-length": 10,
+  "pattern": "(?:[A-Z]+-[0-9]+|because)"
+}

@@ -59,6 +59,14 @@ func TestReasonTail(t *testing.T) {
 	}
 }
 
+func TestReasonWithoutRuleIDIsMalformed(t *testing.T) {
+	src := "// pawnlint-disable-next-line -- temporary exception\nvalue;\n"
+	directives := parseSupp(t, "x.pwn", src)
+	if len(directives) != 1 || !directives[0].Malformed || directives[0].Reason != "temporary exception" {
+		t.Fatalf("directive = %+v", directives)
+	}
+}
+
 func TestAllAndMalformed(t *testing.T) {
 	src := "// pawnlint-disable-next-line all\nx;\n// pawnlint-disable-next-line\ny;\n"
 	ds := parseSupp(t, "x.pwn", src)

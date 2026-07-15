@@ -184,7 +184,12 @@ func parseIDs(rest string) (ids []string, all bool, reason string, malformed boo
 	if body == "" {
 		return nil, false, "", true
 	}
-	if i := strings.Index(body, " -- "); i >= 0 {
+	if body == "--" {
+		body = ""
+	} else if strings.HasPrefix(body, "-- ") {
+		reason = strings.TrimSpace(body[3:])
+		body = ""
+	} else if i := strings.Index(body, " -- "); i >= 0 {
 		reason = strings.TrimSpace(body[i+4:])
 		body = strings.TrimSpace(body[:i])
 	}

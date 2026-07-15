@@ -43,7 +43,7 @@ func (UnknownSuppression) Run(ctx *lint.Context) {
 		r := m.LineTable.Range(d.Offset, d.Offset)
 		switch d.Kind {
 		case suppress.KindDisableNextLine, suppress.KindDisable:
-			if d.Malformed && d.Reason == "" {
+			if d.Malformed {
 				ctx.Report(diagnostic.Diagnostic{
 					RuleID:   "unknown-suppression",
 					Message:  "malformed suppression: no rule id given",

@@ -1,0 +1,34 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "suppression-reason",
+      "severity": "warning",
+      "message": "suppression must include a reason after --",
+      "startLine": 1,
+      "startCol": 1,
+      "endLine": 1,
+      "endCol": 51
+    },
+    {
+      "ruleId": "suppression-reason",
+      "severity": "warning",
+      "message": "suppression reason must contain at least 10 characters",
+      "startLine": 4,
+      "startCol": 1,
+      "endLine": 4,
+      "endCol": 60
+    },
+    {
+      "ruleId": "suppression-reason",
+      "severity": "warning",
+      "message": "suppression reason must match pattern \"(?:[A-Z]+-[0-9]+|because)\"",
+      "startLine": 7,
+      "startCol": 1,
+      "endLine": 7,
+      "endCol": 84
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
