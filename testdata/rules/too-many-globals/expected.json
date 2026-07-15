@@ -1,0 +1,26 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "too-many-globals",
+      "severity": "warning",
+      "message": "file declares 4 mutable global variables, exceeding the maximum of 3",
+      "startLine": 3,
+      "startCol": 5,
+      "endLine": 3,
+      "endCol": 11
+    }
+  ],
+  "malformed.pwn": [
+    {
+      "ruleId": "too-many-globals",
+      "severity": "warning",
+      "message": "file declares 4 mutable global variables, exceeding the maximum of 3",
+      "startLine": 1,
+      "startCol": 27,
+      "endLine": 1,
+      "endCol": 33
+    }
+  ],
+  "valid.pwn": []
+}
