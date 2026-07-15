@@ -1,0 +1,33 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "format-argument-tag",
+      "severity": "error",
+      "message": "format argument 1 to \"LogValues\" uses %f and requires tag Float, but is untagged",
+      "startLine": 8,
+      "startCol": 24,
+      "endLine": 8,
+      "endCol": 29
+    },
+    {
+      "ruleId": "format-argument-tag",
+      "severity": "error",
+      "message": "format argument 2 to \"LogValues\" uses %d for a cell value, but has tag Float",
+      "startLine": 8,
+      "startCol": 31,
+      "endLine": 8,
+      "endCol": 36
+    },
+    {
+      "ruleId": "format-argument-tag",
+      "severity": "error",
+      "message": "format argument 1 to \"LogValues\" uses %d for a cell value, but has tag Float",
+      "startLine": 9,
+      "startCol": 21,
+      "endLine": 9,
+      "endCol": 24
+    }
+  ],
+  "valid.pwn": []
+}

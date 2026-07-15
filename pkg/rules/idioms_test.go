@@ -18,6 +18,7 @@ func TestEcosystemIdioms(t *testing.T) {
 		"unused-parameter",
 		"discarded-expression",
 		"unreleased-resource-handle",
+		"read-after-release",
 		"dead-write",
 		"negative-or-zero-array-size",
 	}

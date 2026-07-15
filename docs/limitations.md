@@ -66,7 +66,8 @@
 
 - Tracks direct local file, database, and query acquisitions across
   control-flow branches.
-- Recognizes official release natives and known non-owning native uses.
+- Recognizes official release natives, released-handle use, and known
+  non-owning native uses.
 - Tracking stops once ownership may escape through user code, returns,
   aliases, or reference parameters.
 

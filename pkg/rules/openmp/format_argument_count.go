@@ -134,14 +134,19 @@ func literalContinues(ctx *lint.Context, node *parser.Node) bool {
 }
 
 func formatArgumentCount(value string) (int, bool) {
-	count := 0
+	specifiers, ok := formatSpecifiers(value)
+	return len(specifiers), ok
+}
+
+func formatSpecifiers(value string) ([]byte, bool) {
+	var specifiers []byte
 	for i := 0; i < len(value); i++ {
 		if value[i] != '%' {
 			continue
 		}
 		i++
 		if i >= len(value) {
-			return 0, false
+			return nil, false
 		}
 		if value[i] == '%' {
 			continue
@@ -156,11 +161,11 @@ func formatArgumentCount(value string) (int, bool) {
 			}
 		}
 		if i >= len(value) || !formatSpecifier(value[i]) {
-			return 0, false
+			return nil, false
 		}
-		count++
+		specifiers = append(specifiers, value[i])
 	}
-	return count, true
+	return specifiers, true
 }
 
 func formatSpecifier(value byte) bool {

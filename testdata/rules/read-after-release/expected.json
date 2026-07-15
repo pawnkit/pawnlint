@@ -1,0 +1,51 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "read-after-release",
+      "severity": "error",
+      "message": "resource handle \"resource\" is used after release",
+      "startLine": 9,
+      "startCol": 10,
+      "endLine": 9,
+      "endCol": 18
+    },
+    {
+      "ruleId": "read-after-release",
+      "severity": "error",
+      "message": "resource handle \"resource\" is used after release",
+      "startLine": 10,
+      "startCol": 6,
+      "endLine": 10,
+      "endCol": 14
+    },
+    {
+      "ruleId": "read-after-release",
+      "severity": "error",
+      "message": "resource handle \"resource\" is used after release",
+      "startLine": 12,
+      "startCol": 11,
+      "endLine": 12,
+      "endCol": 19
+    },
+    {
+      "ruleId": "read-after-release",
+      "severity": "error",
+      "message": "resource handle \"resource\" is used after release",
+      "startLine": 23,
+      "startCol": 10,
+      "endLine": 23,
+      "endCol": 18
+    },
+    {
+      "ruleId": "read-after-release",
+      "severity": "error",
+      "message": "resource handle \"resource\" is used after release",
+      "startLine": 29,
+      "startCol": 9,
+      "endLine": 29,
+      "endCol": 17
+    }
+  ],
+  "valid.pwn": []
+}

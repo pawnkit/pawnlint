@@ -1,0 +1,11 @@
+{
+  "natives": {
+    "LogValues": {
+      "parameters": [
+        {"name": "format", "arrayRank": 1, "const": true},
+        {"tag": "OPEN_MP_TAGS", "variadic": true}
+      ],
+      "formatParameter": 1
+    }
+  }
+}

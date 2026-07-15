@@ -1,6 +1,9 @@
 package openmp
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestFormatArgumentCount(t *testing.T) {
 	tests := []struct {
@@ -20,5 +23,13 @@ func TestFormatArgumentCount(t *testing.T) {
 		if count != test.count || ok != test.ok {
 			t.Errorf("formatArgumentCount(%q) = %d, %t", test.format, count, ok)
 		}
+	}
+}
+
+func TestFormatSpecifiers(t *testing.T) {
+	specifiers, ok := formatSpecifiers("%05d %.2f %% %q")
+	want := []byte{'d', 'f', 'q'}
+	if !ok || !reflect.DeepEqual(specifiers, want) {
+		t.Fatalf("format specifiers = %q, %t, want %q", specifiers, ok, want)
 	}
 }

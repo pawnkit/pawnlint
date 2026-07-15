@@ -65,16 +65,5 @@ func (SwappedArguments) Run(ctx *lint.Context) {
 }
 
 func definiteArgumentTag(ctx *lint.Context, node *parser.Node) (string, bool) {
-	if tags := ctx.Semantic.ExpressionTags(node); len(tags) == 1 {
-		return tags[0], true
-	}
-	node = unwrapParentheses(node)
-	if node == nil || node.Kind != parser.KindCallExpression {
-		return "", false
-	}
-	native, _, ok := calledNative(ctx, node)
-	if !ok || native.ReturnTag == "" {
-		return "", false
-	}
-	return native.ReturnTag, true
+	return definiteExpressionTag(ctx, node)
 }

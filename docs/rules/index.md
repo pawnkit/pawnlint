@@ -29,6 +29,7 @@ Rules are stable unless their page marks them as preview.
 | [`float-equality`](float-equality.md) | suspicious | warning | off | no | Reports Float values compared with == or != |
 | [`forbidden-include`](forbidden-include.md) | restriction | error | off | no | Reports includes denied by project policy |
 | [`format-argument-count`](format-argument-count.md) | correctness | error | off | no | Reports literal format strings whose placeholders and arguments differ |
+| [`format-argument-tag`](format-argument-tag.md) | correctness | error | on | no | Reports definite tag mismatches in formatted native calls |
 | [`forward-signature-mismatch`](forward-signature-mismatch.md) | correctness | error | on | no | Reports definitions that do not match their forward declaration |
 | [`identical-branches`](identical-branches.md) | suspicious | warning | off | no | Reports if and ternary branches with identical code |
 | [`ignored-return-value`](ignored-return-value.md) | correctness | warning | off | no | Reports discarded results from APIs marked must-use |
@@ -50,6 +51,7 @@ Rules are stable unless their page marks them as preview.
 | [`overwritten-resource-handle`](overwritten-resource-handle.md) | correctness | warning | off | no | Reports resource handles overwritten before any use or release |
 | [`possibly-uninitialized`](possibly-uninitialized.md) | correctness | warning | off | no | Reports local variables read before an explicit assignment on every path |
 | [`raw-tick-subtraction`](raw-tick-subtraction.md) | correctness | warning | off | no | Reports GetTickCount() subtracted directly instead of through a wraparound-safe helper |
+| [`read-after-release`](read-after-release.md) | correctness | error | on | no | Reports local resource handles used after release |
 | [`recursive-call`](recursive-call.md) | suspicious | warning | off | no | Reports direct and mutual recursion in the project call graph |
 | [`redundant-boolean-comparison`](redundant-boolean-comparison.md) | suspicious | warning | off | no | Reports boolean expressions compared with true or false |
 | [`repeated-strlen-in-loop`](repeated-strlen-in-loop.md) | performance | warning | off | no | Reports loop conditions that repeatedly scan an unchanged local string |

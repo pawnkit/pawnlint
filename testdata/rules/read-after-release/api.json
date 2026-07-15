@@ -1,0 +1,7 @@
+{
+  "natives": {
+    "Acquire": {"returnTag": "Resource", "release": "Release"},
+    "Release": {"parameters": [{"name": "resource", "tag": "Resource"}]},
+    "Consume": {"parameters": [{"name": "resource", "tag": "Resource"}]}
+  }
+}
