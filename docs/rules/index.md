@@ -7,7 +7,6 @@ Generated from rule metadata. Do not edit by hand.
 | [`assignment-in-condition`](assignment-in-condition.md) | suspicious | warning | on | no | An assignment used as an if/while condition is often a typo for == |
 | [`buffer-size`](buffer-size.md) | correctness | error | off | no | Reports native size arguments larger than a declared buffer |
 | [`callback-signature`](callback-signature.md) | correctness | error | off | no | Reports public callbacks that do not match the target API |
-| [`comparison-chain`](comparison-chain.md) | suspicious | warning | on | no | Chained relational comparisons (a < b < c) do not test a range |
 | [`constant-condition`](constant-condition.md) | suspicious | warning | off | no | Reports if and ternary conditions with a constant result |
 | [`dead-write`](dead-write.md) | suspicious | warning | off | no | Reports local assignments whose stored value is never read |
 | [`deprecated-function`](deprecated-function.md) | openmp | warning | off | no | Reports deprecated compatibility functions in open.mp |

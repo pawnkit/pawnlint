@@ -14,7 +14,6 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(correctness.AssignmentInCondition{})
 	reg.MustRegister(correctness.DiscardedExpression{})
 	reg.MustRegister(suspicious.SuspiciousCommaExpression{})
-	reg.MustRegister(suspicious.ComparisonChain{})
 	reg.MustRegister(suspicious.SuspiciousNegation{})
 	reg.MustRegister(correctness.UnknownSuppression{})
 	reg.MustRegister(correctness.SelfAssignment{})
