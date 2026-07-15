@@ -104,11 +104,11 @@ func (m *Model) directiveValue(node *parser.Node, offset int) (int64, bool) {
 			return 0, false
 		}
 		text := strings.ReplaceAll(node.Tok.Text(m.File.Source), "_", "")
-		value, err := strconv.ParseInt(text, 0, 32)
-		if err == nil {
-			return value, true
+		base := 10
+		if strings.HasPrefix(text, "0x") || strings.HasPrefix(text, "0X") || strings.HasPrefix(text, "0b") || strings.HasPrefix(text, "0B") {
+			base = 0
 		}
-		unsigned, err := strconv.ParseUint(text, 0, 32)
+		unsigned, err := strconv.ParseUint(text, base, 32)
 		return int64(int32(uint32(unsigned))), err == nil
 	case parser.KindUnaryExpression:
 		value, ok := m.directiveValue(node.Field("expression"), offset)

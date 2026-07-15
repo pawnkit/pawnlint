@@ -16,6 +16,7 @@ Rules are stable unless their page marks them as preview.
 | [`conflicting-include-symbol`](conflicting-include-symbol.md) | correctness | error | on | no | Reports namespace collisions contributed by included files |
 | [`confusable-identifier`](confusable-identifier.md) | suspicious | warning | off | no | Reports visible declarations with visually confusable names |
 | [`constant-condition`](constant-condition.md) | suspicious | warning | off | no | Reports if and ternary conditions with a constant result |
+| [`constant-overflow`](constant-overflow.md) | correctness | warning | on | no | Reports constant arithmetic outside the cell range |
 | [`cyclomatic-complexity`](cyclomatic-complexity.md) | maintainability | warning | off | no | Reports functions with too many independent control-flow paths |
 | [`dead-write`](dead-write.md) | suspicious | warning | off | no | Reports local assignments whose stored value is never read |
 | [`declaration-order`](declaration-order.md) | style | warning | off | no | Reports declarations outside the configured source order |

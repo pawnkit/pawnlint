@@ -115,14 +115,13 @@ func (m *Model) evalLiteral(node *parser.Node) (int64, bool) {
 		return 0, false
 	}
 	text := strings.ReplaceAll(node.Tok.Text(m.File.Source), "_", "")
-	if value, err := strconv.ParseInt(text, 0, 32); err == nil {
-		return value, true
-	}
+	base := 10
 	if strings.HasPrefix(text, "0x") || strings.HasPrefix(text, "0X") || strings.HasPrefix(text, "0b") || strings.HasPrefix(text, "0B") {
-		value, err := strconv.ParseUint(text, 0, 32)
-		if err == nil {
-			return int64(int32(uint32(value))), true
-		}
+		base = 0
+	}
+	value, err := strconv.ParseUint(text, base, 32)
+	if err == nil {
+		return int64(int32(uint32(value))), true
 	}
 	return 0, false
 }

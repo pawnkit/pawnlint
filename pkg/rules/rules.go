@@ -56,6 +56,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(correctness.InfiniteLoop{})
 	reg.MustRegister(correctness.UnconditionalRecursion{})
 	reg.MustRegister(correctness.IncompleteEnumSwitch{})
+	reg.MustRegister(correctness.ConstantOverflow{})
 	reg.MustRegister(correctness.DuplicateSwitchCase{})
 	reg.MustRegister(correctness.OutOfBoundsConstantIndex{})
 	reg.MustRegister(suspicious.DuplicateCondition{})

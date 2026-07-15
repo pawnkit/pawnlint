@@ -76,7 +76,7 @@ func TestEnclosingFunctionAndConditional(t *testing.T) {
 }
 
 func TestConditionalLiteralState(t *testing.T) {
-	src := "main() {\n#if 1\nnew active;\n#else\nnew inactive;\n#endif\n#if FEATURE\nnew uncertain;\n#endif\n}\n"
+	src := "main() {\n#if 08\nnew active;\n#else\nnew inactive;\n#endif\n#if FEATURE\nnew uncertain;\n#endif\n}\n"
 	f := mustParse(t, src)
 	m := walk.New("x.pwn", f)
 	declarations := m.OfKind(parser.KindVariableDeclarator)

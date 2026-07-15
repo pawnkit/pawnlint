@@ -1,0 +1,88 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "constant-overflow",
+      "severity": "warning",
+      "message": "constant addition overflows the 32-bit cell range",
+      "startLine": 5,
+      "startCol": 20,
+      "endLine": 5,
+      "endCol": 34
+    },
+    {
+      "ruleId": "constant-overflow",
+      "severity": "warning",
+      "message": "constant addition overflows the 32-bit cell range",
+      "startLine": 6,
+      "startCol": 17,
+      "endLine": 6,
+      "endCol": 30
+    },
+    {
+      "ruleId": "constant-overflow",
+      "severity": "warning",
+      "message": "constant subtraction overflows the 32-bit cell range",
+      "startLine": 7,
+      "startCol": 23,
+      "endLine": 7,
+      "endCol": 38
+    },
+    {
+      "ruleId": "constant-overflow",
+      "severity": "warning",
+      "message": "constant multiplication overflows the 32-bit cell range",
+      "startLine": 8,
+      "startCol": 26,
+      "endLine": 8,
+      "endCol": 39
+    },
+    {
+      "ruleId": "constant-overflow",
+      "severity": "warning",
+      "message": "constant division overflows the 32-bit cell range",
+      "startLine": 9,
+      "startCol": 20,
+      "endLine": 9,
+      "endCol": 32
+    },
+    {
+      "ruleId": "constant-overflow",
+      "severity": "warning",
+      "message": "constant negation overflows the 32-bit cell range",
+      "startLine": 10,
+      "startCol": 20,
+      "endLine": 10,
+      "endCol": 28
+    },
+    {
+      "ruleId": "constant-overflow",
+      "severity": "warning",
+      "message": "integer literal is outside the 32-bit cell range",
+      "startLine": 11,
+      "startCol": 19,
+      "endLine": 11,
+      "endCol": 29
+    },
+    {
+      "ruleId": "constant-overflow",
+      "severity": "warning",
+      "message": "integer literal is outside the 32-bit cell range",
+      "startLine": 12,
+      "startCol": 23,
+      "endLine": 12,
+      "endCol": 34
+    },
+    {
+      "ruleId": "constant-overflow",
+      "severity": "warning",
+      "message": "integer literal is outside the 32-bit cell range",
+      "startLine": 13,
+      "startCol": 18,
+      "endLine": 13,
+      "endCol": 53
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
