@@ -44,6 +44,7 @@ Rules are stable unless their page marks them as preview.
 | [`impossible-comparison`](impossible-comparison.md) | correctness | warning | on | no | Reports comparisons that cannot produce both results |
 | [`include-cycle`](include-cycle.md) | correctness | error | on | no | Reports cycles in the resolved include graph |
 | [`include-layering`](include-layering.md) | restriction | error | off | no | Reports dependencies outside a source layer's allowlist |
+| [`incomplete-enum-switch`](incomplete-enum-switch.md) | correctness | warning | off | no | Reports enum switches that omit named values |
 | [`inconsistent-enum-prefix`](inconsistent-enum-prefix.md) | style | warning | off | no | Reports enum entries that omit a dominant member prefix |
 | [`infinite-loop`](infinite-loop.md) | correctness | warning | on | no | Reports loops proven unable to exit |
 | [`invalid-sentinel-comparison`](invalid-sentinel-comparison.md) | correctness | error | off | no | Reports a native's result compared against the wrong INVALID_* constant |

@@ -1,0 +1,35 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "incomplete-enum-switch",
+      "severity": "warning",
+      "message": "switch on enum \"SharedState\" does not cover SHARED_ACTIVE",
+      "startLine": 34,
+      "startCol": 12,
+      "endLine": 34,
+      "endCol": 19
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "incomplete-enum-switch",
+      "severity": "warning",
+      "message": "switch on enum \"PlayerState\" does not cover STATE_ALIVE, STATE_DEAD",
+      "startLine": 10,
+      "startCol": 12,
+      "endLine": 10,
+      "endCol": 21
+    },
+    {
+      "ruleId": "incomplete-enum-switch",
+      "severity": "warning",
+      "message": "switch on enum \"Code\" does not cover CODE_THIRD",
+      "startLine": 27,
+      "startCol": 12,
+      "endLine": 27,
+      "endCol": 18
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
