@@ -1,0 +1,26 @@
+enum PlayerState
+{
+	PLAYER_STATE_NONE,
+	PLAYER_STATE_ACTIVE,
+	PLAYER_STATE_PAUSED,
+	PLAYER_STATE_FINISHED
+}
+
+enum
+{
+	ANON_FIRST,
+	SECOND,
+	ANON_THIRD,
+	FOURTH
+}
+
+enum SmallSet
+{
+	SMALL_ONE,
+	SMALL_TWO,
+	THREE
+}
+
+main()
+{
+}

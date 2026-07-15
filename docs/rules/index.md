@@ -37,6 +37,7 @@ Rules are stable unless their page marks them as preview.
 | [`ignored-return-value`](ignored-return-value.md) | correctness | warning | off | no | Reports discarded results from APIs marked must-use |
 | [`include-cycle`](include-cycle.md) | correctness | error | on | no | Reports cycles in the resolved include graph |
 | [`include-layering`](include-layering.md) | restriction | error | off | no | Reports dependencies outside a source layer's allowlist |
+| [`inconsistent-enum-prefix`](inconsistent-enum-prefix.md) | style | warning | off | no | Reports enum entries that omit a dominant member prefix |
 | [`invalid-sentinel-comparison`](invalid-sentinel-comparison.md) | correctness | error | off | no | Reports a native's result compared against the wrong INVALID_* constant |
 | [`invalid-shift-count`](invalid-shift-count.md) | correctness | error | on | no | Reports constant shift counts outside the 32-bit cell width |
 | [`large-local-array`](large-local-array.md) | performance | warning | off | no | Reports large automatic arrays allocated on the Pawn stack |

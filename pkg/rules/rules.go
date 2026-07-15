@@ -25,6 +25,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(maintainability.NamingConvention{})
 	reg.MustRegister(maintainability.DisallowedName{})
 	reg.MustRegister(maintainability.ConfusableIdentifier{})
+	reg.MustRegister(maintainability.InconsistentEnumPrefix{})
 	reg.MustRegister(correctness.DivisionByZero{})
 	reg.MustRegister(correctness.InvalidShiftCount{})
 	reg.MustRegister(correctness.InvalidArraySize{})

@@ -1,0 +1,43 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "inconsistent-enum-prefix",
+      "severity": "warning",
+      "message": "enum-entry name \"STATE_UNKNOWN\" should use the dominant prefix \"PLAYER_\"",
+      "startLine": 5,
+      "startCol": 2,
+      "endLine": 5,
+      "endCol": 15,
+      "notes": [
+        {
+          "message": "prefixed enum entry is here",
+          "startLine": 3,
+          "startCol": 2,
+          "endLine": 3,
+          "endCol": 19
+        }
+      ]
+    },
+    {
+      "ruleId": "inconsistent-enum-prefix",
+      "severity": "warning",
+      "message": "enum-entry name \"dataName\" should use the dominant prefix \"p\"",
+      "startLine": 13,
+      "startCol": 2,
+      "endLine": 13,
+      "endCol": 10,
+      "notes": [
+        {
+          "message": "prefixed enum entry is here",
+          "startLine": 11,
+          "startCol": 2,
+          "endLine": 11,
+          "endCol": 11
+        }
+      ]
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
