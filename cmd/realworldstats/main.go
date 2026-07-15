@@ -35,10 +35,25 @@ func main() {
 	entry := flag.String("entry", "", "")
 	configPath := flag.String("config", "", "")
 	heapProfile := flag.String("heap-profile", "", "")
+	cpuProfile := flag.String("cpu-profile", "", "")
 	flag.Parse()
 	if *root == "" || *entry == "" || *configPath == "" {
 		flag.Usage()
 		os.Exit(2)
+	}
+	if *cpuProfile != "" {
+		file, err := os.Create(*cpuProfile)
+		if err != nil {
+			fatal(err)
+		}
+		if err := pprof.StartCPUProfile(file); err != nil {
+			_ = file.Close()
+			fatal(err)
+		}
+		defer func() {
+			pprof.StopCPUProfile()
+			_ = file.Close()
+		}()
 	}
 	cfg, err := config.Load(*configPath)
 	if err != nil {
@@ -53,9 +68,10 @@ func main() {
 		includePaths[index] = filepath.Join(*root, path)
 	}
 	model, err := project.Build([]project.Source{{Path: filepath.Join(*root, *entry), Content: content}}, project.Options{
-		WorkingDir:   *root,
-		IncludePaths: includePaths,
-		Defines:      cfg.Defines,
+		WorkingDir:      *root,
+		IncludePaths:    includePaths,
+		Defines:         cfg.Defines,
+		DefinesComplete: true,
 	})
 	if err != nil {
 		fatal(err)

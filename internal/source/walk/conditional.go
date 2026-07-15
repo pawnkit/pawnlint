@@ -212,7 +212,14 @@ func (m *Model) directiveName(node *parser.Node) string {
 		return ""
 	}
 	seenDirective := false
-	for _, tok := range m.File.Tokens {
+	start := sort.Search(len(m.File.Tokens), func(index int) bool {
+		return m.File.Tokens[index].End.Offset > node.Start
+	})
+	for index := start; index < len(m.File.Tokens); index++ {
+		tok := m.File.Tokens[index]
+		if tok.Start.Offset >= node.End {
+			break
+		}
 		if tok.Start.Offset < node.Start || tok.End.Offset > node.End {
 			continue
 		}

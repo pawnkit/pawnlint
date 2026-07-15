@@ -1,6 +1,8 @@
 package openmp
 
 import (
+	"sort"
+
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/api"
@@ -60,10 +62,11 @@ func argumentCount(ctx *lint.Context, arguments *parser.Node) (int, bool) {
 }
 
 func tokenBetween(tokens []token.Token, kind token.Kind, start, end int) bool {
-	for _, current := range tokens {
-		if current.Start.Offset < start {
-			continue
-		}
+	index := sort.Search(len(tokens), func(index int) bool {
+		return tokens[index].Start.Offset >= start
+	})
+	for ; index < len(tokens); index++ {
+		current := tokens[index]
 		if current.End.Offset > end {
 			return false
 		}
@@ -135,12 +138,7 @@ func projectDefinesName(ctx *lint.Context, name string) bool {
 	if ctx.Project == nil {
 		return false
 	}
-	for _, file := range ctx.Project.Files {
-		if definesName(file.Walk, name) {
-			return true
-		}
-	}
-	return false
+	return ctx.Project.DefinesName(name)
 }
 
 func definesName(tree *walk.Model, name string) bool {

@@ -106,26 +106,29 @@ type Reference struct {
 }
 
 type Model struct {
-	Files             []*File
-	Units             []*Unit
-	Declarations      map[string][]Declaration
-	CallGraph         *CallGraph
-	includeCycles     []IncludeCycle
-	includeDirectives []IncludeIssue
-	missingIncludes   []IncludeIssue
-	ambiguousIncludes []IncludeIssue
-	duplicateIncludes []IncludeIssue
-	unusedIncludes    []IncludeIssue
-	symbolConflicts   []SymbolConflict
-	byCanonical       map[string]*File
-	byContext         map[string]*File
-	physical          map[string]*physicalFile
-	references        map[declarationID][]Reference
-	resolved          map[*File]map[*parser.Node]Declaration
-	ambiguous         map[*File]map[*parser.Node]bool
-	effects           map[declarationID]FunctionEffects
-	sourceFiles       map[uint32]*File
-	options           Options
+	Files              []*File
+	Units              []*Unit
+	Declarations       map[string][]Declaration
+	CallGraph          *CallGraph
+	includeCycles      []IncludeCycle
+	duplicateFunctions []DuplicateFunction
+	duplicateGlobals   []DuplicateGlobal
+	includeDirectives  []IncludeIssue
+	missingIncludes    []IncludeIssue
+	ambiguousIncludes  []IncludeIssue
+	duplicateIncludes  []IncludeIssue
+	unusedIncludes     []IncludeIssue
+	symbolConflicts    []SymbolConflict
+	byCanonical        map[string]*File
+	byContext          map[string]*File
+	physical           map[string]*physicalFile
+	references         map[declarationID][]Reference
+	resolved           map[*File]map[*parser.Node]Declaration
+	ambiguous          map[*File]map[*parser.Node]bool
+	effects            map[declarationID]FunctionEffects
+	definedNames       map[string]struct{}
+	sourceFiles        map[uint32]*File
+	options            Options
 }
 
 type physicalFile struct {
@@ -158,6 +161,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 		references:   make(map[declarationID][]Reference),
 		resolved:     make(map[*File]map[*parser.Node]Declaration),
 		ambiguous:    make(map[*File]map[*parser.Node]bool),
+		definedNames: make(map[string]struct{}),
 		sourceFiles:  make(map[uint32]*File),
 		options:      options,
 	}
@@ -175,6 +179,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 			return nil, err
 		}
 	}
+	model.buildDefinedNames()
 	sort.SliceStable(model.Files, func(i, j int) bool {
 		if model.Files[i].canonical != model.Files[j].canonical {
 			return model.Files[i].canonical < model.Files[j].canonical
@@ -183,6 +188,8 @@ func Build(sources []Source, options Options) (*Model, error) {
 	})
 	model.buildDeclarations()
 	model.buildUnits()
+	model.duplicateFunctions = model.buildDuplicateFunctions()
+	model.duplicateGlobals = model.buildDuplicateGlobals()
 	model.symbolConflicts = model.buildConflictingIncludeSymbols()
 	model.includeCycles = model.buildIncludeCycles()
 	model.buildIncludeIssues()
@@ -191,6 +198,28 @@ func Build(sources []Source, options Options) (*Model, error) {
 	model.CallGraph = model.buildCallGraph()
 	model.buildFunctionEffects()
 	return model, nil
+}
+
+func (m *Model) DefinesName(name string) bool {
+	if m == nil {
+		return false
+	}
+	_, ok := m.definedNames[name]
+	return ok
+}
+
+func (m *Model) buildDefinedNames() {
+	for _, file := range m.Files {
+		for _, node := range file.Walk.OfKind(parser.KindDirectiveDefine) {
+			if file.Walk.Inactive(node) {
+				continue
+			}
+			name := file.Walk.Text(node.Field("name"))
+			if name != "" {
+				m.definedNames[name] = struct{}{}
+			}
+		}
+	}
 }
 
 func (m *Model) File(path string) *File {

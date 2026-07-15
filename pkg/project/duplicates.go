@@ -13,6 +13,10 @@ func (m *Model) DuplicateFunctions() []DuplicateFunction {
 	if m == nil {
 		return nil
 	}
+	return m.duplicateFunctions
+}
+
+func (m *Model) buildDuplicateFunctions() []DuplicateFunction {
 	seen := make(map[declarationPair]struct{})
 	var result []DuplicateFunction
 	for _, unit := range m.Units {
@@ -88,6 +92,10 @@ func (m *Model) DuplicateGlobals() []DuplicateGlobal {
 	if m == nil {
 		return nil
 	}
+	return m.duplicateGlobals
+}
+
+func (m *Model) buildDuplicateGlobals() []DuplicateGlobal {
 	seen := make(map[declarationPair]struct{})
 	var result []DuplicateGlobal
 	for _, unit := range m.Units {

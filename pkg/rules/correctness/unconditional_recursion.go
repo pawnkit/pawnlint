@@ -42,6 +42,9 @@ func (UnconditionalRecursion) Run(ctx *lint.Context) {
 		flows[file] = ctx.Flow
 	}
 	for _, component := range ctx.Project.CallGraph.RecursiveComponents() {
+		if !componentContainsFile(component, file) {
+			continue
+		}
 		members := make(map[*parser.Node]bool, len(component))
 		names := make([]string, 0, len(component))
 		for _, function := range component {
@@ -78,6 +81,15 @@ func (UnconditionalRecursion) Run(ctx *lint.Context) {
 			ctx.Report(diagnosticValue)
 		}
 	}
+}
+
+func componentContainsFile(component []project.Declaration, file *project.File) bool {
+	for _, declaration := range component {
+		if declaration.File == file {
+			return true
+		}
+	}
+	return false
 }
 
 func unconditionalComponent(ctx *lint.Context, component []project.Declaration, members map[*parser.Node]bool, flows map[*project.File]*controlflow.Model) bool {

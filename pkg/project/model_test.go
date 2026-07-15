@@ -73,6 +73,22 @@ func TestBuildResolvesDottedIncludeWithIncSuffix(t *testing.T) {
 	}
 }
 
+func TestBuildIndexesDefinedNames(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	source := []byte("#define ACTIVE 1\n#if 0\n#define INACTIVE 1\n#endif\nmain() {}\n")
+	model, err := Build([]Source{{Path: path, Content: source}}, Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !model.DefinesName("ACTIVE") {
+		t.Fatal("active define was not indexed")
+	}
+	if model.DefinesName("INACTIVE") {
+		t.Fatal("inactive define was indexed")
+	}
+}
+
 func TestBuildReportsTimings(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "main.pwn")

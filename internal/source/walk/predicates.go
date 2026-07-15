@@ -1,6 +1,8 @@
 package walk
 
 import (
+	"sort"
+
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 )
@@ -51,7 +53,13 @@ func ReferencesByAmpersand(tokens []token.Token, node *parser.Node) bool {
 	if name != nil {
 		end = name.Start
 	}
-	for _, tok := range tokens {
+	start := sort.Search(len(tokens), func(index int) bool {
+		return tokens[index].End.Offset > node.Start
+	})
+	for _, tok := range tokens[start:] {
+		if tok.Start.Offset >= end {
+			break
+		}
 		if tok.Start.Offset >= node.Start && tok.End.Offset <= end && tok.Kind == token.Amp {
 			return true
 		}
