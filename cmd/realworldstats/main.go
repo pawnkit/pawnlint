@@ -36,6 +36,7 @@ func main() {
 	configPath := flag.String("config", "", "")
 	heapProfile := flag.String("heap-profile", "", "")
 	cpuProfile := flag.String("cpu-profile", "", "")
+	releaseExpanded := flag.Bool("release-expanded", false, "")
 	flag.Parse()
 	if *root == "" || *entry == "" || *configPath == "" {
 		flag.Usage()
@@ -72,6 +73,7 @@ func main() {
 		IncludePaths:    includePaths,
 		Defines:         cfg.Defines,
 		DefinesComplete: true,
+		ReleaseExpanded: *releaseExpanded,
 	})
 	if err != nil {
 		fatal(err)

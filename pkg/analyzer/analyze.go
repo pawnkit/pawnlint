@@ -70,6 +70,7 @@ func analyze(ctx context.Context, request Request) (Result, error) {
 			IncludePaths:    settings.includePaths,
 			Defines:         settings.defines,
 			DefinesComplete: settings.definesComplete,
+			ReleaseExpanded: true,
 		})
 		if err != nil {
 			return Result{}, fmt.Errorf("analyzer: build project: %w", err)

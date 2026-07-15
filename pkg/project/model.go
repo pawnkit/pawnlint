@@ -22,6 +22,7 @@ type Options struct {
 	IncludePaths    []string
 	Defines         []string
 	DefinesComplete bool
+	ReleaseExpanded bool
 	ObserveTiming   func(TimingEvent)
 }
 
@@ -60,6 +61,8 @@ type File struct {
 	complete          bool
 	sourceID          uint32
 	expansionState    *preprocess.State
+	runtimeCalls      []runtimeCallFact
+	expansionOrigins  map[*parser.Node][]expansionOriginFact
 }
 
 type Include struct {
@@ -138,7 +141,7 @@ type physicalFile struct {
 
 func Build(sources []Source, options Options) (*Model, error) {
 	options.IncludePaths = append([]string(nil), options.IncludePaths...)
-	options.Defines = append([]string(nil), options.Defines...)
+	options.Defines = normalizeDefines(options.Defines)
 	if options.WorkingDir == "" {
 		options.WorkingDir = "."
 	}

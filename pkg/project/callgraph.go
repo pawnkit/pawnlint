@@ -51,6 +51,19 @@ type CallGraph struct {
 	recursive     [][]Declaration
 }
 
+type runtimeCallFact struct {
+	caller         string
+	target         string
+	node           *parser.Node
+	kind           CallKind
+	argumentOffset int
+}
+
+type expansionOriginFact struct {
+	span  token.Span
+	macro string
+}
+
 func (m *Model) buildCallGraph() *CallGraph {
 	graph := &CallGraph{outgoing: make(map[declarationID][]Call), asyncOutgoing: make(map[declarationID][]Call), asyncIncoming: make(map[declarationID][]Call)}
 	byNode := make(map[*File]map[*parser.Node]Declaration)
@@ -110,12 +123,72 @@ func (m *Model) buildCallGraph() *CallGraph {
 		}
 		return declarationLess(left.Callee, right.Callee)
 	})
-	graph.buildRuntimeEdges(m, byNode)
+	graph.buildRuntimeEdges(m)
 	graph.recursive = graph.findRecursiveComponents()
 	return graph
 }
 
-func (g *CallGraph) buildRuntimeEdges(model *Model, byNode map[*File]map[*parser.Node]Declaration) {
+func (m *Model) captureRuntimeCalls(file *File) {
+	tree, parsed := file.ExpandedWalk, file.ExpandedParsed
+	if !file.ExpansionComplete || tree == nil || parsed == nil {
+		return
+	}
+	for _, call := range tree.OfKind(parser.KindCallExpression) {
+		if tree.Inactive(call) || tree.Uncertain(call) {
+			continue
+		}
+		callee := call.Field("function")
+		if callee == nil || callee.Kind != parser.KindIdentifier {
+			continue
+		}
+		name := tree.Text(callee)
+		if name != "SetTimer" && name != "SetTimerEx" && name != "__settimer" && name != "CallLocalFunction" && name != "CallRemoteFunction" {
+			continue
+		}
+		arguments := call.Field("arguments")
+		if arguments == nil || len(arguments.Children) == 0 {
+			continue
+		}
+		target, ok := runtimeCallbackName(tree, parsed.Source, arguments.Children[0])
+		if !ok {
+			continue
+		}
+		function := tree.EnclosingFunction(call)
+		if function == nil {
+			continue
+		}
+		caller := tree.Text(function.Field("name"))
+		if caller == "" {
+			continue
+		}
+		fact := runtimeCallFact{caller: caller, target: target, node: call, kind: CallTimer, argumentOffset: -1}
+		if name == "SetTimerEx" {
+			fact.argumentOffset = 4
+		} else if name == "CallLocalFunction" || name == "CallRemoteFunction" {
+			fact.kind = CallDynamic
+			fact.argumentOffset = 2
+		}
+		file.runtimeCalls = append(file.runtimeCalls, fact)
+		file.captureExpansionOrigins(parsed, call)
+	}
+}
+
+func (f *File) captureExpansionOrigins(parsed *parser.File, node *parser.Node) {
+	for _, current := range parsed.Tokens {
+		if current.Kind == token.EOF || current.End.Offset <= node.Start || current.Start.Offset >= node.End || current.Origin == nil {
+			continue
+		}
+		if f.expansionOrigins == nil {
+			f.expansionOrigins = make(map[*parser.Node][]expansionOriginFact)
+		}
+		for origin := current.Origin; origin != nil; origin = origin.Parent {
+			f.expansionOrigins[node] = append(f.expansionOrigins[node], expansionOriginFact{span: origin.Span, macro: origin.Macro})
+		}
+		return
+	}
+}
+
+func (g *CallGraph) buildRuntimeEdges(model *Model) {
 	for _, function := range g.Functions {
 		if function.Name == "main" {
 			g.EntryPoints = append(g.EntryPoints, EntryPoint{Function: function, Kind: EntryMain})
@@ -124,47 +197,16 @@ func (g *CallGraph) buildRuntimeEdges(model *Model, byNode map[*File]map[*parser
 		}
 	}
 	for _, file := range model.Files {
-		tree, parsed := file.ExpandedWalk, file.ExpandedParsed
-		if !file.ExpansionComplete || tree == nil || parsed == nil {
-			continue
-		}
-		for _, call := range tree.OfKind(parser.KindCallExpression) {
-			if tree.Inactive(call) || tree.Uncertain(call) {
-				continue
-			}
-			callee := call.Field("function")
-			if callee == nil || callee.Kind != parser.KindIdentifier {
-				continue
-			}
-			name := tree.Text(callee)
-			if name != "SetTimer" && name != "SetTimerEx" && name != "__settimer" && name != "CallLocalFunction" && name != "CallRemoteFunction" {
-				continue
-			}
-			arguments := call.Field("arguments")
-			if arguments == nil || len(arguments.Children) == 0 {
-				continue
-			}
-			target, ok := runtimeCallbackName(tree, parsed.Source, arguments.Children[0])
-			if !ok {
-				continue
-			}
-			caller := runtimeCaller(file, tree.EnclosingFunction(call), byNode[file], model.Declarations)
+		for _, fact := range file.runtimeCalls {
+			caller := runtimeCaller(file, fact.caller, model.Declarations)
 			if caller.Node == nil {
 				continue
 			}
-			argumentOffset := -1
-			if name == "SetTimerEx" {
-				argumentOffset = 4
-			} else if name == "CallLocalFunction" || name == "CallRemoteFunction" {
-				argumentOffset = 2
-			}
-			for _, targetFunction := range model.runtimeDefinitions(file, target) {
-				resolved := Call{Caller: caller, Callee: targetFunction, File: file, Node: call, ArgumentOffset: argumentOffset}
-				if name == "CallLocalFunction" || name == "CallRemoteFunction" {
-					resolved.Kind = CallDynamic
+			for _, targetFunction := range model.runtimeDefinitions(file, fact.target) {
+				resolved := Call{Caller: caller, Callee: targetFunction, File: file, Node: fact.node, Kind: fact.kind, ArgumentOffset: fact.argumentOffset}
+				if fact.kind == CallDynamic {
 					g.Calls = append(g.Calls, resolved)
 				} else {
-					resolved.Kind = CallTimer
 					g.AsyncCalls = append(g.AsyncCalls, resolved)
 				}
 			}
@@ -209,14 +251,7 @@ func (g *CallGraph) buildRuntimeEdges(model *Model, byNode map[*File]map[*parser
 	}
 }
 
-func runtimeCaller(file *File, function *parser.Node, direct map[*parser.Node]Declaration, declarations map[string][]Declaration) Declaration {
-	if caller := direct[function]; caller.Node != nil {
-		return caller
-	}
-	if function == nil || file.ExpandedWalk == nil {
-		return Declaration{}
-	}
-	name := file.ExpandedWalk.Text(function.Field("name"))
+func runtimeCaller(file *File, name string, declarations map[string][]Declaration) Declaration {
 	var result Declaration
 	for _, declaration := range declarations[name] {
 		if declaration.File != file || declaration.Node.Kind != parser.KindFunctionDefinition || declaration.Symbol == nil || declaration.Symbol.Ambiguous {

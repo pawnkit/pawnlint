@@ -146,6 +146,35 @@ public Tick()
 	}
 }
 
+func TestCallGraphRetainsMacroFactsAfterReleasingExpandedTrees(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	source := []byte(`#define TIMER_CALLBACK "Tick"
+main()
+{
+	SetTimer(TIMER_CALLBACK, 1000, false);
+}
+
+public Tick()
+{
+}
+`)
+	model, err := project.Build([]project.Source{{Path: path, Content: source}}, project.Options{WorkingDir: dir, DefinesComplete: true, ReleaseExpanded: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := model.File(path)
+	if file.ExpandedSource != nil || file.ExpandedParsed != nil || file.ExpandedWalk != nil || file.ExpandedSemantic != nil {
+		t.Fatal("expanded trees were retained")
+	}
+	if len(model.CallGraph.AsyncCalls) != 1 || model.CallGraph.AsyncCalls[0].Callee.Name != "Tick" {
+		t.Fatalf("async calls = %#v", model.CallGraph.AsyncCalls)
+	}
+	if origins := model.ExpansionOrigins(file, model.CallGraph.AsyncCalls[0].Node); len(origins) == 0 {
+		t.Fatalf("origins = %#v", origins)
+	}
+}
+
 func TestCallGraphResolvesDynamicFunctionCall(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "main.pwn")

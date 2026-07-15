@@ -12,18 +12,25 @@ type ExpansionOrigin struct {
 }
 
 func (m *Model) ExpansionOrigins(file *File, node *parser.Node) []ExpansionOrigin {
-	if m == nil || file == nil || file.ExpandedParsed == nil || node == nil {
+	if m == nil || file == nil || node == nil {
 		return nil
 	}
-	for _, current := range file.ExpandedParsed.Tokens {
-		if current.Kind == token.EOF || current.End.Offset <= node.Start || current.Start.Offset >= node.End || current.Origin == nil {
-			continue
+	if file.ExpandedParsed != nil {
+		for _, current := range file.ExpandedParsed.Tokens {
+			if current.Kind == token.EOF || current.End.Offset <= node.Start || current.Start.Offset >= node.End || current.Origin == nil {
+				continue
+			}
+			var result []ExpansionOrigin
+			for origin := current.Origin; origin != nil; origin = origin.Parent {
+				result = append(result, ExpansionOrigin{File: m.sourceFiles[origin.Span.File], Span: origin.Span, Macro: origin.Macro})
+			}
+			return result
 		}
-		var result []ExpansionOrigin
-		for origin := current.Origin; origin != nil; origin = origin.Parent {
-			result = append(result, ExpansionOrigin{File: m.sourceFiles[origin.Span.File], Span: origin.Span, Macro: origin.Macro})
-		}
-		return result
 	}
-	return nil
+	facts := file.expansionOrigins[node]
+	result := make([]ExpansionOrigin, 0, len(facts))
+	for _, fact := range facts {
+		result = append(result, ExpansionOrigin{File: m.sourceFiles[fact.span.File], Span: fact.span, Macro: fact.macro})
+	}
+	return result
 }

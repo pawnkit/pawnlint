@@ -50,7 +50,7 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines []str
 		display = canonical
 	}
 	tree := walk.NewWithDefineContext(display, parsed, defines, nil, m.options.DefinesComplete)
-	file := &File{Path: display, Source: physical.source, Parsed: parsed, Walk: tree, Provided: provided, canonical: canonical, instance: instance, defines: normalizeDefines(defines), complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1)}
+	file := &File{Path: display, Source: physical.source, Parsed: parsed, Walk: tree, Provided: provided, canonical: canonical, instance: instance, defines: append([]string(nil), defines...), complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1)}
 	m.Files = append(m.Files, file)
 	m.sourceFiles[file.sourceID] = file
 	m.byContext[instance] = file
@@ -140,7 +140,16 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		file.ExpandedSource = expanded.Source
 		file.ExpandedParsed = expanded.Parsed
 		file.ExpandedWalk = walk.NewWithDefineContext(file.Path, expanded.Parsed, file.defines, nil, file.complete)
-		file.ExpandedSemantic = semantic.Build(expanded.Parsed, file.ExpandedWalk)
+		if !m.options.ReleaseExpanded {
+			file.ExpandedSemantic = semantic.Build(expanded.Parsed, file.ExpandedWalk)
+		}
+	}
+	m.captureRuntimeCalls(file)
+	if m.options.ReleaseExpanded {
+		file.ExpandedSource = nil
+		file.ExpandedParsed = nil
+		file.ExpandedWalk = nil
+		file.ExpandedSemantic = nil
 	}
 	if m.options.ObserveTiming != nil {
 		m.observe(TimingEvent{Stage: TimingPreprocess, Duration: time.Since(started)})
@@ -224,7 +233,7 @@ func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot) {
 }
 
 func contextKey(canonical string, defines []string) string {
-	return canonical + "\x00" + strings.Join(normalizeDefines(defines), "\x00")
+	return canonical + "\x00" + strings.Join(defines, "\x00")
 }
 
 func normalizeDefines(defines []string) []string {
@@ -245,8 +254,6 @@ func normalizeDefines(defines []string) []string {
 }
 
 func sameDefines(left, right []string) bool {
-	left = normalizeDefines(left)
-	right = normalizeDefines(right)
 	if len(left) != len(right) {
 		return false
 	}

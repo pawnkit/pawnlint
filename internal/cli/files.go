@@ -76,10 +76,11 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 			started = time.Now()
 		}
 		model, err := projectmodel.Build(projectSources, projectmodel.Options{
-			WorkingDir:    cwd,
-			IncludePaths:  includePaths,
-			Defines:       variant.Defines,
-			ObserveTiming: projectTimingObserver(timings),
+			WorkingDir:      cwd,
+			IncludePaths:    includePaths,
+			Defines:         variant.Defines,
+			ReleaseExpanded: true,
+			ObserveTiming:   projectTimingObserver(timings),
 		})
 		if timings != nil {
 			timings.addProject(time.Since(started))
@@ -189,6 +190,7 @@ func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registra
 			IncludePaths:    includePaths,
 			Defines:         defines,
 			DefinesComplete: true,
+			ReleaseExpanded: true,
 			ObserveTiming:   projectTimingObserver(timings),
 		})
 		if timings != nil {
