@@ -115,6 +115,7 @@ it does not cache parser or semantic models.
   reference flows, and complex state selectors.
 - Macro-generated includes are not expanded; uncertain includes are skipped.
 - Contexts track macro names, not values; identical contexts share one instance.
+- Large contextual include graphs retain separate semantic and expanded views and can use substantial memory.
 
 ## Naming policy
 

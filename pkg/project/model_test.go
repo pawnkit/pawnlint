@@ -379,6 +379,35 @@ func TestRepeatedIncludeDoesNotDuplicateFile(t *testing.T) {
 	}
 }
 
+func TestContextualIncludeDoesNotDuplicatePhysicalDefinitions(t *testing.T) {
+	dir := t.TempDir()
+	includePath := filepath.Join(dir, "shared.inc")
+	shared := "#if defined SHARED_INC\n#endinput\n#endif\n#define SHARED_INC\nShared() {}\nnew shared_value;\n"
+	if err := os.WriteFile(includePath, []byte(shared), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	leftPath := filepath.Join(dir, "left.inc")
+	rightPath := filepath.Join(dir, "right.inc")
+	if err := os.WriteFile(leftPath, []byte("#define FIRST\n#include \"shared.inc\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(rightPath, []byte("#define SECOND\n#include \"shared.inc\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	rootPath := filepath.Join(dir, "main.pwn")
+	root := []byte("#include \"left.inc\"\n#include \"right.inc\"\nmain() {}\n")
+	model, err := Build([]Source{{Path: rootPath, Content: root}}, Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if duplicates := model.DuplicateFunctions(); len(duplicates) != 0 {
+		t.Fatalf("functions = %#v", duplicates)
+	}
+	if duplicates := model.DuplicateGlobals(); len(duplicates) != 0 {
+		t.Fatalf("globals = %#v", duplicates)
+	}
+}
+
 func TestBuildResolvesCrossFileReferences(t *testing.T) {
 	dir := t.TempDir()
 	includePath := filepath.Join(dir, "shared.inc")

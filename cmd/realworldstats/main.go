@@ -14,6 +14,13 @@ import (
 type result struct {
 	Files              int `json:"files"`
 	Bytes              int `json:"bytes"`
+	Tokens             int `json:"tokens"`
+	Functions          int `json:"functions"`
+	Calls              int `json:"calls"`
+	DynamicCalls       int `json:"dynamicCalls"`
+	TimerCalls         int `json:"timerCalls"`
+	EntryPoints        int `json:"entryPoints"`
+	ExpandedFiles      int `json:"expandedFiles"`
 	Includes           int `json:"includes"`
 	UnresolvedIncludes int `json:"unresolvedIncludes"`
 	UncertainIncludes  int `json:"uncertainIncludes"`
@@ -54,7 +61,11 @@ func main() {
 	output.Files = len(model.Files)
 	for _, file := range model.Files {
 		output.Bytes += len(file.Source)
+		output.Tokens += len(file.Parsed.Tokens)
 		output.Includes += len(file.Includes)
+		if file.ExpandedParsed != file.Parsed {
+			output.ExpandedFiles++
+		}
 		if file.Parsed.Broken {
 			output.BrokenFiles++
 		}
@@ -66,6 +77,17 @@ func main() {
 				output.UncertainIncludes++
 			} else if include.Resolved == nil && !include.Optional {
 				output.UnresolvedIncludes++
+			}
+		}
+	}
+	if model.CallGraph != nil {
+		output.Functions = len(model.CallGraph.Functions)
+		output.Calls = len(model.CallGraph.Calls)
+		output.TimerCalls = len(model.CallGraph.AsyncCalls)
+		output.EntryPoints = len(model.CallGraph.EntryPoints)
+		for _, call := range model.CallGraph.Calls {
+			if call.Kind == project.CallDynamic {
+				output.DynamicCalls++
 			}
 		}
 	}

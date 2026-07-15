@@ -53,6 +53,9 @@ func (m *Model) DuplicateFunctions() []DuplicateFunction {
 			name := declarations[0].Name
 			for _, duplicate := range declarations[1:] {
 				first := declarations[0]
+				if first.File.canonical == duplicate.File.canonical && first.Node.Start == duplicate.Node.Start {
+					continue
+				}
 				key := declarationKey(first) + "\x00" + declarationKey(duplicate)
 				if _, exists := seen[key]; exists {
 					continue
@@ -121,6 +124,9 @@ func (m *Model) DuplicateGlobals() []DuplicateGlobal {
 			name := declarations[0].Name
 			for _, duplicate := range declarations[1:] {
 				first := declarations[0]
+				if first.File.canonical == duplicate.File.canonical && first.Node.Start == duplicate.Node.Start {
+					continue
+				}
 				key := declarationKey(first) + "\x00" + declarationKey(duplicate)
 				if _, exists := seen[key]; exists {
 					continue
