@@ -249,6 +249,18 @@ Conventions are checked in order. Selectors support `kinds`, `scopes`,
 and `exclude`. Callbacks and natives require `include-callbacks` or
 `include-natives`.
 
+```toml
+[rules.disallowed-name]
+severity = "warning"
+policies = [
+  { kinds = ["local", "parameter"], names = ["foo", "bar"] },
+  { patterns = ["^temp_"], exclude = ["^temporaryAllowed$"] }
+]
+```
+
+Disallowed-name policies use the same selectors and opt-ins. Each policy needs
+`names` or `patterns` and may provide a `reason`.
+
 ## Precedence
 
 Highest priority first:

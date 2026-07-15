@@ -1,0 +1,89 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "disallowed-name",
+      "severity": "warning",
+      "message": "function name \"ReservedFunction2\" is disallowed: use a domain-specific function name",
+      "startLine": 5,
+      "startCol": 8,
+      "endLine": 5,
+      "endCol": 25
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "disallowed-name",
+      "severity": "warning",
+      "message": "function name \"bad_api\" is disallowed by pattern \"^bad_\": native wrappers must use stable API names",
+      "startLine": 1,
+      "startCol": 8,
+      "endLine": 1,
+      "endCol": 15
+    },
+    {
+      "ruleId": "disallowed-name",
+      "severity": "warning",
+      "message": "global name \"DEBUG\" is disallowed",
+      "startLine": 3,
+      "startCol": 11,
+      "endLine": 3,
+      "endCol": 16
+    },
+    {
+      "ruleId": "disallowed-name",
+      "severity": "warning",
+      "message": "enum-entry name \"UNKNOWN_STATE\" is disallowed by pattern \"^UNKNOWN(?:_|$)\"",
+      "startLine": 7,
+      "startCol": 2,
+      "endLine": 7,
+      "endCol": 15
+    },
+    {
+      "ruleId": "disallowed-name",
+      "severity": "warning",
+      "message": "function name \"ProcessData\" is disallowed: use a domain-specific function name",
+      "startLine": 10,
+      "startCol": 7,
+      "endLine": 10,
+      "endCol": 18
+    },
+    {
+      "ruleId": "disallowed-name",
+      "severity": "warning",
+      "message": "parameter name \"value\" is disallowed: include the measured quantity",
+      "startLine": 10,
+      "startCol": 25,
+      "endLine": 10,
+      "endCol": 30
+    },
+    {
+      "ruleId": "disallowed-name",
+      "severity": "warning",
+      "message": "parameter name \"foo\" is disallowed",
+      "startLine": 10,
+      "startCol": 32,
+      "endLine": 10,
+      "endCol": 35
+    },
+    {
+      "ruleId": "disallowed-name",
+      "severity": "warning",
+      "message": "local name \"temp_buffer\" is disallowed by pattern \"^temp(?:_|$)\"",
+      "startLine": 12,
+      "startCol": 6,
+      "endLine": 12,
+      "endCol": 17
+    },
+    {
+      "ruleId": "disallowed-name",
+      "severity": "warning",
+      "message": "local name \"bar\" is disallowed",
+      "startLine": 13,
+      "startCol": 6,
+      "endLine": 13,
+      "endCol": 9
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

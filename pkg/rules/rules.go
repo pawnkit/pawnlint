@@ -23,6 +23,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(maintainability.ShadowedVariable{})
 	reg.MustRegister(maintainability.UnusedLabel{})
 	reg.MustRegister(maintainability.NamingConvention{})
+	reg.MustRegister(maintainability.DisallowedName{})
 	reg.MustRegister(correctness.DivisionByZero{})
 	reg.MustRegister(correctness.InvalidShiftCount{})
 	reg.MustRegister(correctness.InvalidArraySize{})

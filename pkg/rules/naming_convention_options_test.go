@@ -30,3 +30,28 @@ func TestNamingConventionOptionValidation(t *testing.T) {
 		}
 	}
 }
+
+func TestDisallowedNameOptionValidation(t *testing.T) {
+	metadata, ok := rules.Default().Lookup("disallowed-name")
+	if !ok || len(metadata.Options) != 1 {
+		t.Fatal("disallowed name option is missing")
+	}
+	option := metadata.Options[0]
+	valid := []any{map[string]any{"kinds": []any{"local"}, "names": []any{"foo"}, "patterns": []any{"^temp_"}}}
+	if _, err := lint.NormalizeOption(option, valid); err != nil {
+		t.Fatal(err)
+	}
+	invalid := [][]any{
+		{map[string]any{"kinds": []any{"unknown"}, "names": []any{"foo"}}},
+		{map[string]any{"patterns": []any{"["}}},
+		{map[string]any{"patterns": []any{""}}},
+		{map[string]any{"names": []any{"bad name"}}},
+		{map[string]any{"kinds": []any{"function"}}},
+		{map[string]any{"unknown": true, "names": []any{"foo"}}},
+	}
+	for _, value := range invalid {
+		if _, err := lint.NormalizeOption(option, value); err == nil {
+			t.Fatalf("invalid policy accepted: %#v", value)
+		}
+	}
+}

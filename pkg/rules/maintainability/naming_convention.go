@@ -36,16 +36,22 @@ func (NamingConvention) Metadata() lint.Metadata {
 }
 
 func namingConventionFields() []lint.Option {
+	fields := namingSelectorFields()
+	return append(fields,
+		lint.Option{Name: "case", Type: lint.OptionString, Choices: []string{"camelCase", "PascalCase", "snake_case", "UPPER_SNAKE_CASE", "lowercase", "UPPERCASE"}},
+		lint.Option{Name: "prefix", Type: lint.OptionString},
+		lint.Option{Name: "suffix", Type: lint.OptionString},
+		lint.Option{Name: "pattern", Type: lint.OptionString, Validate: validateNamingPattern},
+		lint.Option{Name: "exclude", Type: lint.OptionStringList, Validate: validateNamingPatterns},
+	)
+}
+
+func namingSelectorFields() []lint.Option {
 	return []lint.Option{
 		{Name: "kinds", Type: lint.OptionStringList, Choices: []string{"function", "global", "local", "parameter", "enum", "enum-entry", "label"}},
 		{Name: "scopes", Type: lint.OptionStringList, Choices: []string{"global", "local"}},
 		{Name: "storage", Type: lint.OptionStringList, Choices: []string{"automatic", "const", "static", "public", "stock", "native", "forward", "default"}},
 		{Name: "tags", Type: lint.OptionStringList},
-		{Name: "case", Type: lint.OptionString, Choices: []string{"camelCase", "PascalCase", "snake_case", "UPPER_SNAKE_CASE", "lowercase", "UPPERCASE"}},
-		{Name: "prefix", Type: lint.OptionString},
-		{Name: "suffix", Type: lint.OptionString},
-		{Name: "pattern", Type: lint.OptionString, Validate: validateNamingPattern},
-		{Name: "exclude", Type: lint.OptionStringList, Validate: validateNamingPatterns},
 		{Name: "include-callbacks", Type: lint.OptionBoolean, Default: false},
 		{Name: "include-natives", Type: lint.OptionBoolean, Default: false},
 	}
@@ -104,12 +110,7 @@ func (NamingConvention) Run(ctx *lint.Context) {
 	if len(policies) == 0 {
 		return
 	}
-	definitions := make(map[string]bool)
-	for _, symbol := range ctx.Semantic.Symbols {
-		if symbol.Kind == semantic.SymbolFunction && symbol.Decl != nil && symbol.Decl.Kind == parser.KindFunctionDefinition {
-			definitions[symbol.Name] = true
-		}
-	}
+	definitions := namingDefinitions(ctx)
 	for _, symbol := range ctx.Semantic.Symbols {
 		if !namingSymbol(ctx, symbol, definitions) {
 			continue
@@ -133,6 +134,16 @@ func (NamingConvention) Run(ctx *lint.Context) {
 			break
 		}
 	}
+}
+
+func namingDefinitions(ctx *lint.Context) map[string]bool {
+	definitions := make(map[string]bool)
+	for _, symbol := range ctx.Semantic.Symbols {
+		if symbol.Kind == semantic.SymbolFunction && symbol.Decl != nil && symbol.Decl.Kind == parser.KindFunctionDefinition {
+			definitions[symbol.Name] = true
+		}
+	}
+	return definitions
 }
 
 func configuredNamingPolicies(ctx *lint.Context) []namingPolicy {

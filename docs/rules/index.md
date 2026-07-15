@@ -16,6 +16,7 @@ Rules are stable unless their page marks them as preview.
 | [`dead-write`](dead-write.md) | suspicious | warning | off | no | Reports local assignments whose stored value is never read |
 | [`deprecated-function`](deprecated-function.md) | openmp | warning | off | no | Reports deprecated compatibility functions in open.mp |
 | [`deprecated-native`](deprecated-native.md) | openmp | warning | off | no | Reports calls to natives deprecated by the selected API |
+| [`disallowed-name`](disallowed-name.md) | restriction | warning | off | no | Reports declarations denied by configured name policies |
 | [`discarded-expression`](discarded-expression.md) | suspicious | warning | on | no | A standalone expression with no side effects does nothing |
 | [`discarded-repeating-timer`](discarded-repeating-timer.md) | correctness | warning | off | no | Reports repeating SetTimer/SetTimerEx handles discarded before they can be killed |
 | [`discarded-resource-handle`](discarded-resource-handle.md) | correctness | warning | off | no | Reports resource handles discarded before they can be released |

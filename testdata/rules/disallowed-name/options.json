@@ -1,0 +1,10 @@
+{
+  "policies": [
+    {"kinds": ["function"], "storage": ["native"], "include-natives": true, "patterns": ["^bad_"], "reason": "native wrappers must use stable API names"},
+    {"kinds": ["function"], "names": ["ProcessData", "ReservedFunction", "ReservedFunction2"], "reason": "use a domain-specific function name"},
+    {"kinds": ["global"], "storage": ["const"], "names": ["DEBUG"]},
+    {"kinds": ["local", "parameter"], "scopes": ["local"], "names": ["foo", "bar"], "patterns": ["^temp(?:_|$)"], "exclude": ["^temporaryAllowed$"]},
+    {"kinds": ["local", "parameter"], "tags": ["Float"], "names": ["value"], "reason": "include the measured quantity"},
+    {"kinds": ["enum-entry"], "patterns": ["^UNKNOWN(?:_|$)"]}
+  ]
+}
