@@ -261,6 +261,18 @@ policies = [
 Disallowed-name policies use the same selectors and opt-ins. Each policy needs
 `names` or `patterns` and may provide a `reason`.
 
+```toml
+[rules.identifier-length]
+severity = "warning"
+limits = [
+  { kinds = ["function", "global"], minimum = 3, maximum = 40 },
+  { kinds = ["local", "parameter"], minimum = 2, maximum = 30, exclude = ["^[xyz]$"] }
+]
+```
+
+Length limits use the same selectors and opt-ins. One-character `for` indices
+are allowed by default; set `allow-loop-indices = false` to check them.
+
 ## Precedence
 
 Highest priority first:

@@ -1,0 +1,8 @@
+{
+  "limits": [
+    {"kinds": ["function"], "minimum": 4, "maximum": 16, "exclude": ["^main$"]},
+    {"kinds": ["global"], "minimum": 4, "maximum": 16},
+    {"kinds": ["local", "parameter"], "minimum": 3, "maximum": 12},
+    {"kinds": ["enum-entry"], "maximum": 20}
+  ]
+}

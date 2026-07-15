@@ -1,0 +1,71 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "identifier-length",
+      "severity": "warning",
+      "message": "function name \"Go\" is shorter than the minimum of 4 characters",
+      "startLine": 7,
+      "startCol": 7,
+      "endLine": 7,
+      "endCol": 9
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "identifier-length",
+      "severity": "warning",
+      "message": "global name \"id\" is shorter than the minimum of 4 characters",
+      "startLine": 1,
+      "startCol": 5,
+      "endLine": 1,
+      "endCol": 7
+    },
+    {
+      "ruleId": "identifier-length",
+      "severity": "warning",
+      "message": "enum-entry name \"PLAYER_STATE_NAME_TOO_LONG\" is longer than the maximum of 20 characters",
+      "startLine": 5,
+      "startCol": 2,
+      "endLine": 5,
+      "endCol": 28
+    },
+    {
+      "ruleId": "identifier-length",
+      "severity": "warning",
+      "message": "function name \"Do\" is shorter than the minimum of 4 characters",
+      "startLine": 8,
+      "startCol": 7,
+      "endLine": 8,
+      "endCol": 9
+    },
+    {
+      "ruleId": "identifier-length",
+      "severity": "warning",
+      "message": "parameter name \"id\" is shorter than the minimum of 3 characters",
+      "startLine": 8,
+      "startCol": 10,
+      "endLine": 8,
+      "endCol": 12
+    },
+    {
+      "ruleId": "identifier-length",
+      "severity": "warning",
+      "message": "local name \"x\" is shorter than the minimum of 3 characters",
+      "startLine": 10,
+      "startCol": 6,
+      "endLine": 10,
+      "endCol": 7
+    },
+    {
+      "ruleId": "identifier-length",
+      "severity": "warning",
+      "message": "local name \"excessivelyLong\" is longer than the maximum of 12 characters",
+      "startLine": 11,
+      "startCol": 6,
+      "endLine": 11,
+      "endCol": 21
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

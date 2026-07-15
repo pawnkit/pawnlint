@@ -34,6 +34,7 @@ Rules are stable unless their page marks them as preview.
 | [`format-argument-tag`](format-argument-tag.md) | correctness | error | on | no | Reports definite tag mismatches in formatted native calls |
 | [`forward-signature-mismatch`](forward-signature-mismatch.md) | correctness | error | on | no | Reports definitions that do not match their forward declaration |
 | [`identical-branches`](identical-branches.md) | suspicious | warning | off | no | Reports if and ternary branches with identical code |
+| [`identifier-length`](identifier-length.md) | style | warning | off | no | Reports declarations outside configured name-length limits |
 | [`ignored-return-value`](ignored-return-value.md) | correctness | warning | off | no | Reports discarded results from APIs marked must-use |
 | [`include-cycle`](include-cycle.md) | correctness | error | on | no | Reports cycles in the resolved include graph |
 | [`include-layering`](include-layering.md) | restriction | error | off | no | Reports dependencies outside a source layer's allowlist |

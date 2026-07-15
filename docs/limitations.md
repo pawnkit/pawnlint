@@ -91,6 +91,7 @@
 - Disallowed-name policies apply only to configured exact names or patterns.
 - Confusable names cover the Pawn ASCII groups `0/O/o` and `1/I/l`.
 - Enum prefixes require four definite entries and 75 percent agreement.
+- Identifier lengths apply only through configured ordered limits.
 - Callbacks and natives require explicit opt-in. Uncertain declarations and
   non-standard identifiers are skipped.
 
