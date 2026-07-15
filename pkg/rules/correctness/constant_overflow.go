@@ -151,7 +151,7 @@ func constantOverflowValue(ctx *lint.Context, node *parser.Node) (int64, bool) {
 			return constantOverflowValue(ctx, node.Field("expression"))
 		}
 	}
-	return ctx.Semantic.Eval(node)
+	return ctx.Constant(node)
 }
 
 func constantLiteralCellValue(text string) (int64, bool) {

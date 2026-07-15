@@ -39,7 +39,7 @@ func (InvariantLoopCondition) Run(ctx *lint.Context) {
 			if condition == nil || loop.HasError || ctx.Walk.Inactive(loop) || ctx.Walk.Uncertain(loop) {
 				continue
 			}
-			if _, constant := ctx.Semantic.Eval(condition); constant {
+			if _, constant := ctx.Constant(condition); constant {
 				continue
 			}
 			symbols, ok := invariantConditionSymbols(ctx, condition)

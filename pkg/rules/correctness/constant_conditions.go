@@ -84,7 +84,7 @@ func (DuplicateSwitchCase) Run(ctx *lint.Context) {
 				if valueNode.Kind == parser.KindCaseRange {
 					continue
 				}
-				value, ok := ctx.Semantic.Eval(valueNode)
+				value, ok := ctx.Constant(valueNode)
 				if !ok {
 					continue
 				}

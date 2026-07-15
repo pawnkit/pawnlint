@@ -67,7 +67,7 @@ func (FloatEquality) Run(ctx *lint.Context) {
 }
 
 func isFloatOperand(ctx *lint.Context, node *parser.Node) bool {
-	tags := ctx.Semantic.ExpressionTags(node)
+	tags := ctx.ExpressionTags(node)
 	return len(tags) == 1 && tags[0] == "Float"
 }
 

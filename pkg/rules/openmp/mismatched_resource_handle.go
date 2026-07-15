@@ -67,7 +67,7 @@ func resourceReleaserTag(ctx *lint.Context, callable resourceCallable) (string, 
 }
 
 func resourceTag(ctx *lint.Context, node *parser.Node) (string, bool) {
-	if tags := ctx.Semantic.ExpressionTags(node); len(tags) == 1 {
+	if tags := ctx.ExpressionTags(node); len(tags) == 1 {
 		return tags[0], true
 	}
 	node = unwrapParentheses(node)

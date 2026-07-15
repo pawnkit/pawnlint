@@ -148,7 +148,7 @@ func (OutOfBoundsConstantIndex) Run(ctx *lint.Context) {
 		if dimension == nil {
 			return
 		}
-		size, sizeOK := ctx.Semantic.Eval(dimension.Field("size"))
+		size, sizeOK := ctx.Constant(dimension.Field("size"))
 		value, valueOK := ctx.Eval(index)
 		if !sizeOK || !valueOK || value >= 0 && value < size {
 			return
@@ -171,7 +171,7 @@ func (InvalidArraySize) Run(ctx *lint.Context) {
 			return
 		}
 		size := node.Field("size")
-		value, ok := ctx.Semantic.Eval(size)
+		value, ok := ctx.Constant(size)
 		if !ok || value > 0 {
 			return
 		}

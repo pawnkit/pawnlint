@@ -88,7 +88,7 @@ func loopInvariantExpression(ctx *lint.Context, node, loop *parser.Node, symbols
 	if node == nil || node.HasError || node.Tok.Origin != nil || ctx.Walk.Inactive(node) || ctx.Walk.Uncertain(node) {
 		return false
 	}
-	if _, known := ctx.Semantic.Eval(node); known {
+	if _, known := ctx.Constant(node); known {
 		return true
 	}
 	switch node.Kind {

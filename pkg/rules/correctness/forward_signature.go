@@ -112,8 +112,8 @@ func signatureDifference(ctx *lint.Context, declaration, definition *parser.Node
 		declDimensions := dimensions(declParams[i])
 		defDimensions := dimensions(defParams[i])
 		for dimension := range declDimensions {
-			declValue, declKnown := ctx.Semantic.Eval(declDimensions[dimension].Field("size"))
-			defValue, defKnown := ctx.Semantic.Eval(defDimensions[dimension].Field("size"))
+			declValue, declKnown := ctx.Constant(declDimensions[dimension].Field("size"))
+			defValue, defKnown := ctx.Constant(defDimensions[dimension].Field("size"))
 			if declKnown && defKnown && declValue != defValue {
 				return fmt.Sprintf("parameter %d array dimensions differ", position)
 			}
@@ -124,8 +124,8 @@ func signatureDifference(ctx *lint.Context, declaration, definition *parser.Node
 			return fmt.Sprintf("parameter %d default value presence differs", position)
 		}
 		if declDefault != nil {
-			declValue, declKnown := ctx.Semantic.Eval(declDefault)
-			defValue, defKnown := ctx.Semantic.Eval(defDefault)
+			declValue, declKnown := ctx.Constant(declDefault)
+			defValue, defKnown := ctx.Constant(defDefault)
 			if declKnown && defKnown && declValue != defValue {
 				return fmt.Sprintf("parameter %d default value differs", position)
 			}

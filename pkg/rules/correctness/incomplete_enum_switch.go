@@ -54,7 +54,7 @@ func (IncompleteEnumSwitch) Run(ctx *lint.Context) {
 		if condition == nil || statement.HasError || ctx.Walk.Inactive(statement) || ctx.Walk.Uncertain(statement) || enumSwitchHasDefault(statement) {
 			continue
 		}
-		tag, ok := ctx.Semantic.ExpressionTag(condition)
+		tag, ok := ctx.ExpressionTag(condition)
 		if !ok || tag == "" || tag == "_" || tag == "Float" || tag == "bool" {
 			continue
 		}
@@ -107,7 +107,7 @@ func resolvedEnumSwitchDefinition(model *project.Model, from *project.File, tag 
 				if enumSwitchTypeName(file, declaration) != tag || declaration.HasError || file.Walk.Inactive(declaration) || file.Walk.Uncertain(declaration) {
 					continue
 				}
-				definition, ok := buildEnumSwitchDefinition(file, declaration, tag)
+				definition, ok := buildEnumSwitchDefinition(model, file, declaration, tag)
 				if ok {
 					seen[declaration] = definition
 				}
@@ -137,7 +137,7 @@ func enumSwitchTypeName(file *project.File, declaration *parser.Node) string {
 	return file.Walk.Text(declaration.Field("name"))
 }
 
-func buildEnumSwitchDefinition(file *project.File, declaration *parser.Node, name string) (enumSwitchDefinition, bool) {
+func buildEnumSwitchDefinition(model *project.Model, file *project.File, declaration *parser.Node, name string) (enumSwitchDefinition, bool) {
 	if declaration.Field("increment") != nil {
 		return enumSwitchDefinition{}, false
 	}
@@ -155,7 +155,7 @@ func buildEnumSwitchDefinition(file *project.File, declaration *parser.Node, nam
 			return enumSwitchDefinition{}, false
 		}
 		if explicit := entry.Field("value"); explicit != nil {
-			value, ok := file.Semantic.Eval(explicit)
+			value, ok := model.Eval(file, explicit)
 			if !ok {
 				return enumSwitchDefinition{}, false
 			}
@@ -171,7 +171,7 @@ func buildEnumSwitchDefinition(file *project.File, declaration *parser.Node, nam
 			if child.Kind != parser.KindDimension {
 				continue
 			}
-			size, ok := file.Semantic.Eval(child.Field("size"))
+			size, ok := model.Eval(file, child.Field("size"))
 			if !ok || size <= 0 {
 				return enumSwitchDefinition{}, false
 			}
@@ -230,7 +230,7 @@ func enumSwitchCaseValue(ctx *lint.Context, file *project.File, node *parser.Nod
 	if node == nil || node.HasError || ctx.Walk.Uncertain(node) {
 		return 0, false
 	}
-	if value, ok := ctx.Semantic.Eval(node); ok {
+	if value, ok := ctx.Constant(node); ok {
 		return value, true
 	}
 	switch node.Kind {

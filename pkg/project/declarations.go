@@ -26,6 +26,69 @@ func (m *Model) Resolve(file *File, node *parser.Node) (Declaration, bool) {
 	return declaration, ok
 }
 
+func (m *Model) FunctionVariants(file *File, node *parser.Node) []Declaration {
+	if m == nil || file == nil || node == nil || node.Kind != parser.KindIdentifier {
+		return nil
+	}
+	name := file.Walk.Text(node)
+	seen := make(map[string]Declaration)
+	for _, unit := range m.Units {
+		if _, contains := unit.members[file]; !contains {
+			continue
+		}
+		for _, declaration := range m.Declarations[name] {
+			if _, included := unit.members[declaration.File]; !included || declaration.Kind != semantic.SymbolFunction || declaration.Symbol == nil || declaration.Symbol.Ambiguous {
+				continue
+			}
+			seen[declarationKey(declaration)] = declaration
+		}
+	}
+	var definitions []Declaration
+	var declarations []Declaration
+	for _, declaration := range seen {
+		if declaration.Node.Kind == parser.KindFunctionDefinition {
+			definitions = append(definitions, declaration)
+		} else if declaration.Node.Kind == parser.KindFunctionDeclaration {
+			declarations = append(declarations, declaration)
+		}
+	}
+	candidates := definitions
+	if len(candidates) == 0 {
+		candidates = declarations
+	}
+	sortDeclarations(candidates)
+	for left := range candidates {
+		for right := left + 1; right < len(candidates); right++ {
+			if !projectStateVariantsCoexist(candidates[left].Symbol, candidates[right].Symbol) {
+				return nil
+			}
+		}
+	}
+	return candidates
+}
+
+func projectStateVariantsCoexist(left, right *semantic.Symbol) bool {
+	leftState := left.Decl.Field("state") != nil
+	rightState := right.Decl.Field("state") != nil
+	if !leftState && !rightState {
+		return false
+	}
+	if leftState != rightState {
+		return true
+	}
+	if left.StateRaw || right.StateRaw {
+		return false
+	}
+	for _, leftName := range left.States {
+		for _, rightName := range right.States {
+			if leftName == rightName {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func (m *Model) buildDeclarations() {
 	for _, file := range m.Files {
 		for _, symbol := range file.Semantic.Symbols {
@@ -63,6 +126,15 @@ func (m *Model) buildReferences() {
 	for _, unit := range m.Units {
 		for _, file := range unit.Files {
 			for _, reference := range file.Semantic.UnresolvedReferences() {
+				if reference.Target == semantic.ReferenceFunction {
+					variants := m.FunctionVariants(file, reference.Node)
+					if len(variants) != 0 {
+						for _, declaration := range variants {
+							m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind}, seen)
+						}
+						continue
+					}
+				}
 				name := file.Walk.Text(reference.Node)
 				declaration, ok := m.resolveInUnit(unit, file, name, reference.Target)
 				if !ok {

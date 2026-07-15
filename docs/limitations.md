@@ -6,7 +6,7 @@ it does not cache parser or semantic models.
 ## Current analysis
 
 - Syntax analysis
-- Per-file semantic analysis
+- Per-file semantics with project-wide fact resolution
 - Per-function control-flow analysis
 - Basic include-graph analysis
 - Preview interprocedural taint analysis for configured direct flows
@@ -15,7 +15,6 @@ it does not cache parser or semantic models.
 
 - Operator-overload and advanced tag compatibility analysis
 - General interprocedural and alias-aware data-flow analysis
-- Complete cross-file constant, tag, and state resolution
 - Complete API constant and behavioral metadata
 
 ## Fixes
@@ -43,12 +42,13 @@ it does not cache parser or semantic models.
 
 ## Semantic analysis
 
-- Resolves unambiguous functions, globals, locals, parameters, named enums,
-  enum entries, and labels — within a single file.
+- Resolves unambiguous functions, globals, named enums, enum entries, and state
+  variants across definite include units. Locals, parameters, and labels remain
+  file-scoped.
 - Distinguishes value, function, label, tag, and member-name contexts.
 - Constant evaluation covers integer expressions, declared constants, and
   standard enum sequences.
-- Not evaluated: custom enum increments, macros, cross-file values.
+- Not evaluated: custom enum increments and macros.
 - Direct state selectors are modeled; complex automaton selectors stay
   conservative.
 - Tags propagate only when the result is definite.
@@ -94,9 +94,8 @@ it does not cache parser or semantic models.
 - Resolves direct includes from the source directory and configured include
   paths.
 - Tracks define contexts and include order while sharing parsed CSTs.
-- Resolves unambiguous function and value references; reports duplicate or
-  unused project symbols.
-- Cross-file constant evaluation is not available.
+- Resolves function and value references, constant values, tags, and compatible
+  state variants; reports duplicate or unused project symbols.
 - Macro-generated includes are not expanded; uncertain includes are skipped.
 - Contexts track macro names, not values; identical contexts share one instance.
 

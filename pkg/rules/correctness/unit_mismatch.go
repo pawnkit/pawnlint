@@ -154,7 +154,7 @@ func unitExpressionTag(ctx *lint.Context, node *parser.Node) string {
 	if node == nil || unitNodeHasError(node) || node.Kind == parser.KindTaggedExpression && node.Field("expression") == nil {
 		return ""
 	}
-	tag, ok := ctx.Semantic.ExpressionTag(node)
+	tag, ok := ctx.ExpressionTag(node)
 	if !ok {
 		return ""
 	}

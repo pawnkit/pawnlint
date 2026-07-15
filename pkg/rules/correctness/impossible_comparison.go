@@ -112,7 +112,7 @@ func expressionComparisonRange(ctx *lint.Context, node *parser.Node) (comparison
 	if node == nil || node.HasError || ctx.Walk.Inactive(node) || ctx.Walk.Uncertain(node) {
 		return comparisonRange{}, false
 	}
-	if value, ok := ctx.Semantic.Eval(node); ok {
+	if value, ok := ctx.Constant(node); ok {
 		return comparisonRange{minimum: value, maximum: value}, true
 	}
 	switch node.Kind {
@@ -160,7 +160,7 @@ func binaryComparisonRange(ctx *lint.Context, node *parser.Node) (comparisonRang
 	rightNode := node.Field("right")
 	switch node.Tok.Kind {
 	case token.Percent:
-		divisor, ok := ctx.Semantic.Eval(rightNode)
+		divisor, ok := ctx.Constant(rightNode)
 		if !ok || divisor == 0 || divisor == -2147483648 {
 			return comparisonRange{}, false
 		}
@@ -185,7 +185,7 @@ func binaryComparisonRange(ctx *lint.Context, node *parser.Node) (comparisonRang
 			return comparisonRange{minimum: 0, maximum: mask}, true
 		}
 	case token.Ushr:
-		shift, ok := ctx.Semantic.Eval(rightNode)
+		shift, ok := ctx.Constant(rightNode)
 		if !ok || shift < 1 || shift > 31 {
 			return comparisonRange{}, false
 		}
@@ -195,7 +195,7 @@ func binaryComparisonRange(ctx *lint.Context, node *parser.Node) (comparisonRang
 }
 
 func nonnegativeComparisonConstant(ctx *lint.Context, node *parser.Node) (int64, bool) {
-	value, ok := ctx.Semantic.Eval(node)
+	value, ok := ctx.Constant(node)
 	return value, ok && value >= 0
 }
 

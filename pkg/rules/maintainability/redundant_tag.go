@@ -40,7 +40,7 @@ func (RedundantTag) Run(ctx *lint.Context) {
 			continue
 		}
 		name := ctx.Walk.Text(tag)
-		expressionTag, known := ctx.Semantic.ExpressionTag(expression)
+		expressionTag, known := ctx.ExpressionTag(expression)
 		if name == "" || !known || expressionTag != name {
 			continue
 		}

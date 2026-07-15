@@ -9,14 +9,31 @@ import (
 )
 
 func (m *Model) Eval(node *parser.Node) (int64, bool) {
-	return m.eval(node, make(map[*Symbol]bool), nil)
+	return m.eval(node, make(map[*Symbol]bool), nil, nil)
 }
 
 func (m *Model) EvalWithValues(node *parser.Node, values map[*Symbol]int64) (int64, bool) {
-	return m.eval(node, make(map[*Symbol]bool), values)
+	return m.eval(node, make(map[*Symbol]bool), values, nil)
 }
 
-func (m *Model) eval(node *parser.Node, visiting map[*Symbol]bool, values map[*Symbol]int64) (int64, bool) {
+func (m *Model) EvalWithResolver(node *parser.Node, resolver func(*parser.Node) (int64, bool)) (int64, bool) {
+	return m.eval(node, make(map[*Symbol]bool), nil, resolver)
+}
+
+func (m *Model) ConstantValue(symbol *Symbol) (int64, bool) {
+	if m == nil || symbol == nil || !symbol.Constant || symbol.Ambiguous {
+		return 0, false
+	}
+	if value, ok := m.constantValues[symbol]; ok {
+		return value, true
+	}
+	if symbol.Value == nil {
+		return 0, false
+	}
+	return m.Eval(symbol.Value)
+}
+
+func (m *Model) eval(node *parser.Node, visiting map[*Symbol]bool, values map[*Symbol]int64, resolver func(*parser.Node) (int64, bool)) (int64, bool) {
 	if node == nil || node.HasError || m.Walk.Uncertain(node) {
 		return 0, false
 	}
@@ -24,9 +41,9 @@ func (m *Model) eval(node *parser.Node, visiting map[*Symbol]bool, values map[*S
 	case parser.KindLiteral:
 		return m.evalLiteral(node)
 	case parser.KindParenthesizedExpression:
-		return m.eval(node.Field("expression"), visiting, values)
+		return m.eval(node.Field("expression"), visiting, values, resolver)
 	case parser.KindUnaryExpression:
-		value, ok := m.eval(node.Field("expression"), visiting, values)
+		value, ok := m.eval(node.Field("expression"), visiting, values, resolver)
 		if !ok {
 			return 0, false
 		}
@@ -43,26 +60,29 @@ func (m *Model) eval(node *parser.Node, visiting map[*Symbol]bool, values map[*S
 			return 0, false
 		}
 	case parser.KindBinaryExpression:
-		left, leftOK := m.eval(node.Field("left"), visiting, values)
-		right, rightOK := m.eval(node.Field("right"), visiting, values)
+		left, leftOK := m.eval(node.Field("left"), visiting, values, resolver)
+		right, rightOK := m.eval(node.Field("right"), visiting, values, resolver)
 		if !leftOK || !rightOK {
 			return 0, false
 		}
 		return evalBinary(node.Tok.Kind, left, right)
 	case parser.KindTernaryExpression:
-		condition, ok := m.eval(node.Field("condition"), visiting, values)
+		condition, ok := m.eval(node.Field("condition"), visiting, values, resolver)
 		if !ok {
 			return 0, false
 		}
 		if condition != 0 {
-			return m.eval(node.Field("consequence"), visiting, values)
+			return m.eval(node.Field("consequence"), visiting, values, resolver)
 		}
-		return m.eval(node.Field("alternative"), visiting, values)
+		return m.eval(node.Field("alternative"), visiting, values, resolver)
 	case parser.KindIdentifier:
 		if value, ok := builtinValue(m.Walk.Text(node)); ok && m.Resolve(node) == nil {
 			return value, true
 		}
 		symbol := m.Resolve(node)
+		if symbol == nil && resolver != nil {
+			return resolver(node)
+		}
 		if value, ok := values[symbol]; ok && symbol != nil {
 			return value, true
 		}
@@ -76,7 +96,7 @@ func (m *Model) eval(node *parser.Node, visiting map[*Symbol]bool, values map[*S
 			return 0, false
 		}
 		visiting[symbol] = true
-		value, ok := m.eval(symbol.Value, visiting, values)
+		value, ok := m.eval(symbol.Value, visiting, values, resolver)
 		delete(visiting, symbol)
 		return value, ok
 	default:

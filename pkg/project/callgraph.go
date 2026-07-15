@@ -50,15 +50,21 @@ func (m *Model) buildCallGraph() *CallGraph {
 			if caller.Node == nil {
 				continue
 			}
-			resolved, ok := m.Resolve(file, calleeNode)
-			if !ok {
-				continue
+			callees := m.FunctionVariants(file, calleeNode)
+			if len(callees) == 0 {
+				resolved, ok := m.Resolve(file, calleeNode)
+				if !ok {
+					continue
+				}
+				callee, ok := m.callDefinition(file, resolved)
+				if !ok {
+					continue
+				}
+				callees = []Declaration{callee}
 			}
-			callee, ok := m.callDefinition(file, resolved)
-			if !ok {
-				continue
+			for _, callee := range callees {
+				graph.Calls = append(graph.Calls, Call{Caller: caller, Callee: callee, File: file, Node: call})
 			}
-			graph.Calls = append(graph.Calls, Call{Caller: caller, Callee: callee, File: file, Node: call})
 		}
 	}
 	sort.SliceStable(graph.Calls, func(i, j int) bool {

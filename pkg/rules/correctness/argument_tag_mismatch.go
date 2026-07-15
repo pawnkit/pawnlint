@@ -160,7 +160,7 @@ func argumentExpressionTags(ctx *lint.Context, node *parser.Node) ([]string, boo
 			return nil, false
 		}
 	}
-	if tags := ctx.Semantic.ExpressionTags(node); len(tags) != 0 {
+	if tags := ctx.ExpressionTags(node); len(tags) != 0 {
 		return normalizeArgumentTags(tags), true
 	}
 	switch node.Kind {

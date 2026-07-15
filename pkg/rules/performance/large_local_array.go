@@ -71,7 +71,7 @@ func arrayCells(ctx *lint.Context, declaration *parser.Node) (int64, bool) {
 			sizeNode = sizeNode.Field("expression")
 			packed = true
 		}
-		size, ok := ctx.Semantic.Eval(sizeNode)
+		size, ok := ctx.Constant(sizeNode)
 		if !ok || size <= 0 {
 			return 0, false
 		}

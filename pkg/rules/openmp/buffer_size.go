@@ -80,6 +80,6 @@ func arrayCapacity(ctx *lint.Context, symbol *semantic.Symbol) (int64, bool) {
 	if count != 1 || dimension.Field("packed") != nil {
 		return 0, false
 	}
-	capacity, ok := ctx.Semantic.Eval(dimension.Field("size"))
+	capacity, ok := ctx.Constant(dimension.Field("size"))
 	return capacity, ok && capacity > 0
 }

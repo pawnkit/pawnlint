@@ -57,7 +57,7 @@ func infiniteLoopCondition(ctx *lint.Context, loop, condition *parser.Node) bool
 	if condition == nil {
 		return loop.Kind == parser.KindForStatement
 	}
-	if constant, ok := ctx.Semantic.Eval(condition); ok {
+	if constant, ok := ctx.Constant(condition); ok {
 		return constant != 0
 	}
 	symbols, ok := invariantConditionSymbols(ctx, condition)
@@ -84,7 +84,7 @@ func infiniteInitialValues(ctx *lint.Context, loop *parser.Node, symbols []*sema
 	values := make(map[*semantic.Symbol]int64, len(symbols))
 	for _, symbol := range symbols {
 		initializer := symbol.Decl.Field("initializer")
-		value, ok := ctx.Semantic.Eval(initializer)
+		value, ok := ctx.Constant(initializer)
 		if !ok || symbol.Decl.End > loop.Start {
 			return nil, false
 		}

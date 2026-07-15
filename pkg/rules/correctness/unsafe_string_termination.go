@@ -101,7 +101,7 @@ func unsafeStringTerminated(ctx *lint.Context, calls, assignments []*parser.Node
 		if left == nil || left.Kind != parser.KindSubscriptExpression || unsafeStringRootSymbol(ctx, left) != destination {
 			continue
 		}
-		if constant, known := ctx.Semantic.Eval(value); known && constant == 0 {
+		if constant, known := ctx.Constant(value); known && constant == 0 {
 			return true
 		}
 	}
