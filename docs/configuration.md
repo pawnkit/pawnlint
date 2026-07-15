@@ -168,7 +168,7 @@ Use JSON to describe plugin or project APIs:
   "callbacks": {
     "OnPluginEvent": {
       "returnTag": "bool",
-      "parameters": [{"name": "value"}]
+      "parameters": [{"name": "value", "taintSource": "player-input"}]
     }
   },
   "natives": {
@@ -182,7 +182,10 @@ Use JSON to describe plugin or project APIs:
       "parameters": [{"name": "handle", "tag": "PluginHandle"}]
     },
     "Plugin_Parse": {
-      "parameters": [{"name": "result", "reference": true, "output": true}]
+      "parameters": [{"name": "result", "reference": true, "output": true, "taintSource": "network-input"}]
+    },
+    "Plugin_Query": {
+      "parameters": [{"name": "query", "arrayRank": 1, "const": true, "taintSink": "sql"}]
     },
     "Plugin_Clamp": {
       "pure": true,
@@ -211,12 +214,13 @@ Use JSON to describe plugin or project APIs:
 }
 ```
 
-Function ownership contracts apply only to unambiguous project definitions.
-`release` marks an owned return value. Scalar input parameters may use
-`ownership` values `borrowed` or `transferred`. Native entries also support
-`pure` marks deterministic calls without observable effects. Native entries also
-support `deprecated`, `mustUse`, `requiresBefore`, `formatParameter`, and `buffers`.
-Invalid fields and relations are configuration errors.
+Function contracts apply only to unambiguous project definitions. `release`
+marks an owned return value, `ownership` accepts `borrowed` or `transferred`,
+and `pure` marks deterministic calls without observable effects. Parameter
+`taintSource` and `taintSink` labels use lowercase names such as `player-input`,
+`sql`, `command`, `file`, and `format`. Native entries also support `deprecated`,
+`mustUse`, `requiresBefore`, `formatParameter`, and `buffers`. Invalid fields and
+relations are configuration errors.
 
 ## Profiles
 

@@ -6,11 +6,12 @@
 - Per-file semantic analysis
 - Per-function control-flow analysis
 - Basic include-graph analysis
+- Preview interprocedural taint analysis for configured direct flows
 
 ## Not implemented yet
 
 - Operator-overload and advanced tag compatibility analysis
-- Interprocedural and alias-aware data-flow analysis
+- General interprocedural and alias-aware data-flow analysis
 - Complete cross-file constant, tag, and state resolution
 - Complete API constant and behavioral metadata
 
@@ -50,7 +51,7 @@
   revisions.
 - Checks direct-call arity and known open.mp deprecations.
 - Configured JSON metadata can add plugin callbacks, natives, constants,
-  buffer relations, deprecations, and resource release pairs.
+  buffers, deprecations, resource ownership, and taint contracts.
 - SA-MP targets: reports direct native calls and unresolved constant
   references declared only by open.mp modules. Constant values are not
   modeled.
@@ -72,6 +73,13 @@
   transferred scalar parameters when resolution is unambiguous.
 - Tracking stops once ownership may escape through user code, returns,
   aliases, or reference parameters.
+
+## Security analysis
+
+- Preview taint tracking follows configured callback inputs, callable outputs,
+  direct assignments, known buffer writers, and project parameters.
+- Unknown calls, aliases, macros, ambiguous resolution, and unsupported
+  transformations stop tracking.
 
 ## Project analysis
 

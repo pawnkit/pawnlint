@@ -75,6 +75,9 @@ func Merge(target string, custom ...*Metadata) (*Metadata, error) {
 			result.Constants[name] = constant
 		}
 	}
+	if err := result.validate("merged"); err != nil {
+		return nil, err
+	}
 	if err := validateRelations(result); err != nil {
 		return nil, err
 	}
@@ -105,7 +108,7 @@ func (m *Metadata) validate(path string) error {
 		}
 		callback.Name = name
 		m.Callbacks[name] = callback
-		validateParameters("callback "+name, callback.Parameters, &problems)
+		validateParameters("callback "+name, callback.Parameters, true, &problems)
 	}
 	for name, native := range m.Natives {
 		if strings.TrimSpace(name) == "" {
@@ -114,7 +117,7 @@ func (m *Metadata) validate(path string) error {
 		}
 		native.Name = name
 		m.Natives[name] = native
-		validateParameters("native "+name, native.Parameters, &problems)
+		validateParameters("native "+name, native.Parameters, false, &problems)
 		if native.FormatParameter < 0 || native.FormatParameter > len(native.Parameters) {
 			problems = append(problems, fmt.Sprintf("native %s has invalid formatParameter %d", name, native.FormatParameter))
 		}
@@ -148,7 +151,7 @@ func (m *Metadata) validate(path string) error {
 		}
 		function.Name = name
 		m.Functions[name] = function
-		validateParameters("function "+name, function.Parameters, &problems)
+		validateParameters("function "+name, function.Parameters, false, &problems)
 		if function.Pure && (function.Release != "" || mutableParameters(function.Parameters)) {
 			problems = append(problems, fmt.Sprintf("function %s has effects incompatible with pure", name))
 		}
@@ -279,7 +282,7 @@ func nativeRequirementCycle(natives map[string]Native, names []string) []string 
 	return nil
 }
 
-func validateParameters(owner string, parameters []Parameter, problems *[]string) {
+func validateParameters(owner string, parameters []Parameter, callback bool, problems *[]string) {
 	variadic := false
 	for index, parameter := range parameters {
 		position := fmt.Sprintf("%s parameter %d", owner, index+1)
@@ -305,11 +308,58 @@ func validateParameters(owner string, parameters []Parameter, problems *[]string
 		if parameter.Ownership != "" && (parameter.ArrayRank != 0 || parameter.Reference || parameter.Output || parameter.Variadic) {
 			*problems = append(*problems, position+" has ownership on a non-scalar input parameter")
 		}
+		if parameter.TaintSource != "" && !validTaintKind(parameter.TaintSource) {
+			*problems = append(*problems, position+" has invalid taintSource "+parameter.TaintSource)
+		}
+		if parameter.TaintSink != "" && !validTaintKind(parameter.TaintSink) {
+			*problems = append(*problems, position+" has invalid taintSink "+parameter.TaintSink)
+		}
+		if parameter.TaintSource != "" && parameter.TaintSink != "" {
+			*problems = append(*problems, position+" cannot be both a taint source and sink")
+		}
+		if callback {
+			if parameter.TaintSource != "" && (parameter.Output || parameter.Variadic) {
+				*problems = append(*problems, position+" has taintSource on a non-input callback parameter")
+			}
+			if parameter.TaintSink != "" {
+				*problems = append(*problems, position+" has taintSink on a callback parameter")
+			}
+		} else {
+			if parameter.TaintSource != "" && !parameter.Output {
+				*problems = append(*problems, position+" has taintSource without output")
+			}
+			if parameter.TaintSink != "" && (parameter.Output || parameter.Variadic) {
+				*problems = append(*problems, position+" has taintSink on a non-input parameter")
+			}
+		}
 		if variadic {
 			*problems = append(*problems, fmt.Sprintf("%s has a parameter after its variadic parameter", owner))
 		}
 		variadic = variadic || parameter.Variadic
 	}
+}
+
+func validTaintKind(value string) bool {
+	if value == "" || value[0] < 'a' || value[0] > 'z' {
+		return false
+	}
+	hyphen := false
+	for _, char := range value[1:] {
+		if char == '-' {
+			if hyphen {
+				return false
+			}
+			hyphen = true
+			continue
+		}
+		if char < 'a' || char > 'z' {
+			if char < '0' || char > '9' {
+				return false
+			}
+		}
+		hyphen = false
+	}
+	return !hyphen
 }
 
 func copyMap[K comparable, V any](source map[K]V) map[K]V {

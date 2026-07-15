@@ -6,6 +6,7 @@ import (
 	"github.com/pawnkit/pawnlint/pkg/rules/maintainability"
 	"github.com/pawnkit/pawnlint/pkg/rules/openmp"
 	"github.com/pawnkit/pawnlint/pkg/rules/performance"
+	"github.com/pawnkit/pawnlint/pkg/rules/security"
 	"github.com/pawnkit/pawnlint/pkg/rules/suspicious"
 )
 
@@ -115,6 +116,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(performance.OverwrittenCopy{})
 	reg.MustRegister(performance.RepeatedFormatWork{})
 	reg.MustRegister(performance.StringConcatenationLoop{})
+	reg.MustRegister(security.TaintedDataToSink{})
 	reg.MustRegister(suspicious.FloatEquality{})
 	reg.MustRegister(openmp.NonPublicCallback{})
 	reg.MustRegister(openmp.InvalidSentinelComparison{})

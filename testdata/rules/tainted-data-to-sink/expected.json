@@ -1,0 +1,49 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "tainted-data-to-sink",
+      "severity": "warning",
+      "message": "data from \"player-input\" reaches \"sql\" sink parameter of \"SQL_Query\"",
+      "startLine": 5,
+      "startCol": 15,
+      "endLine": 5,
+      "endCol": 20,
+      "suggestions": [
+        {
+          "description": "validate or sanitize the value before this call"
+        }
+      ]
+    },
+    {
+      "ruleId": "tainted-data-to-sink",
+      "severity": "warning",
+      "message": "data from \"network-input\" reaches \"command\" sink parameter of \"ExecuteCommand\"",
+      "startLine": 9,
+      "startCol": 20,
+      "endLine": 9,
+      "endCol": 27,
+      "suggestions": [
+        {
+          "description": "validate or sanitize the value before this call"
+        }
+      ]
+    },
+    {
+      "ruleId": "tainted-data-to-sink",
+      "severity": "warning",
+      "message": "data from \"player-input\" reaches \"file\" sink parameter of \"OpenPath\"",
+      "startLine": 15,
+      "startCol": 14,
+      "endLine": 15,
+      "endCol": 19,
+      "suggestions": [
+        {
+          "description": "validate or sanitize the value before this call"
+        }
+      ]
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

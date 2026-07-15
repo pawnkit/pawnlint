@@ -100,6 +100,7 @@ Rules are stable unless their page marks them as preview.
 | [`suspicious-comma-expression`](suspicious-comma-expression.md) | suspicious | warning | on | no | The comma operator chains sub-expressions; it is rarely intended in statements or returns |
 | [`suspicious-negation`](suspicious-negation.md) | suspicious | warning | on | no | '!' binds tighter than &/\|/^/==/!=, so !x & y is (!x) & y |
 | [`swapped-arguments`](swapped-arguments.md) | suspicious | warning | off | no | Reports native arguments whose tags match each other's parameters |
+| [`tainted-data-to-sink`](tainted-data-to-sink.md) | security | warning | off | no | Reports configured input reaching a configured sensitive sink |
 | [`target-constant-availability`](target-constant-availability.md) | openmp | error | off | no | Reports open.mp-only constants when targeting SA-MP |
 | [`target-native-availability`](target-native-availability.md) | openmp | error | off | no | Reports open.mp-only native calls when targeting SA-MP |
 | [`todo-policy`](todo-policy.md) | restriction | warning | off | no | Reports task comments that violate configured metadata policy |

@@ -7,17 +7,19 @@ type Callback struct {
 }
 
 type Parameter struct {
-	Name      string `json:"name,omitempty"`
-	Tag       string `json:"tag,omitempty"`
-	ArrayRank int    `json:"arrayRank,omitempty"`
-	Const     bool   `json:"const,omitempty"`
-	Reference bool   `json:"reference,omitempty"`
-	Output    bool   `json:"output,omitempty"`
-	Variadic  bool   `json:"variadic,omitempty"`
-	Default   bool   `json:"default,omitempty"`
-	Minimum   *int64 `json:"minimum,omitempty"`
-	Maximum   *int64 `json:"maximum,omitempty"`
-	Ownership string `json:"ownership,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Tag         string `json:"tag,omitempty"`
+	ArrayRank   int    `json:"arrayRank,omitempty"`
+	Const       bool   `json:"const,omitempty"`
+	Reference   bool   `json:"reference,omitempty"`
+	Output      bool   `json:"output,omitempty"`
+	Variadic    bool   `json:"variadic,omitempty"`
+	Default     bool   `json:"default,omitempty"`
+	Minimum     *int64 `json:"minimum,omitempty"`
+	Maximum     *int64 `json:"maximum,omitempty"`
+	Ownership   string `json:"ownership,omitempty"`
+	TaintSource string `json:"taintSource,omitempty"`
+	TaintSink   string `json:"taintSink,omitempty"`
 }
 
 type Native struct {

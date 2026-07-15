@@ -1,0 +1,43 @@
+{
+  "callbacks": {
+    "OnPluginInput": {
+      "parameters": [
+        {"name": "playerid"},
+        {"name": "text", "arrayRank": 1, "const": true, "taintSource": "player-input"}
+      ]
+    }
+  },
+  "natives": {
+    "SQL_Query": {
+      "parameters": [{"name": "query", "arrayRank": 1, "const": true, "taintSink": "sql"}]
+    },
+    "ExecuteCommand": {
+      "parameters": [{"name": "command", "arrayRank": 1, "const": true, "taintSink": "command"}]
+    },
+    "OpenPath": {
+      "parameters": [{"name": "path", "arrayRank": 1, "const": true, "taintSink": "file"}]
+    },
+    "Plugin_Read": {
+      "parameters": [
+        {"name": "output", "arrayRank": 1, "output": true, "taintSource": "network-input"},
+        {"name": "size"}
+      ]
+    },
+    "Plugin_Clean": {
+      "parameters": [
+        {"name": "output", "arrayRank": 1, "output": true},
+        {"name": "size"}
+      ]
+    },
+    "format": {
+      "parameters": [
+        {"name": "output", "arrayRank": 1},
+        {"name": "size"},
+        {"name": "format", "arrayRank": 1, "const": true},
+        {"variadic": true}
+      ],
+      "formatParameter": 3,
+      "buffers": [{"parameter": 1, "sizeParameter": 2}]
+    }
+  }
+}
