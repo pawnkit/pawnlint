@@ -94,6 +94,8 @@ func loopInvariantExpression(ctx *lint.Context, node, loop *parser.Node, symbols
 	switch node.Kind {
 	case parser.KindLiteral:
 		return true
+	case parser.KindSizeofExpression, parser.KindTagofExpression:
+		return true
 	case parser.KindIdentifier:
 		symbol := ctx.Semantic.Resolve(node)
 		if symbol == nil || symbol.Ambiguous {

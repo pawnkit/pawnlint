@@ -57,6 +57,7 @@ var curate = map[Profile]map[string]struct{}{
 		"statement-macro-hazard":   {},
 		"loop-invariant-call":      {},
 		"overwritten-copy":         {},
+		"repeated-format-work":     {},
 	},
 }
 

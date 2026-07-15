@@ -1,0 +1,49 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "repeated-format-work",
+      "severity": "warning",
+      "message": "format repeatedly formats unchanged values into \"output\" before the buffer is used",
+      "startLine": 6,
+      "startCol": 9,
+      "endLine": 6,
+      "endCol": 57,
+      "suggestions": [
+        {
+          "description": "format the buffer once at its point of use"
+        }
+      ]
+    },
+    {
+      "ruleId": "repeated-format-work",
+      "severity": "warning",
+      "message": "strformat repeatedly formats unchanged values into \"output\" before the buffer is used",
+      "startLine": 17,
+      "startCol": 9,
+      "endLine": 17,
+      "endCol": 57,
+      "suggestions": [
+        {
+          "description": "format the buffer once at its point of use"
+        }
+      ]
+    },
+    {
+      "ruleId": "repeated-format-work",
+      "severity": "warning",
+      "message": "Format repeatedly formats unchanged values into \"output\" before the buffer is used",
+      "startLine": 26,
+      "startCol": 9,
+      "endLine": 26,
+      "endCol": 47,
+      "suggestions": [
+        {
+          "description": "format the buffer once at its point of use"
+        }
+      ]
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

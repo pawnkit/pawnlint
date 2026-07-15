@@ -85,6 +85,7 @@ Rules are stable unless their page marks them as preview.
 | [`redundant-initialization`](redundant-initialization.md) | suspicious | warning | off | no | Reports local initial values overwritten before any read |
 | [`redundant-parentheses`](redundant-parentheses.md) | style | warning | off | yes | Reports expression parentheses that do not affect parsing |
 | [`redundant-tag`](redundant-tag.md) | maintainability | warning | off | yes | Reports tag overrides that repeat an expression's known tag |
+| [`repeated-format-work`](repeated-format-work.md) | performance | warning | off | no | Reports invariant formatting repeated before a buffer is used |
 | [`repeated-strlen-in-loop`](repeated-strlen-in-loop.md) | performance | warning | off | no | Reports loop conditions that repeatedly scan an unchanged local string |
 | [`required-call-order`](required-call-order.md) | correctness | error | off | no | Reports API calls missing a required earlier call |
 | [`restricted-syntax`](restricted-syntax.md) | restriction | warning | off | no | Reports configured language and dependency restrictions |
