@@ -1,0 +1,61 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "todo-policy",
+      "severity": "warning",
+      "message": "TODO must include an owner",
+      "startLine": 1,
+      "startCol": 4,
+      "endLine": 1,
+      "endCol": 8
+    },
+    {
+      "ruleId": "todo-policy",
+      "severity": "warning",
+      "message": "TODO owner \"charlie\" is not allowed",
+      "startLine": 2,
+      "startCol": 4,
+      "endLine": 2,
+      "endCol": 8
+    },
+    {
+      "ruleId": "todo-policy",
+      "severity": "warning",
+      "message": "TODO must include an ISO date",
+      "startLine": 3,
+      "startCol": 4,
+      "endLine": 3,
+      "endCol": 8
+    },
+    {
+      "ruleId": "todo-policy",
+      "severity": "warning",
+      "message": "TODO has invalid date \"2026-99-99\"",
+      "startLine": 4,
+      "startCol": 4,
+      "endLine": 4,
+      "endCol": 8
+    },
+    {
+      "ruleId": "todo-policy",
+      "severity": "warning",
+      "message": "TODO must include an issue matching \"[A-Z]+-[0-9]+\"",
+      "startLine": 5,
+      "startCol": 4,
+      "endLine": 5,
+      "endCol": 8
+    },
+    {
+      "ruleId": "todo-policy",
+      "severity": "warning",
+      "message": "FIXME date \"2000-01-01\" exceeds the maximum age of 30 days",
+      "startLine": 6,
+      "startCol": 4,
+      "endLine": 6,
+      "endCol": 9
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

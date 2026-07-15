@@ -299,6 +299,21 @@ goto = true
 Restricted calls require definite targets. Include restrictions match requested
 paths, and inactive or uncertain syntax is skipped.
 
+```toml
+[rules.todo-policy]
+severity = "warning"
+tags = ["TODO", "FIXME"]
+allowed-owners = ["alice", "team-core"]
+require-owner = true
+require-date = true
+require-issue = true
+issue-pattern = "[A-Z]+-[0-9]+"
+maximum-age-days = 90
+```
+
+Task metadata uses `TODO(owner, YYYY-MM-DD, ISSUE-123): description` at the
+start of a comment line.
+
 ## Precedence
 
 Highest priority first:

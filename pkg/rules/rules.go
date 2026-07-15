@@ -30,6 +30,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(maintainability.BooleanName{})
 	reg.MustRegister(maintainability.RestrictedSyntax{})
 	reg.MustRegister(maintainability.SuppressionReason{})
+	reg.MustRegister(maintainability.TodoPolicy{})
 	reg.MustRegister(correctness.DivisionByZero{})
 	reg.MustRegister(correctness.InvalidShiftCount{})
 	reg.MustRegister(correctness.InvalidArraySize{})

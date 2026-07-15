@@ -1,0 +1,9 @@
+{
+  "tags": ["TODO", "FIXME"],
+  "allowed-owners": ["alice", "bob"],
+  "require-owner": true,
+  "require-date": true,
+  "require-issue": true,
+  "issue-pattern": "[A-Z]+-[0-9]+",
+  "maximum-age-days": 30
+}
