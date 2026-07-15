@@ -1,0 +1,43 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "macro-repeated-parameter",
+      "severity": "warning",
+      "message": "parameter \"x\" is evaluated 2 times by macro \"DOUBLE\"",
+      "startLine": 1,
+      "startCol": 16,
+      "endLine": 1,
+      "endCol": 17
+    },
+    {
+      "ruleId": "macro-repeated-parameter",
+      "severity": "warning",
+      "message": "parameter \"a\" is evaluated 2 times by macro \"MAXIMUM\"",
+      "startLine": 2,
+      "startCol": 17,
+      "endLine": 2,
+      "endCol": 18
+    },
+    {
+      "ruleId": "macro-repeated-parameter",
+      "severity": "warning",
+      "message": "parameter \"b\" is evaluated 2 times by macro \"MAXIMUM\"",
+      "startLine": 2,
+      "startCol": 20,
+      "endLine": 2,
+      "endCol": 21
+    },
+    {
+      "ruleId": "macro-repeated-parameter",
+      "severity": "warning",
+      "message": "parameter \"%0\" is evaluated 2 times by macro \"APPLY\"",
+      "startLine": 3,
+      "startCol": 15,
+      "endLine": 3,
+      "endCol": 17
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
