@@ -20,6 +20,7 @@ type runTimings struct {
 	mu          sync.Mutex
 	started     time.Time
 	parse       time.Duration
+	preprocess  time.Duration
 	semantic    time.Duration
 	controlFlow time.Duration
 	project     time.Duration
@@ -61,6 +62,8 @@ func (t *runTimings) observeProject(event project.TimingEvent) {
 	switch event.Stage {
 	case project.TimingParse:
 		t.parse += event.Duration
+	case project.TimingPreprocess:
+		t.preprocess += event.Duration
 	case project.TimingSemantic:
 		t.semantic += event.Duration
 	}
@@ -90,6 +93,7 @@ func (t *runTimings) write(w io.Writer) {
 	}
 	t.mu.Lock()
 	parse := t.parse
+	preprocess := t.preprocess
 	semantic := t.semantic
 	controlFlow := t.controlFlow
 	projectDuration := t.project
@@ -104,6 +108,7 @@ func (t *runTimings) write(w io.Writer) {
 	t.mu.Unlock()
 	_, _ = fmt.Fprintln(w, "pawnlint timings:")
 	_, _ = fmt.Fprintf(w, "  %-16s %s\n", "parse", timingDuration(parse))
+	_, _ = fmt.Fprintf(w, "  %-16s %s\n", "preprocess", timingDuration(preprocess))
 	_, _ = fmt.Fprintf(w, "  %-16s %s\n", "semantic", timingDuration(semantic))
 	_, _ = fmt.Fprintf(w, "  %-16s %s\n", "control-flow", timingDuration(controlFlow))
 	_, _ = fmt.Fprintf(w, "  %-16s %s\n", "project", timingDuration(projectDuration))

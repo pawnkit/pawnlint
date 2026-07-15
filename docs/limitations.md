@@ -33,12 +33,17 @@ it does not cache parser or semantic models.
 
 ## Preprocessor
 
-- Macros are not expanded.
+- Project files expose separate expanded CST and semantic views for active
+  object-like and function-like macros.
+- Nested macro tokens retain definition and invocation origins across includes.
+- Stringizing, token pasting, conditional macro bodies, and parent macros used
+  inside included files remain unexpanded.
 - Literal integer conditions and `defined(NAME)` checks are evaluated.
 - Known names include configured symbols, compiler predefines, active defines,
   and definitions exported by earlier includes.
 - Builds treat absent names as undefined; paths and variants treat them as uncertain.
 - Rules skip inactive and uncertain branches.
+- Rules use expanded views only when their diagnostics can map safely to source.
 
 ## Semantic analysis
 

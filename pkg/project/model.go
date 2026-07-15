@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pawnkit/pawn-parser"
+	"github.com/pawnkit/pawnlint/internal/preprocess"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
 )
@@ -27,8 +28,9 @@ type Options struct {
 type TimingStage string
 
 const (
-	TimingParse    TimingStage = "parse"
-	TimingSemantic TimingStage = "semantic"
+	TimingParse      TimingStage = "parse"
+	TimingPreprocess TimingStage = "preprocess"
+	TimingSemantic   TimingStage = "semantic"
 )
 
 type TimingEvent struct {
@@ -37,20 +39,27 @@ type TimingEvent struct {
 }
 
 type File struct {
-	Path      string
-	Source    []byte
-	Parsed    *parser.File
-	Walk      *walk.Model
-	Semantic  *semantic.Model
-	Includes  []*Include
-	Provided  bool
-	canonical string
-	instance  string
-	defines   []string
-	final     []string
-	resolving bool
-	resolved  bool
-	complete  bool
+	Path              string
+	Source            []byte
+	Parsed            *parser.File
+	Walk              *walk.Model
+	Semantic          *semantic.Model
+	ExpandedSource    []byte
+	ExpandedParsed    *parser.File
+	ExpandedWalk      *walk.Model
+	ExpandedSemantic  *semantic.Model
+	ExpansionComplete bool
+	Includes          []*Include
+	Provided          bool
+	canonical         string
+	instance          string
+	defines           []string
+	final             []string
+	resolving         bool
+	resolved          bool
+	complete          bool
+	sourceID          uint32
+	expansionState    *preprocess.State
 }
 
 type Include struct {
@@ -115,6 +124,7 @@ type Model struct {
 	resolved          map[*File]map[*parser.Node]Declaration
 	ambiguous         map[*File]map[*parser.Node]bool
 	effects           map[string]FunctionEffects
+	sourceFiles       map[uint32]*File
 	options           Options
 }
 
@@ -148,6 +158,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 		references:   make(map[string][]Reference),
 		resolved:     make(map[*File]map[*parser.Node]Declaration),
 		ambiguous:    make(map[*File]map[*parser.Node]bool),
+		sourceFiles:  make(map[uint32]*File),
 		options:      options,
 	}
 	for _, source := range sources {

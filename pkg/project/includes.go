@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/pawnkit/pawn-parser"
+	"github.com/pawnkit/pawnlint/internal/preprocess"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
 )
@@ -49,8 +50,9 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines []str
 		display = canonical
 	}
 	tree := walk.NewWithDefineContext(display, parsed, defines, nil, m.options.DefinesComplete)
-	file := &File{Path: display, Source: physical.source, Parsed: parsed, Walk: tree, Provided: provided, canonical: canonical, instance: instance, defines: normalizeDefines(defines), complete: m.options.DefinesComplete}
+	file := &File{Path: display, Source: physical.source, Parsed: parsed, Walk: tree, Provided: provided, canonical: canonical, instance: instance, defines: normalizeDefines(defines), complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1)}
 	m.Files = append(m.Files, file)
+	m.sourceFiles[file.sourceID] = file
 	m.byContext[instance] = file
 	if m.byCanonical[canonical] == nil || provided {
 		m.byCanonical[canonical] = file
@@ -113,6 +115,35 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		started := time.Now()
 		file.Semantic = semantic.Build(file.Parsed, file.Walk)
 		m.observe(TimingEvent{Stage: TimingSemantic, Duration: time.Since(started)})
+	}
+	started := time.Now()
+	imports := make(map[int]*preprocess.State)
+	for _, include := range file.Includes {
+		if include.Resolved != nil && !include.Uncertain && include.Resolved.expansionState != nil {
+			imports[include.Node.Start] = include.Resolved.expansionState
+		}
+	}
+	expanded, expansionState := preprocess.ExpandWithState(file.Parsed, file.Walk, file.sourceID, nil, imports)
+	file.expansionState = expansionState
+	file.ExpansionComplete = expanded.Complete
+	for _, include := range file.Includes {
+		if include.Uncertain || include.Resolved != nil && !include.Resolved.ExpansionComplete {
+			file.ExpansionComplete = false
+		}
+	}
+	if !expanded.Changed {
+		file.ExpandedSource = file.Source
+		file.ExpandedParsed = file.Parsed
+		file.ExpandedWalk = file.Walk
+		file.ExpandedSemantic = file.Semantic
+	} else {
+		file.ExpandedSource = expanded.Source
+		file.ExpandedParsed = expanded.Parsed
+		file.ExpandedWalk = walk.NewWithDefineContext(file.Path, expanded.Parsed, file.defines, nil, file.complete)
+		file.ExpandedSemantic = semantic.Build(expanded.Parsed, file.ExpandedWalk)
+	}
+	if m.options.ObserveTiming != nil {
+		m.observe(TimingEvent{Stage: TimingPreprocess, Duration: time.Since(started)})
 	}
 	file.resolved = true
 	return nil

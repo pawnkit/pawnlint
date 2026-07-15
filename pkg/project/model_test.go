@@ -60,7 +60,7 @@ func TestBuildReportsTimings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wanted := map[TimingStage]bool{TimingParse: false, TimingSemantic: false}
+	wanted := map[TimingStage]bool{TimingParse: false, TimingPreprocess: false, TimingSemantic: false}
 	for _, event := range events {
 		if event.Duration < 0 {
 			t.Fatalf("negative duration: %+v", event)
@@ -71,6 +71,62 @@ func TestBuildReportsTimings(t *testing.T) {
 		if !found {
 			t.Errorf("missing %s event: %+v", stage, events)
 		}
+	}
+}
+
+func TestBuildCreatesExpandedMacroView(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	source := []byte("#define DOUBLE(%0) ((%0) + (%0))\nnew value = DOUBLE(3);\n")
+	model, err := Build([]Source{{Path: path, Content: source}}, Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := model.File(path)
+	if file == nil || !file.ExpansionComplete || file.ExpandedParsed == nil || file.ExpandedWalk == nil || file.ExpandedSemantic == nil {
+		t.Fatalf("expanded file = %#v", file)
+	}
+	declarators := file.ExpandedWalk.OfKind(parser.KindVariableDeclarator)
+	if len(declarators) != 1 {
+		t.Fatalf("declarators = %d", len(declarators))
+	}
+	if value, ok := file.ExpandedSemantic.Eval(declarators[0].Field("initializer")); !ok || value != 6 {
+		t.Fatalf("value = %d, %v", value, ok)
+	}
+}
+
+func TestBuildExpandsMacroExportedByInclude(t *testing.T) {
+	dir := t.TempDir()
+	includePath := filepath.Join(dir, "macros.inc")
+	mainPath := filepath.Join(dir, "main.pwn")
+	if err := os.WriteFile(includePath, []byte("#define DOUBLE(%0) ((%0) + (%0))\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	source := []byte("#include \"macros.inc\"\nnew value = DOUBLE(4);\n")
+	model, err := Build([]Source{{Path: mainPath, Content: source}}, Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := model.File(mainPath)
+	declarators := file.ExpandedWalk.OfKind(parser.KindVariableDeclarator)
+	if !file.ExpansionComplete || len(declarators) != 1 {
+		t.Fatalf("complete=%v declarators=%d source=%s", file.ExpansionComplete, len(declarators), file.ExpandedSource)
+	}
+	if value, ok := file.ExpandedSemantic.Eval(declarators[0].Field("initializer")); !ok || value != 8 {
+		t.Fatalf("value = %d, %v", value, ok)
+	}
+	origins := model.ExpansionOrigins(file, declarators[0].Field("initializer"))
+	files := make(map[string]bool)
+	for _, origin := range origins {
+		if origin.File != nil {
+			files[origin.File.Path] = true
+		}
+		if origin.Macro != "DOUBLE" {
+			t.Fatalf("origin = %#v", origin)
+		}
+	}
+	if !files[includePath] || !files[mainPath] {
+		t.Fatalf("origin files = %#v", files)
 	}
 }
 
