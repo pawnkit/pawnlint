@@ -40,6 +40,8 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(openmp.LegacyInclude{})
 	reg.MustRegister(openmp.NativeArgumentCount{})
 	reg.MustRegister(openmp.IgnoredReturnValue{})
+	reg.MustRegister(openmp.ArgumentValueRange{})
+	reg.MustRegister(openmp.SwappedArguments{})
 	reg.MustRegister(openmp.DeprecatedNative{})
 	reg.MustRegister(openmp.FormatArgumentCount{})
 	reg.MustRegister(openmp.BufferSize{})

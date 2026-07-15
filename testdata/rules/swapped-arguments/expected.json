@@ -1,0 +1,15 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "swapped-arguments",
+      "severity": "warning",
+      "message": "arguments 1 and 2 to \"Attach\" appear to be swapped",
+      "startLine": 6,
+      "startCol": 12,
+      "endLine": 6,
+      "endCol": 27
+    }
+  ],
+  "valid.pwn": []
+}

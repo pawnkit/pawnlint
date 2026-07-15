@@ -1,0 +1,33 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "argument-value-range",
+      "severity": "error",
+      "message": "argument \"level\" to \"SetLevel\" must be between 0 and 10, but is 11",
+      "startLine": 6,
+      "startCol": 14,
+      "endLine": 6,
+      "endCol": 19
+    },
+    {
+      "ruleId": "argument-value-range",
+      "severity": "error",
+      "message": "argument \"value\" to \"SetFloor\" must be at least -5, but is -6",
+      "startLine": 7,
+      "startCol": 14,
+      "endLine": 7,
+      "endCol": 16
+    },
+    {
+      "ruleId": "argument-value-range",
+      "severity": "error",
+      "message": "argument 1 to \"SetCeiling\" must be at most 100, but is 101",
+      "startLine": 8,
+      "startCol": 16,
+      "endLine": 8,
+      "endCol": 19
+    }
+  ],
+  "valid.pwn": []
+}

@@ -15,6 +15,8 @@ type Parameter struct {
 	Output    bool   `json:"output,omitempty"`
 	Variadic  bool   `json:"variadic,omitempty"`
 	Default   bool   `json:"default,omitempty"`
+	Minimum   *int64 `json:"minimum,omitempty"`
+	Maximum   *int64 `json:"maximum,omitempty"`
 }
 
 type Native struct {

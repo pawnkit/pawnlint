@@ -137,8 +137,22 @@ func (m *Metadata) validate(path string) error {
 func validateParameters(owner string, parameters []Parameter, problems *[]string) {
 	variadic := false
 	for index, parameter := range parameters {
+		position := fmt.Sprintf("%s parameter %d", owner, index+1)
 		if parameter.ArrayRank < 0 {
 			*problems = append(*problems, fmt.Sprintf("%s parameter %d has negative arrayRank", owner, index+1))
+		}
+		if parameter.Minimum != nil || parameter.Maximum != nil {
+			if parameter.ArrayRank != 0 || parameter.Output || parameter.Variadic {
+				*problems = append(*problems, position+" has value bounds on a non-scalar or non-input parameter")
+			}
+			if parameter.Minimum != nil && parameter.Maximum != nil && *parameter.Minimum > *parameter.Maximum {
+				*problems = append(*problems, position+" has minimum greater than maximum")
+			}
+			minimumOutside := parameter.Minimum != nil && (*parameter.Minimum < -2147483648 || *parameter.Minimum > 2147483647)
+			maximumOutside := parameter.Maximum != nil && (*parameter.Maximum < -2147483648 || *parameter.Maximum > 2147483647)
+			if minimumOutside || maximumOutside {
+				*problems = append(*problems, position+" has value bounds outside the Pawn cell range")
+			}
 		}
 		if variadic {
 			*problems = append(*problems, fmt.Sprintf("%s has a parameter after its variadic parameter", owner))

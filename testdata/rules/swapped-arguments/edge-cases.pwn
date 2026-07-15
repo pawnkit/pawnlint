@@ -1,0 +1,7 @@
+native Attach(PlayerHandle:player, VehicleHandle:vehicle, mode);
+
+main() {
+    new PlayerHandle:player;
+    new VehicleHandle:vehicle;
+    Attach(.vehicle = vehicle, .player = player, .mode = 0);
+}

@@ -1,0 +1,11 @@
+{
+  "natives": {
+    "Attach": {
+      "parameters": [
+        {"name": "player", "tag": "PlayerHandle"},
+        {"name": "vehicle", "tag": "VehicleHandle"},
+        {"name": "mode"}
+      ]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "natives": {
+    "SetLevel": {"parameters": [{"name": "level", "minimum": 0, "maximum": 10}]},
+    "SetFloor": {"parameters": [{"name": "value", "minimum": -5}]},
+    "SetCeiling": {"parameters": [{"maximum": 100}]}
+  }
+}

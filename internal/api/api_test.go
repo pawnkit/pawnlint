@@ -69,7 +69,7 @@ func TestLoadAndMergeUserMetadata(t *testing.T) {
   "callbacks": {"OnPluginEvent": {"returnTag": "bool", "parameters": [{"name": "value"}]}},
   "natives": {
     "Plugin_Open": {"returnTag": "PluginHandle", "release": "Plugin_Close", "mustUse": true},
-    "Plugin_Close": {"parameters": [{"name": "handle", "tag": "PluginHandle"}]}
+    "Plugin_Close": {"parameters": [{"name": "handle", "tag": "PluginHandle", "minimum": 1, "maximum": 8}]}
   },
   "constants": {"PLUGIN_LIMIT": {}}
 }`
@@ -84,8 +84,28 @@ func TestLoadAndMergeUserMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if metadata.Natives["Plugin_Open"].Release != "Plugin_Close" || !metadata.Natives["Plugin_Open"].MustUse || metadata.Callbacks["OnPluginEvent"].Name != "OnPluginEvent" || metadata.Constants["PLUGIN_LIMIT"].Name != "PLUGIN_LIMIT" {
+	closeParameter := metadata.Natives["Plugin_Close"].Parameters[0]
+	if metadata.Natives["Plugin_Open"].Release != "Plugin_Close" || !metadata.Natives["Plugin_Open"].MustUse || closeParameter.Minimum == nil || *closeParameter.Minimum != 1 || closeParameter.Maximum == nil || *closeParameter.Maximum != 8 || metadata.Callbacks["OnPluginEvent"].Name != "OnPluginEvent" || metadata.Constants["PLUGIN_LIMIT"].Name != "PLUGIN_LIMIT" {
 		t.Fatalf("metadata = %#v", metadata)
+	}
+}
+
+func TestLoadUserMetadataRejectsInvalidValueBounds(t *testing.T) {
+	for _, source := range []string{
+		`{"natives":{"Plugin":{"parameters":[{"minimum":2,"maximum":1}]}}}`,
+		`{"natives":{"Plugin":{"parameters":[{"arrayRank":1,"minimum":0}]}}}`,
+		`{"natives":{"Plugin":{"parameters":[{"output":true,"maximum":1}]}}}`,
+		`{"natives":{"Plugin":{"parameters":[{"variadic":true,"minimum":0}]}}}`,
+		`{"natives":{"Plugin":{"parameters":[{"minimum":-2147483649}]}}}`,
+		`{"natives":{"Plugin":{"parameters":[{"maximum":2147483648}]}}}`,
+	} {
+		path := filepath.Join(t.TempDir(), "api.json")
+		if err := os.WriteFile(path, []byte(source), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Load(path); err == nil {
+			t.Fatalf("invalid value bounds accepted: %s", source)
+		}
 	}
 }
 
