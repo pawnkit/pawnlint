@@ -1,0 +1,7 @@
+{
+  "units": [
+    {"name": "milliseconds", "tags": ["Milliseconds", "DurationMs"]},
+    {"name": "seconds", "tags": ["Seconds"]},
+    {"name": "metres", "tags": ["Metres"]}
+  ]
+}

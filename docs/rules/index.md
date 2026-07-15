@@ -101,6 +101,7 @@ Rules are stable unless their page marks them as preview.
 | [`unconditional-recursion`](unconditional-recursion.md) | correctness | warning | on | no | Reports recursive cycles with no terminating path |
 | [`unescaped-sql-format`](unescaped-sql-format.md) | correctness | warning | off | no | Reports mysql_format calls using %s for a non-literal string argument |
 | [`unimplemented-function`](unimplemented-function.md) | openmp | error | off | no | Reports legacy API calls intentionally not implemented by open.mp |
+| [`unit-mismatch`](unit-mismatch.md) | correctness | warning | off | no | Reports operations between incompatible configured unit tags |
 | [`unknown-suppression`](unknown-suppression.md) | maintainability | warning | on | no | Reports unknown, malformed, or unused pawnlint suppression directives |
 | [`unparenthesized-macro`](unparenthesized-macro.md) | correctness | warning | on | yes | Reports function-like macros whose replacement list or parameters lack protective parentheses |
 | [`unreachable-code`](unreachable-code.md) | correctness | warning | on | no | Reports statements that cannot be executed |

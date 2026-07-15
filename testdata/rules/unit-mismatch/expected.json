@@ -1,0 +1,79 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "unit-mismatch",
+      "severity": "warning",
+      "message": "unit tags \"Milliseconds\" and \"Seconds\" are incompatible",
+      "startLine": 3,
+      "startCol": 36,
+      "endLine": 3,
+      "endCol": 43
+    },
+    {
+      "ruleId": "unit-mismatch",
+      "severity": "warning",
+      "message": "unit tags \"Milliseconds\" and \"Seconds\" are incompatible",
+      "startLine": 5,
+      "startCol": 5,
+      "endLine": 5,
+      "endCol": 23
+    },
+    {
+      "ruleId": "unit-mismatch",
+      "severity": "warning",
+      "message": "unit tags \"Milliseconds\" and \"Seconds\" are incompatible",
+      "startLine": 6,
+      "startCol": 5,
+      "endLine": 6,
+      "endCol": 24
+    },
+    {
+      "ruleId": "unit-mismatch",
+      "severity": "warning",
+      "message": "unit tags \"Milliseconds\" and \"Seconds\" are incompatible",
+      "startLine": 7,
+      "startCol": 9,
+      "endLine": 7,
+      "endCol": 27
+    },
+    {
+      "ruleId": "unit-mismatch",
+      "severity": "warning",
+      "message": "unit tags \"Milliseconds\" and \"Seconds\" are incompatible",
+      "startLine": 7,
+      "startCol": 36,
+      "endLine": 7,
+      "endCol": 43
+    },
+    {
+      "ruleId": "unit-mismatch",
+      "severity": "warning",
+      "message": "unit tags \"Milliseconds\" and \"Seconds\" are incompatible",
+      "startLine": 8,
+      "startCol": 16,
+      "endLine": 8,
+      "endCol": 34
+    },
+    {
+      "ruleId": "unit-mismatch",
+      "severity": "warning",
+      "message": "unit tags \"Milliseconds\" and \"Seconds\" are incompatible",
+      "startLine": 9,
+      "startCol": 16,
+      "endLine": 9,
+      "endCol": 41
+    },
+    {
+      "ruleId": "unit-mismatch",
+      "severity": "warning",
+      "message": "unit tags \"Milliseconds\" and \"Seconds\" are incompatible",
+      "startLine": 10,
+      "startCol": 12,
+      "endLine": 10,
+      "endCol": 19
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

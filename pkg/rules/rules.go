@@ -59,6 +59,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(correctness.ConstantOverflow{})
 	reg.MustRegister(correctness.NarrowingConversion{})
 	reg.MustRegister(correctness.SignednessMismatch{})
+	reg.MustRegister(correctness.UnitMismatch{})
 	reg.MustRegister(correctness.DuplicateSwitchCase{})
 	reg.MustRegister(correctness.OutOfBoundsConstantIndex{})
 	reg.MustRegister(suspicious.DuplicateCondition{})
