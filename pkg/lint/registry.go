@@ -32,7 +32,7 @@ var curate = map[Profile]map[string]struct{}{
 	ProfileStrict: {
 		"unused-local": {}, "unused-parameter": {}, "unused-function": {}, "unused-global": {},
 		"shadowed-variable": {}, "unused-label": {}, "constant-condition": {}, "duplicate-condition": {},
-		"redundant-boolean-comparison": {}, "identical-branches": {}, "dead-write": {}, "possibly-uninitialized": {},
+		"redundant-boolean-comparison": {}, "identical-branches": {}, "dead-write": {}, "redundant-initialization": {}, "possibly-uninitialized": {},
 		"discarded-resource-handle": {}, "mismatched-resource-handle": {}, "unreleased-resource-handle": {},
 		"overwritten-resource-handle": {}, "recursive-call": {}, "large-local-array": {}, "repeated-strlen-in-loop": {},
 		"callback-signature": {}, "misspelled-callback": {}, "unimplemented-function": {}, "deprecated-function": {},

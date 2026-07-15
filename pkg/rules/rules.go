@@ -56,6 +56,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(correctness.MissingReturnValue{})
 	reg.MustRegister(suspicious.IdenticalBranches{})
 	reg.MustRegister(suspicious.DeadWrite{})
+	reg.MustRegister(suspicious.RedundantInitialization{})
 	reg.MustRegister(correctness.PossiblyUninitialized{})
 	reg.MustRegister(correctness.DuplicateFunctionDefinition{})
 	reg.MustRegister(correctness.DuplicateGlobalDefinition{})

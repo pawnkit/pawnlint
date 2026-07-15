@@ -1,0 +1,42 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "redundant-initialization",
+      "severity": "warning",
+      "message": "initial value of \"value\" is overwritten before it is read",
+      "startLine": 13,
+      "startCol": 14,
+      "endLine": 13,
+      "endCol": 15
+    },
+    {
+      "ruleId": "redundant-initialization",
+      "severity": "warning",
+      "message": "initial value of \"value\" is overwritten before it is read",
+      "startLine": 20,
+      "startCol": 14,
+      "endLine": 20,
+      "endCol": 16
+    },
+    {
+      "ruleId": "redundant-initialization",
+      "severity": "warning",
+      "message": "initial value of \"value\" is overwritten before it is read",
+      "startLine": 34,
+      "startCol": 14,
+      "endLine": 34,
+      "endCol": 16
+    },
+    {
+      "ruleId": "redundant-initialization",
+      "severity": "warning",
+      "message": "initial value of \"value\" is overwritten before it is read",
+      "startLine": 45,
+      "startCol": 14,
+      "endLine": 45,
+      "endCol": 16
+    }
+  ],
+  "valid.pwn": []
+}

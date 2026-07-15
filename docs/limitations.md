@@ -86,6 +86,8 @@
 
 - Tracks reachability, explicit assignment, and constant values for scalar
   non-static locals.
+- Redundant initialization requires a pure scalar initializer and direct
+  standalone overwrites.
 - A value stays known only when every incoming path agrees.
 - Calls invalidate local arguments when reference behavior is unknown.
 
