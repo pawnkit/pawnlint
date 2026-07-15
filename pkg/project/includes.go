@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawnlint/internal/semantic"
@@ -28,7 +29,15 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines []str
 	}
 	physical := m.physical[canonical]
 	if physical == nil {
-		physical = &physicalFile{source: source, parsed: parser.Parse(source)}
+		var parsed *parser.File
+		if m.options.ObserveTiming == nil {
+			parsed = parser.Parse(source)
+		} else {
+			started := time.Now()
+			parsed = parser.Parse(source)
+			m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
+		}
+		physical = &physicalFile{source: source, parsed: parsed}
 		m.physical[canonical] = physical
 	}
 	parsed := physical.parsed
@@ -98,9 +107,21 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		file.rebuildWalk(snapshots)
 	}
 	file.final = file.Walk.KnownDefinesAt(len(file.Source) + 1)
-	file.Semantic = semantic.Build(file.Parsed, file.Walk)
+	if m.options.ObserveTiming == nil {
+		file.Semantic = semantic.Build(file.Parsed, file.Walk)
+	} else {
+		started := time.Now()
+		file.Semantic = semantic.Build(file.Parsed, file.Walk)
+		m.observe(TimingEvent{Stage: TimingSemantic, Duration: time.Since(started)})
+	}
 	file.resolved = true
 	return nil
+}
+
+func (m *Model) observe(event TimingEvent) {
+	if m.options.ObserveTiming != nil {
+		m.options.ObserveTiming(event)
+	}
 }
 
 func (m *Model) resolveInclude(from *File, path string, defines []string) (*File, []string, error) {

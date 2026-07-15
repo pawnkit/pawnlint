@@ -66,6 +66,23 @@ func TestCLIBadColor(t *testing.T) {
 	}
 }
 
+func TestCLITimings(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	if err := os.WriteFile(path, []byte("main() { if (value); { return; } }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, stderr, code := runCLI(t, []string{"--timings", "--format", "compact", path}, "")
+	if code != 1 || !strings.Contains(out, "empty-condition-body") {
+		t.Fatalf("code=%d output=%q", code, out)
+	}
+	for _, expected := range []string{"pawnlint timings:", "parse", "semantic", "control-flow", "project", "rules", "output", "total", "pawnlint rule timings:", "empty-condition-body"} {
+		if !strings.Contains(stderr, expected) {
+			t.Errorf("stderr missing %q: %q", expected, stderr)
+		}
+	}
+}
+
 func TestCLIBaselineGenerateApplyAndPrune(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "pawnlint.toml")

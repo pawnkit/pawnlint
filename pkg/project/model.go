@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawnlint/internal/semantic"
@@ -20,6 +21,19 @@ type Options struct {
 	IncludePaths    []string
 	Defines         []string
 	DefinesComplete bool
+	ObserveTiming   func(TimingEvent)
+}
+
+type TimingStage string
+
+const (
+	TimingParse    TimingStage = "parse"
+	TimingSemantic TimingStage = "semantic"
+)
+
+type TimingEvent struct {
+	Stage    TimingStage
+	Duration time.Duration
 }
 
 type File struct {

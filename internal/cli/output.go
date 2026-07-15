@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/pawnkit/pawnlint/internal/baseline"
 	"github.com/pawnkit/pawnlint/internal/config"
@@ -12,7 +13,11 @@ import (
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 )
 
-func emit(opts *cli, stdout, stderr io.Writer, diags []diagnostic.Diagnostic, sources output.SourceSet, r *config.Resolved) int {
+func emit(opts *cli, stdout, stderr io.Writer, diags []diagnostic.Diagnostic, sources output.SourceSet, r *config.Resolved, timings *runTimings) int {
+	var started time.Time
+	if timings != nil {
+		started = time.Now()
+	}
 	baselinePath, projectDir := resolvedBaselinePath(opts, r)
 	if baselinePath != "" {
 		if opts.GenerateBaseline {
@@ -49,6 +54,10 @@ func emit(opts *cli, stdout, stderr io.Writer, diags []diagnostic.Diagnostic, so
 	if err := output.Write(stdout, output.Format(opts.Format), diags, sources, useColor); err != nil {
 		_, _ = fmt.Fprintf(stderr, "pawnlint: %v\n", err)
 		return exitInternal
+	}
+	if timings != nil {
+		timings.addOutput(time.Since(started))
+		timings.write(stderr)
 	}
 	if fail {
 		return exitFindings

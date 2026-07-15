@@ -45,6 +45,12 @@ Set `baseline` to suppress matching existing findings. Run `pawnlint
 paths...` to remove resolved entries. `--baseline <path>` overrides the
 configured path. Parser and internal errors are never baselined.
 
+## Timings
+
+Run `pawnlint --timings paths...` to print parsing, semantic, control-flow,
+project, rule, output, and total durations to stderr. Project durations include
+parsing and semantics; rule durations are cumulative across concurrent files.
+
 ## Builds
 
 `builds` lets a build system provide compiler contexts, then invoke `pawnlint`

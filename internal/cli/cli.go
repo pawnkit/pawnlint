@@ -42,6 +42,7 @@ type cli struct {
 	Baseline         string           `help:"baseline file path" predictor:"path"`
 	GenerateBaseline bool             `help:"replace the baseline with current findings"`
 	PruneBaseline    bool             `help:"remove baseline entries without matching findings"`
+	Timings          bool             `help:"print analysis timing details"`
 	Color            string           `default:"auto" help:"colour: auto|always|never"`
 	Version          kong.VersionFlag `short:"V" help:"print version and exit"`
 }
@@ -102,14 +103,18 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 		_, _ = fmt.Fprintln(stderr, "pawnlint: baseline update requires --baseline or a configured baseline")
 		return exitUsage
 	}
+	var timings *runTimings
+	if opts.Timings {
+		timings = newRunTimings()
+	}
 	if opts.Stdin {
-		return runStdin(opts, stdin, stdout, stderr, reg, resolved)
+		return runStdin(opts, stdin, stdout, stderr, reg, resolved, timings)
 	}
 	if len(opts.Paths) == 0 && len(resolved.Source.Builds) == 0 {
 		_, _ = fmt.Fprintln(stderr, "pawnlint: no input; pass file/directory paths or use --stdin")
 		return exitUsage
 	}
-	return runFiles(opts, stdout, stderr, reg, resolved)
+	return runFiles(opts, stdout, stderr, reg, resolved, timings)
 }
 
 type kongEagerExit struct{ code int }

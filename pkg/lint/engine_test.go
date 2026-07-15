@@ -292,6 +292,40 @@ func TestEngineBuildsControlFlowOnDemand(t *testing.T) {
 	}
 }
 
+func TestEngineReportsTimings(t *testing.T) {
+	rule := &controlFlowProbe{}
+	reg := lint.NewRegistrar()
+	reg.MustRegister(rule)
+	engine := lint.NewEngine(reg)
+	var events []lint.TimingEvent
+	engine.ObserveTiming = func(event lint.TimingEvent) {
+		events = append(events, event)
+	}
+	engine.LintFile("x.pwn", []byte("main(){}"), lint.ControlFlowAnalysis, map[string]diagnostic.Severity{
+		"control-flow-probe": diagnostic.SeverityWarning,
+	}, nil, nil)
+	wanted := map[lint.TimingStage]bool{
+		lint.TimingParse:       false,
+		lint.TimingSemantic:    false,
+		lint.TimingControlFlow: false,
+		lint.TimingRule:        false,
+	}
+	for _, event := range events {
+		if event.Duration < 0 {
+			t.Fatalf("negative duration: %+v", event)
+		}
+		if event.Stage == lint.TimingRule && event.RuleID != "control-flow-probe" {
+			t.Fatalf("rule event = %+v", event)
+		}
+		wanted[event.Stage] = true
+	}
+	for stage, found := range wanted {
+		if !found {
+			t.Errorf("missing %s event: %+v", stage, events)
+		}
+	}
+}
+
 type dupRule struct{}
 
 func (dupRule) Metadata() lint.Metadata {

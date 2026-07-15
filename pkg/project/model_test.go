@@ -47,6 +47,33 @@ func TestBuildResolvesIncludesAndIndexesDeclarations(t *testing.T) {
 	}
 }
 
+func TestBuildReportsTimings(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	var events []TimingEvent
+	_, err := Build([]Source{{Path: path, Content: []byte("main() {}\n")}}, Options{
+		WorkingDir: dir,
+		ObserveTiming: func(event TimingEvent) {
+			events = append(events, event)
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wanted := map[TimingStage]bool{TimingParse: false, TimingSemantic: false}
+	for _, event := range events {
+		if event.Duration < 0 {
+			t.Fatalf("negative duration: %+v", event)
+		}
+		wanted[event.Stage] = true
+	}
+	for stage, found := range wanted {
+		if !found {
+			t.Errorf("missing %s event: %+v", stage, events)
+		}
+	}
+}
+
 func TestBuildResolvesIncludeWhenExtensionlessPathIsDirectory(t *testing.T) {
 	dir := t.TempDir()
 	includeDir := filepath.Join(dir, "include")

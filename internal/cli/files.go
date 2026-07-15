@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/pawnkit/pawnlint/internal/config"
 	"github.com/pawnkit/pawnlint/internal/fix"
@@ -19,14 +20,14 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *config.Resolved) int {
+func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *config.Resolved, timings *runTimings) int {
 	cwd, _ := os.Getwd()
 	projectDir := cwd
 	if r.SourcePath != "" {
 		projectDir = filepath.Dir(r.SourcePath)
 	}
 	if len(opts.Paths) == 0 {
-		return runConfiguredBuilds(opts, stdout, stderr, reg, r, projectDir)
+		return runConfiguredBuilds(opts, stdout, stderr, reg, r, projectDir, timings)
 	}
 	files, err := discovery.Discover(discovery.Options{
 		Roots:      opts.Paths,
@@ -44,6 +45,9 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 	engine := lint.NewEngine(reg)
 	engine.Target = string(r.Target)
 	engine.API = r.API
+	if timings != nil {
+		engine.ObserveTiming = timings.observeLint
+	}
 	projectSources := make([]projectmodel.Source, 0, len(files))
 	for _, file := range files {
 		projectSources = append(projectSources, projectmodel.Source{Path: file.Path, Content: file.Content})
@@ -64,11 +68,19 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 	sources := output.SourceSet{}
 	perVariant := make([][]diagnostic.Diagnostic, 0, len(variants))
 	for _, variant := range variants {
+		var started time.Time
+		if timings != nil {
+			started = time.Now()
+		}
 		model, err := projectmodel.Build(projectSources, projectmodel.Options{
-			WorkingDir:   cwd,
-			IncludePaths: includePaths,
-			Defines:      variant.Defines,
+			WorkingDir:    cwd,
+			IncludePaths:  includePaths,
+			Defines:       variant.Defines,
+			ObserveTiming: projectTimingObserver(timings),
 		})
+		if timings != nil {
+			timings.addProject(time.Since(started))
+		}
 		if err != nil {
 			_, _ = fmt.Fprintf(stderr, "pawnlint: build project: %v\n", err)
 			return exitInternal
@@ -103,7 +115,15 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 			return exitInternal
 		}
 		if opts.Diff && len(plan.Changes) != 0 {
+			var started time.Time
+			if timings != nil {
+				started = time.Now()
+			}
 			_, _ = fmt.Fprint(stdout, fix.Diff(plan))
+			if timings != nil {
+				timings.addOutput(time.Since(started))
+				timings.write(stderr)
+			}
 			return exitFindings
 		}
 		if (opts.Fix || opts.FixSafe) && len(plan.Changes) != 0 {
@@ -114,13 +134,13 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 			next := *opts
 			next.Fix = false
 			next.FixSafe = false
-			return runFiles(&next, stdout, stderr, reg, r)
+			return runFiles(&next, stdout, stderr, reg, r, timings)
 		}
 	}
-	return emit(opts, stdout, stderr, all, sources, r)
+	return emit(opts, stdout, stderr, all, sources, r, timings)
 }
 
-func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *config.Resolved, projectDir string) int {
+func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *config.Resolved, projectDir string, timings *runTimings) int {
 	sources := output.SourceSet{}
 	perBuild := make([][]diagnostic.Diagnostic, 0, len(r.Source.Builds))
 	for _, build := range r.Source.Builds {
@@ -143,12 +163,20 @@ func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registra
 			_, _ = fmt.Fprintf(stderr, "pawnlint: build %q: %v\n", build.Name, err)
 			return exitUsage
 		}
+		var started time.Time
+		if timings != nil {
+			started = time.Now()
+		}
 		model, err := projectmodel.Build([]projectmodel.Source{{Path: entry, Content: content}}, projectmodel.Options{
 			WorkingDir:      workingDir,
 			IncludePaths:    includePaths,
 			Defines:         defines,
 			DefinesComplete: true,
+			ObserveTiming:   projectTimingObserver(timings),
 		})
+		if timings != nil {
+			timings.addProject(time.Since(started))
+		}
 		if err != nil {
 			_, _ = fmt.Fprintf(stderr, "pawnlint: build %q project: %v\n", build.Name, err)
 			return exitInternal
@@ -158,6 +186,9 @@ func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registra
 		engine.API = metadata
 		engine.Defines = defines
 		engine.Project = model
+		if timings != nil {
+			engine.ObserveTiming = timings.observeLint
+		}
 		files := configuredBuildFiles(model, entry, workingDir, build.Files, build.Exclude)
 		perFile := make([][]diagnostic.Diagnostic, len(files))
 		var eg errgroup.Group
@@ -187,7 +218,15 @@ func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registra
 			return exitInternal
 		}
 		if opts.Diff && len(plan.Changes) != 0 {
+			var started time.Time
+			if timings != nil {
+				started = time.Now()
+			}
 			_, _ = fmt.Fprint(stdout, fix.Diff(plan))
+			if timings != nil {
+				timings.addOutput(time.Since(started))
+				timings.write(stderr)
+			}
 			return exitFindings
 		}
 		if (opts.Fix || opts.FixSafe) && len(plan.Changes) != 0 {
@@ -198,10 +237,17 @@ func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registra
 			next := *opts
 			next.Fix = false
 			next.FixSafe = false
-			return runFiles(&next, stdout, stderr, reg, r)
+			return runFiles(&next, stdout, stderr, reg, r, timings)
 		}
 	}
-	return emit(opts, stdout, stderr, all, sources, r)
+	return emit(opts, stdout, stderr, all, sources, r, timings)
+}
+
+func projectTimingObserver(timings *runTimings) func(projectmodel.TimingEvent) {
+	if timings == nil {
+		return nil
+	}
+	return timings.observeProject
 }
 
 func configuredBuildFiles(model *projectmodel.Model, entry, workingDir string, patterns, excludes []string) []*projectmodel.File {

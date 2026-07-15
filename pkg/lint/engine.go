@@ -3,6 +3,7 @@ package lint
 import (
 	"bytes"
 	"fmt"
+	"time"
 
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
@@ -17,11 +18,27 @@ import (
 )
 
 type Engine struct {
-	Reg     *Registrar
-	Defines []string
-	Target  string
-	Project *project.Model
-	API     *api.Metadata
+	Reg           *Registrar
+	Defines       []string
+	Target        string
+	Project       *project.Model
+	API           *api.Metadata
+	ObserveTiming func(TimingEvent)
+}
+
+type TimingStage string
+
+const (
+	TimingParse       TimingStage = "parse"
+	TimingSemantic    TimingStage = "semantic"
+	TimingControlFlow TimingStage = "control-flow"
+	TimingRule        TimingStage = "rule"
+)
+
+type TimingEvent struct {
+	Stage    TimingStage
+	RuleID   string
+	Duration time.Duration
 }
 
 func NewEngine(reg *Registrar) *Engine {
@@ -66,7 +83,13 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 		}
 	}
 	if pf == nil {
-		pf = parser.Parse(src)
+		if e.ObserveTiming == nil {
+			pf = parser.Parse(src)
+		} else {
+			started := time.Now()
+			pf = parser.Parse(src)
+			e.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
+		}
 	}
 	if pf == nil {
 		return []diagnostic.Diagnostic{{
@@ -106,10 +129,22 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 		needFlow = needFlow || meta.AnalysisLevel >= ControlFlowAnalysis
 	}
 	if needSemantics && semantics == nil {
-		semantics = semantic.Build(pf, m)
+		if e.ObserveTiming == nil {
+			semantics = semantic.Build(pf, m)
+		} else {
+			started := time.Now()
+			semantics = semantic.Build(pf, m)
+			e.observe(TimingEvent{Stage: TimingSemantic, Duration: time.Since(started)})
+		}
 	}
 	if needFlow {
-		flow = controlflow.Build(m, semantics)
+		if e.ObserveTiming == nil {
+			flow = controlflow.Build(m, semantics)
+		} else {
+			started := time.Now()
+			flow = controlflow.Build(m, semantics)
+			e.observe(TimingEvent{Stage: TimingControlFlow, Duration: time.Since(started)})
+		}
 	}
 
 	tokensByKind := func(k token.Kind) []*token.Token {
@@ -171,7 +206,14 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 		}
 		var failed any
 		func() {
+			if e.ObserveTiming == nil {
+				defer func() { failed = recover() }()
+				rl.Run(ctx)
+				return
+			}
+			started := time.Now()
 			defer func() {
+				e.observe(TimingEvent{Stage: TimingRule, RuleID: id, Duration: time.Since(started)})
 				failed = recover()
 			}()
 			rl.Run(ctx)
@@ -231,4 +273,10 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 
 	diagnostic.Sort(out)
 	return out
+}
+
+func (e *Engine) observe(event TimingEvent) {
+	if e.ObserveTiming != nil {
+		e.ObserveTiming(event)
+	}
 }
