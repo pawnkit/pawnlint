@@ -70,6 +70,7 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 	sources := output.SourceSet{}
 	perVariant := make([][]diagnostic.Diagnostic, 0, len(variants))
 	cacheDirectory := configuredCacheDirectory(r, projectDir)
+	projectFeatures := r.ProjectFeatures(reg)
 	for variantIndex, variant := range variants {
 		var started time.Time
 		if timings != nil {
@@ -80,6 +81,7 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 			IncludePaths:    includePaths,
 			Defines:         variant.Defines,
 			ReleaseExpanded: true,
+			Features:        &projectFeatures,
 			ObserveTiming:   projectTimingObserver(timings),
 		})
 		if timings != nil {
@@ -161,6 +163,7 @@ func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registra
 	sources := output.SourceSet{}
 	perBuild := make([][]diagnostic.Diagnostic, 0, len(r.Source.Builds))
 	cacheDirectory := configuredCacheDirectory(r, projectDir)
+	projectFeatures := r.ProjectFeatures(reg)
 	for _, build := range r.Source.Builds {
 		workingDir := resolveBuildPath(projectDir, build.WorkingDirectory)
 		entry := resolveBuildPath(workingDir, build.Entry)
@@ -191,6 +194,7 @@ func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registra
 			Defines:         defines,
 			DefinesComplete: true,
 			ReleaseExpanded: true,
+			Features:        &projectFeatures,
 			ObserveTiming:   projectTimingObserver(timings),
 		})
 		if timings != nil {

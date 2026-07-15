@@ -53,6 +53,7 @@ func analyze(ctx context.Context, request Request) (Result, error) {
 	perContext := make([][]diagnostic.Diagnostic, 0, len(contexts))
 	allSources := make(map[string][]byte)
 	cacheStats := CacheStats{}
+	projectFeatures := resolved.ProjectFeatures(reg)
 	for contextIndex, settings := range contexts {
 		if err := ctx.Err(); err != nil {
 			return Result{}, err
@@ -71,6 +72,7 @@ func analyze(ctx context.Context, request Request) (Result, error) {
 			Defines:         settings.defines,
 			DefinesComplete: settings.definesComplete,
 			ReleaseExpanded: true,
+			Features:        &projectFeatures,
 		})
 		if err != nil {
 			return Result{}, fmt.Errorf("analyzer: build project: %w", err)

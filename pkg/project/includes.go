@@ -116,6 +116,10 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		file.Semantic = semantic.Build(file.Parsed, file.Walk)
 		m.observe(TimingEvent{Stage: TimingSemantic, Duration: time.Since(started)})
 	}
+	if m.options.Features != nil && !m.options.Features.Has(FeatureCallGraph) {
+		file.resolved = true
+		return nil
+	}
 	started := time.Now()
 	imports := make(map[int]*preprocess.State)
 	for _, include := range file.Includes {

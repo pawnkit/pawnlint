@@ -23,6 +23,7 @@ type Options struct {
 	Defines         []string
 	DefinesComplete bool
 	ReleaseExpanded bool
+	Features        *Features
 	ObserveTiming   func(TimingEvent)
 }
 
@@ -142,6 +143,11 @@ type physicalFile struct {
 func Build(sources []Source, options Options) (*Model, error) {
 	options.IncludePaths = append([]string(nil), options.IncludePaths...)
 	options.Defines = normalizeDefines(options.Defines)
+	features := AllFeatures()
+	if options.Features != nil {
+		features = options.Features.withDependencies()
+		options.Features = &features
+	}
 	if options.WorkingDir == "" {
 		options.WorkingDir = "."
 	}
@@ -182,24 +188,48 @@ func Build(sources []Source, options Options) (*Model, error) {
 			return nil, err
 		}
 	}
-	model.buildDefinedNames()
+	if features.Has(FeatureDefinedNames) {
+		model.buildDefinedNames()
+	}
 	sort.SliceStable(model.Files, func(i, j int) bool {
 		if model.Files[i].canonical != model.Files[j].canonical {
 			return model.Files[i].canonical < model.Files[j].canonical
 		}
 		return model.Files[i].instance < model.Files[j].instance
 	})
-	model.buildDeclarations()
-	model.buildUnits()
-	model.duplicateFunctions = model.buildDuplicateFunctions()
-	model.duplicateGlobals = model.buildDuplicateGlobals()
-	model.symbolConflicts = model.buildConflictingIncludeSymbols()
-	model.includeCycles = model.buildIncludeCycles()
-	model.buildIncludeIssues()
-	model.buildReferences()
-	model.unusedIncludes = model.buildUnusedIncludes()
-	model.CallGraph = model.buildCallGraph()
-	model.buildFunctionEffects()
+	needsDeclarations := features.Has(FeatureReferences) || features.Has(FeatureDuplicates) || features.Has(FeatureConflicts)
+	needsUnits := needsDeclarations || features.Has(FeatureCallGraph)
+	if needsDeclarations {
+		model.buildDeclarations()
+	}
+	if needsUnits {
+		model.buildUnits()
+	}
+	if features.Has(FeatureDuplicates) {
+		model.duplicateFunctions = model.buildDuplicateFunctions()
+		model.duplicateGlobals = model.buildDuplicateGlobals()
+	}
+	if features.Has(FeatureConflicts) {
+		model.symbolConflicts = model.buildConflictingIncludeSymbols()
+	}
+	if features.Has(FeatureIncludeCycles) {
+		model.includeCycles = model.buildIncludeCycles()
+	}
+	if features.Has(FeatureIncludeIssues) {
+		model.buildIncludeIssues()
+	}
+	if features.Has(FeatureReferences) {
+		model.buildReferences()
+	}
+	if features.Has(FeatureUnusedIncludes) {
+		model.unusedIncludes = model.buildUnusedIncludes()
+	}
+	if features.Has(FeatureCallGraph) {
+		model.CallGraph = model.buildCallGraph()
+	}
+	if features.Has(FeatureFunctionEffects) {
+		model.buildFunctionEffects()
+	}
 	return model, nil
 }
 
