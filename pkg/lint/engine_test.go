@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/pawnkit/pawnlint/internal/api"
+	"github.com/pawnkit/pawnlint/internal/fix"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 	"github.com/pawnkit/pawnlint/pkg/rules"
@@ -94,7 +95,7 @@ func TestEngineReportsParseErrorsWithoutSuppression(t *testing.T) {
 	}
 }
 
-func TestEngineCoalescesAdjacentParseErrors(t *testing.T) {
+func TestEnginePreservesAdjacentParseErrors(t *testing.T) {
 	reg := rules.Default()
 	engine := lint.NewEngine(reg)
 	src := []byte("}\n}\n")
@@ -105,9 +106,48 @@ func TestEngineCoalescesAdjacentParseErrors(t *testing.T) {
 			count++
 		}
 	}
-	if count != 1 {
+	if count != 2 {
 		t.Fatalf("parse diagnostics = %+v", diagnostics)
 	}
+}
+
+func TestEngineUsesStructuredParseRecovery(t *testing.T) {
+	reg := rules.Default()
+	engine := lint.NewEngine(reg)
+	src := []byte("main() { return (1; }\n")
+	diagnostics := engine.LintFile("x.pwn", src, lint.SyntaxAnalysis, map[string]diagnostic.Severity{}, nil, nil)
+	var parseDiagnostic *diagnostic.Diagnostic
+	for i := range diagnostics {
+		if diagnostics[i].RuleID == lint.ParseErrorID && diagnostics[i].Code == "missing_token" {
+			parseDiagnostic = &diagnostics[i]
+			break
+		}
+	}
+	if parseDiagnostic == nil || parseDiagnostic.Fix == nil {
+		t.Fatalf("structured parse recovery missing: %+v", diagnostics)
+	}
+	plan, err := fix.Build(map[string][]byte{"x.pwn": src}, []diagnostic.Diagnostic{*parseDiagnostic})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Changes) != 1 || string(plan.Changes[0].After) != "main() { return (1); }\n" {
+		t.Fatalf("parse recovery plan = %+v", plan)
+	}
+}
+
+func TestEngineDoesNotFixSuggestedParseRecovery(t *testing.T) {
+	reg := rules.Default()
+	engine := lint.NewEngine(reg)
+	diagnostics := engine.LintFile("x.pwn", []byte("main() { value = ; }\n"), lint.SyntaxAnalysis, map[string]diagnostic.Severity{}, nil, nil)
+	for _, item := range diagnostics {
+		if item.RuleID == lint.ParseErrorID && item.Code == "missing_expression" {
+			if item.Fix != nil {
+				t.Fatalf("suggested parser recovery became a fix: %+v", item)
+			}
+			return
+		}
+	}
+	t.Fatalf("missing structured parse diagnostic: %+v", diagnostics)
 }
 
 func TestEngineReportsRulePanics(t *testing.T) {
@@ -186,6 +226,44 @@ func TestRegistryRejectsDuplicate(t *testing.T) {
 	}
 }
 
+func TestProfilesExcludePreviewRules(t *testing.T) {
+	reg := lint.NewRegistrar()
+	reg.MustRegister(previewRule{})
+	for _, profile := range []lint.Profile{lint.ProfileRecommended, lint.ProfileStrict, lint.ProfileAll} {
+		if _, enabled := reg.EnabledForProfile(profile)["preview-rule"]; enabled {
+			t.Fatalf("preview rule enabled by %s", profile)
+		}
+	}
+}
+
+func TestRegistryRejectsInvalidStability(t *testing.T) {
+	reg := lint.NewRegistrar()
+	err := reg.Register(metadataRule{metadata: lint.Metadata{
+		ID: "invalid-stability", Name: "invalid", Summary: "invalid",
+		Stability: lint.Stability(100),
+	}})
+	if err == nil {
+		t.Fatal("invalid stability accepted")
+	}
+}
+
+func TestRegistryRejectsInvalidOptions(t *testing.T) {
+	tests := [][]lint.Option{
+		{{Name: "severity", Type: lint.OptionString}},
+		{{Name: "value", Type: lint.OptionString}, {Name: "value", Type: lint.OptionString}},
+		{{Name: "value", Type: lint.OptionString, Minimum: 1, HasMinimum: true}},
+		{{Name: "value", Type: lint.OptionInteger, Choices: []string{"one"}}},
+		{{Name: "value", Type: lint.OptionInteger, Default: 0, Minimum: 1, HasMinimum: true}},
+	}
+	for _, options := range tests {
+		reg := lint.NewRegistrar()
+		err := reg.Register(metadataRule{metadata: lint.Metadata{ID: "invalid-options", Name: "invalid", Summary: "invalid", Options: options}})
+		if err == nil {
+			t.Fatalf("invalid options accepted: %+v", options)
+		}
+	}
+}
+
 func TestEngineUsesRegistrationOrder(t *testing.T) {
 	var ran []string
 	reg := lint.NewRegistrar()
@@ -220,6 +298,25 @@ func (dupRule) Metadata() lint.Metadata {
 	return lint.Metadata{ID: "dup", Name: "n", Summary: "s", Category: diagnostic.CategoryCorrectness}
 }
 func (dupRule) Run(_ *lint.Context) {}
+
+type previewRule struct{}
+
+func (previewRule) Metadata() lint.Metadata {
+	return lint.Metadata{
+		ID: "preview-rule", Name: "preview", Summary: "preview",
+		DefaultSeverity: diagnostic.SeverityWarning, DefaultEnabled: true,
+		Stability: lint.StabilityPreview,
+	}
+}
+
+func (previewRule) Run(_ *lint.Context) {}
+
+type metadataRule struct {
+	metadata lint.Metadata
+}
+
+func (r metadataRule) Metadata() lint.Metadata { return r.metadata }
+func (metadataRule) Run(_ *lint.Context)       {}
 
 type recordingRule struct {
 	id  string

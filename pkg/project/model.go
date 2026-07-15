@@ -82,17 +82,18 @@ type Reference struct {
 }
 
 type Model struct {
-	Files        []*File
-	Units        []*Unit
-	Declarations map[string][]Declaration
-	CallGraph    *CallGraph
-	byCanonical  map[string]*File
-	byContext    map[string]*File
-	physical     map[string]*physicalFile
-	references   map[string][]Reference
-	resolved     map[*File]map[*parser.Node]Declaration
-	ambiguous    map[*File]map[*parser.Node]bool
-	options      Options
+	Files         []*File
+	Units         []*Unit
+	Declarations  map[string][]Declaration
+	CallGraph     *CallGraph
+	includeCycles []IncludeCycle
+	byCanonical   map[string]*File
+	byContext     map[string]*File
+	physical      map[string]*physicalFile
+	references    map[string][]Reference
+	resolved      map[*File]map[*parser.Node]Declaration
+	ambiguous     map[*File]map[*parser.Node]bool
+	options       Options
 }
 
 type physicalFile struct {
@@ -149,6 +150,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 	})
 	model.buildDeclarations()
 	model.buildUnits()
+	model.includeCycles = model.buildIncludeCycles()
 	model.buildReferences()
 	model.CallGraph = model.buildCallGraph()
 	return model, nil

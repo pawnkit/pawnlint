@@ -1,0 +1,5 @@
+#include "invalid.pwn"
+
+main()
+{
+}

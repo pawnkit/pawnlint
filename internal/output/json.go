@@ -8,20 +8,21 @@ import (
 )
 
 type jsonDiagnostic struct {
-	RuleID    string     `json:"ruleId"`
-	Severity  string     `json:"severity"`
-	Category  string     `json:"category"`
-	Message   string     `json:"message"`
-	File      string     `json:"file"`
-	StartLine int        `json:"startLine"`
-	StartCol  int        `json:"startCol"`
-	EndLine   int        `json:"endLine"`
-	EndCol    int        `json:"endCol"`
-	StartOff  int        `json:"startOffset"`
-	EndOff    int        `json:"endOffset"`
-	Notes     []jsonNote `json:"notes,omitempty"`
-	Suggested string     `json:"suggested,omitempty"`
-	Fix       *jsonFix   `json:"fix,omitempty"`
+	RuleID      string           `json:"ruleId"`
+	Code        string           `json:"code,omitempty"`
+	Severity    string           `json:"severity"`
+	Category    string           `json:"category"`
+	Message     string           `json:"message"`
+	File        string           `json:"file"`
+	StartLine   int              `json:"startLine"`
+	StartCol    int              `json:"startCol"`
+	EndLine     int              `json:"endLine"`
+	EndCol      int              `json:"endCol"`
+	StartOff    int              `json:"startOffset"`
+	EndOff      int              `json:"endOffset"`
+	Notes       []jsonNote       `json:"notes,omitempty"`
+	Suggestions []jsonSuggestion `json:"suggestions,omitempty"`
+	Fix         *jsonFix         `json:"fix,omitempty"`
 }
 
 type jsonNote struct {
@@ -35,6 +36,11 @@ type jsonNote struct {
 type jsonFix struct {
 	Description string     `json:"description"`
 	Edits       []jsonEdit `json:"edits"`
+}
+
+type jsonSuggestion struct {
+	Description string     `json:"description"`
+	Edits       []jsonEdit `json:"edits,omitempty"`
 }
 
 type jsonEdit struct {
@@ -66,6 +72,7 @@ func writeJSON(w io.Writer, diags []diagnostic.Diagnostic, line bool) error {
 func toJSON(d diagnostic.Diagnostic) jsonDiagnostic {
 	j := jsonDiagnostic{
 		RuleID:    d.RuleID,
+		Code:      d.Code,
 		Severity:  d.Severity.String(),
 		Category:  d.Category.String(),
 		Message:   d.Message,
@@ -76,7 +83,6 @@ func toJSON(d diagnostic.Diagnostic) jsonDiagnostic {
 		EndCol:    d.Range.End.Col,
 		StartOff:  d.Range.Start.Offset,
 		EndOff:    d.Range.End.Offset,
-		Suggested: d.Suggested,
 	}
 	for _, n := range d.Notes {
 		j.Notes = append(j.Notes, jsonNote{
@@ -86,6 +92,17 @@ func toJSON(d diagnostic.Diagnostic) jsonDiagnostic {
 			StartOff:  n.Range.Start.Offset,
 			EndOff:    n.Range.End.Offset,
 		})
+	}
+	for _, suggestion := range d.Suggestions {
+		js := jsonSuggestion{Description: suggestion.Description}
+		for _, edit := range suggestion.Edits {
+			js.Edits = append(js.Edits, jsonEdit{
+				StartOff: edit.Range.Start.Offset,
+				EndOff:   edit.Range.End.Offset,
+				NewText:  edit.NewText,
+			})
+		}
+		j.Suggestions = append(j.Suggestions, js)
 	}
 	if d.Fix != nil {
 		jf := &jsonFix{Description: d.Fix.Description}

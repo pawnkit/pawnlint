@@ -9,7 +9,11 @@
       "startCol": 6,
       "endLine": 3,
       "endCol": 12,
-      "suggested": "reduce the array below 1024 cells or move storage out of the automatic stack"
+      "suggestions": [
+        {
+          "description": "reduce the array below 1024 cells or move storage out of the automatic stack"
+        }
+      ]
     },
     {
       "ruleId": "large-local-array",
@@ -19,7 +23,11 @@
       "startCol": 6,
       "endLine": 4,
       "endCol": 12,
-      "suggested": "reduce the array below 1024 cells or move storage out of the automatic stack"
+      "suggestions": [
+        {
+          "description": "reduce the array below 1024 cells or move storage out of the automatic stack"
+        }
+      ]
     },
     {
       "ruleId": "large-local-array",
@@ -29,7 +37,11 @@
       "startCol": 6,
       "endLine": 5,
       "endCol": 12,
-      "suggested": "reduce the array below 1024 cells or move storage out of the automatic stack"
+      "suggestions": [
+        {
+          "description": "reduce the array below 1024 cells or move storage out of the automatic stack"
+        }
+      ]
     }
   ],
   "valid.pwn": []

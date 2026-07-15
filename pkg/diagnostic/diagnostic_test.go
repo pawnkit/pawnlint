@@ -19,6 +19,25 @@ func TestSeverityParseRoundTrip(t *testing.T) {
 	}
 }
 
+func TestDiagnosticCategories(t *testing.T) {
+	tests := map[diagnostic.Category]string{
+		diagnostic.CategoryCorrectness:     "correctness",
+		diagnostic.CategorySuspicious:      "suspicious",
+		diagnostic.CategoryPerformance:     "performance",
+		diagnostic.CategoryMaintainability: "maintainability",
+		diagnostic.CategoryOpenMP:          "openmp",
+		diagnostic.CategoryStyle:           "style",
+		diagnostic.CategorySecurity:        "security",
+		diagnostic.CategoryPortability:     "portability",
+		diagnostic.CategoryRestriction:     "restriction",
+	}
+	for category, want := range tests {
+		if got := category.String(); got != want {
+			t.Fatalf("category %d = %q, want %q", category, got, want)
+		}
+	}
+}
+
 func TestSortDeterministic(t *testing.T) {
 	lt := source.NewLineTable([]byte("ab\ncd\n"))
 	ds := []diagnostic.Diagnostic{

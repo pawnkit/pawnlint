@@ -2,6 +2,8 @@
 
 Generated from rule metadata. Do not edit by hand.
 
+Rules are stable unless their page marks them as preview.
+
 | ID | Category | Severity | Default | Fixable | Summary |
 | --- | --- | --- | --- | --- | --- |
 | [`assignment-in-condition`](assignment-in-condition.md) | suspicious | warning | on | no | An assignment used as an if/while condition is often a typo for == |
@@ -24,6 +26,7 @@ Generated from rule metadata. Do not edit by hand.
 | [`format-argument-count`](format-argument-count.md) | correctness | error | off | no | Reports literal format strings whose placeholders and arguments differ |
 | [`forward-signature-mismatch`](forward-signature-mismatch.md) | correctness | error | on | no | Reports definitions that do not match their forward declaration |
 | [`identical-branches`](identical-branches.md) | suspicious | warning | off | no | Reports if and ternary branches with identical code |
+| [`include-cycle`](include-cycle.md) | correctness | error | on | no | Reports cycles in the resolved include graph |
 | [`invalid-sentinel-comparison`](invalid-sentinel-comparison.md) | correctness | error | off | no | Reports a native's result compared against the wrong INVALID_* constant |
 | [`invalid-shift-count`](invalid-shift-count.md) | correctness | error | on | no | Reports constant shift counts outside the 32-bit cell width |
 | [`large-local-array`](large-local-array.md) | performance | warning | off | no | Reports large automatic arrays allocated on the Pawn stack |

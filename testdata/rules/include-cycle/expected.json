@@ -1,0 +1,15 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "include-cycle",
+      "severity": "error",
+      "message": "include cycle: invalid.pwn -\u003e invalid.pwn",
+      "startLine": 1,
+      "startCol": 10,
+      "endLine": 1,
+      "endCol": 23
+    }
+  ],
+  "valid.pwn": []
+}

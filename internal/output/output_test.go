@@ -112,6 +112,67 @@ func TestJSONRoundTrip(t *testing.T) {
 	}
 }
 
+func TestStructuredSuggestionsAndCode(t *testing.T) {
+	d := diags()[0]
+	d.Code = "missing_expression"
+	d.Suggestions = []diagnostic.Suggestion{{
+		Description: "provide an expression",
+		Edits:       []diagnostic.Edit{{Range: d.Range, NewText: "value"}},
+	}}
+	d.Fix = &diagnostic.Fix{
+		Description: "remove the expression",
+		Edits:       []diagnostic.Edit{{Range: d.Range}},
+	}
+	var text bytes.Buffer
+	if err := output.Write(&text, output.FormatText, []diagnostic.Diagnostic{d}, output.SourceSet{"x.pwn": []byte("main()\n{\n playerid + 1;\n}\n")}, false); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(text.String(), "help: provide an expression") {
+		t.Fatalf("text suggestion missing: %q", text.String())
+	}
+	var raw bytes.Buffer
+	if err := output.Write(&raw, output.FormatJSON, []diagnostic.Diagnostic{d}, nil, false); err != nil {
+		t.Fatal(err)
+	}
+	var records []struct {
+		Code        string `json:"code"`
+		Suggestions []struct {
+			Description string `json:"description"`
+			Edits       []struct {
+				NewText string `json:"newText"`
+			} `json:"edits"`
+		} `json:"suggestions"`
+	}
+	if err := json.Unmarshal(raw.Bytes(), &records); err != nil {
+		t.Fatal(err)
+	}
+	if len(records) != 1 || records[0].Code != "missing_expression" || len(records[0].Suggestions) != 1 || records[0].Suggestions[0].Description != "provide an expression" || len(records[0].Suggestions[0].Edits) != 1 || records[0].Suggestions[0].Edits[0].NewText != "value" {
+		t.Fatalf("structured JSON missing: %s", raw.String())
+	}
+	var sarif bytes.Buffer
+	if err := output.Write(&sarif, output.FormatSARIF, []diagnostic.Diagnostic{d}, nil, false); err != nil {
+		t.Fatal(err)
+	}
+	var log struct {
+		Runs []struct {
+			Results []struct {
+				Fixes      []json.RawMessage `json:"fixes"`
+				Properties struct {
+					Code        string            `json:"code"`
+					Suggestions []json.RawMessage `json:"suggestions"`
+				} `json:"properties"`
+			} `json:"results"`
+		} `json:"runs"`
+	}
+	if err := json.Unmarshal(sarif.Bytes(), &log); err != nil {
+		t.Fatal(err)
+	}
+	result := log.Runs[0].Results[0]
+	if result.Properties.Code != "missing_expression" || len(result.Properties.Suggestions) != 1 || len(result.Fixes) != 1 {
+		t.Fatalf("structured SARIF missing: %s", sarif.String())
+	}
+}
+
 func TestJSONL(t *testing.T) {
 	var b bytes.Buffer
 	if err := output.Write(&b, output.FormatJSONL, diags(), nil, false); err != nil {

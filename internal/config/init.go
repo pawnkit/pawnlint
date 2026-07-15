@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -154,6 +155,8 @@ func ExplainText(m lint.Metadata) string {
 	b.WriteString(m.DefaultSeverity.String())
 	b.WriteString("\nAnalysis:     ")
 	b.WriteString(analysisLevelString(m.AnalysisLevel))
+	b.WriteString("\nStability:    ")
+	b.WriteString(m.Stability.String())
 	b.WriteString("\nDefault:      ")
 	if m.DefaultEnabled {
 		b.WriteString("enabled")
@@ -169,6 +172,19 @@ func ExplainText(m lint.Metadata) string {
 	if len(m.Tags) > 0 {
 		b.WriteString("\nTags:         ")
 		b.WriteString(strings.Join(m.Tags, ", "))
+	}
+	if len(m.Options) > 0 {
+		b.WriteString("\nOptions:")
+		for _, option := range m.Options {
+			b.WriteString("\n  ")
+			b.WriteString(option.Name)
+			b.WriteString(" (")
+			b.WriteString(option.Type.String())
+			b.WriteString(", default ")
+			b.WriteString(fmt.Sprint(option.Default))
+			b.WriteString("): ")
+			b.WriteString(option.Summary)
+		}
 	}
 	b.WriteString("\n\n")
 	b.WriteString(m.Explanation)

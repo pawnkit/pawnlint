@@ -45,6 +45,9 @@ var curate = map[Profile]map[string]struct{}{
 }
 
 func profileEnables(p Profile, id string, m Metadata) bool {
+	if m.Stability == StabilityPreview {
+		return false
+	}
 	switch p {
 	case ProfileAll:
 		return true
@@ -91,6 +94,12 @@ func (reg *Registrar) Register(r Rule) error {
 	meta := r.Metadata()
 	if meta.ID == "" {
 		return fmt.Errorf("lint: rule missing ID")
+	}
+	if meta.Stability != StabilityStable && meta.Stability != StabilityPreview {
+		return fmt.Errorf("lint: rule %q has invalid stability", meta.ID)
+	}
+	if err := validateOptions(meta.ID, meta.Options); err != nil {
+		return err
 	}
 	if _, ok := reg.byID[meta.ID]; ok {
 		return fmt.Errorf("lint: duplicate rule ID %q", meta.ID)

@@ -25,6 +25,20 @@ const (
 	ProjectAnalysis
 )
 
+type Stability uint8
+
+const (
+	StabilityStable Stability = iota
+	StabilityPreview
+)
+
+func (s Stability) String() string {
+	if s == StabilityPreview {
+		return "preview"
+	}
+	return "stable"
+}
+
 type Metadata struct {
 	ID              string
 	Name            string
@@ -33,9 +47,11 @@ type Metadata struct {
 	Category        diagnostic.Category
 	DefaultSeverity diagnostic.Severity
 	AnalysisLevel   AnalysisLevel
+	Stability       Stability
 	DefaultEnabled  bool
 	Fixable         bool
 	Tags            []string
+	Options         []Option
 }
 
 type File struct {

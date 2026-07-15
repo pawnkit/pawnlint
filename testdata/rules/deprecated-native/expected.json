@@ -9,7 +9,11 @@
       "startCol": 5,
       "endLine": 3,
       "endCol": 21,
-      "suggested": "Use `SendRconCommand`."
+      "suggestions": [
+        {
+          "description": "Use `SendRconCommand`."
+        }
+      ]
     },
     {
       "ruleId": "deprecated-native",
@@ -19,7 +23,11 @@
       "startCol": 5,
       "endLine": 4,
       "endCol": 21,
-      "suggested": "Use `CountRunningTimers`."
+      "suggestions": [
+        {
+          "description": "Use `CountRunningTimers`."
+        }
+      ]
     }
   ],
   "valid.pwn": []

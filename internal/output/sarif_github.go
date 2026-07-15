@@ -41,10 +41,43 @@ type sarifText struct {
 }
 
 type sarifResult struct {
-	RuleID    string          `json:"ruleId"`
-	Level     string          `json:"level"`
-	Message   sarifText       `json:"message"`
-	Locations []sarifLocation `json:"locations"`
+	RuleID     string           `json:"ruleId"`
+	Level      string           `json:"level"`
+	Message    sarifText        `json:"message"`
+	Locations  []sarifLocation  `json:"locations"`
+	Fixes      []sarifFix       `json:"fixes,omitempty"`
+	Properties *sarifProperties `json:"properties,omitempty"`
+}
+
+type sarifProperties struct {
+	Code        string            `json:"code,omitempty"`
+	Suggestions []sarifSuggestion `json:"suggestions,omitempty"`
+}
+
+type sarifSuggestion struct {
+	Description string      `json:"description"`
+	Edits       []sarifEdit `json:"edits,omitempty"`
+}
+
+type sarifEdit struct {
+	StartOffset int    `json:"startOffset"`
+	EndOffset   int    `json:"endOffset"`
+	NewText     string `json:"newText"`
+}
+
+type sarifFix struct {
+	Description     sarifText             `json:"description"`
+	ArtifactChanges []sarifArtifactChange `json:"artifactChanges"`
+}
+
+type sarifArtifactChange struct {
+	ArtifactLocation sarifArtifactLocation `json:"artifactLocation"`
+	Replacements     []sarifReplacement    `json:"replacements"`
+}
+
+type sarifReplacement struct {
+	DeletedRegion   sarifRegion `json:"deletedRegion"`
+	InsertedContent sarifText   `json:"insertedContent"`
 }
 
 type sarifLocation struct {
@@ -91,7 +124,7 @@ func writeSARIF(w io.Writer, diags []diagnostic.Diagnostic) error {
 			EndLine:     d.Range.End.Line,
 			EndColumn:   d.Range.End.Col,
 		}
-		results = append(results, sarifResult{
+		result := sarifResult{
 			RuleID:  d.RuleID,
 			Level:   sarifLevel(d.Severity),
 			Message: sarifText{Text: d.Message},
@@ -99,7 +132,42 @@ func writeSARIF(w io.Writer, diags []diagnostic.Diagnostic) error {
 				ArtifactLocation: sarifArtifactLocation{URI: filepath.ToSlash(d.Filename)},
 				Region:           region,
 			}}},
-		})
+		}
+		if d.Fix != nil {
+			replacements := make([]sarifReplacement, 0, len(d.Fix.Edits))
+			for _, edit := range d.Fix.Edits {
+				replacements = append(replacements, sarifReplacement{
+					DeletedRegion: sarifRegion{
+						StartLine: positive(edit.Range.Start.Line), StartColumn: positive(edit.Range.Start.Col),
+						EndLine: edit.Range.End.Line, EndColumn: edit.Range.End.Col,
+					},
+					InsertedContent: sarifText{Text: edit.NewText},
+				})
+			}
+			result.Fixes = []sarifFix{{
+				Description: sarifText{Text: d.Fix.Description},
+				ArtifactChanges: []sarifArtifactChange{{
+					ArtifactLocation: sarifArtifactLocation{URI: filepath.ToSlash(d.Filename)},
+					Replacements:     replacements,
+				}},
+			}}
+		}
+		if d.Code != "" || len(d.Suggestions) != 0 {
+			properties := &sarifProperties{Code: d.Code}
+			for _, suggestion := range d.Suggestions {
+				item := sarifSuggestion{Description: suggestion.Description}
+				for _, edit := range suggestion.Edits {
+					item.Edits = append(item.Edits, sarifEdit{
+						StartOffset: edit.Range.Start.Offset,
+						EndOffset:   edit.Range.End.Offset,
+						NewText:     edit.NewText,
+					})
+				}
+				properties.Suggestions = append(properties.Suggestions, item)
+			}
+			result.Properties = properties
+		}
+		results = append(results, result)
 	}
 	log := sarifLog{
 		Version: "2.1.0",
@@ -152,7 +220,7 @@ func writeGitHub(w io.Writer, diags []diagnostic.Diagnostic) error {
 		if end.Col > 0 && (end.Line == 0 || end.Line == start.Line) {
 			properties += fmt.Sprintf(",endColumn=%d", end.Col)
 		}
-		message := fmt.Sprintf("%s[%s] %s", d.Severity, d.RuleID, d.Message)
+		message := fmt.Sprintf("%s[%s] %s", d.Severity, diagnosticID(d), d.Message)
 		if _, err := fmt.Fprintf(w, "::%s %s::%s\n", cmd, properties, escapeMessage(message)); err != nil {
 			return err
 		}

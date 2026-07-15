@@ -55,10 +55,10 @@ func (RepeatedStrlen) Run(ctx *lint.Context) {
 					continue
 				}
 				ctx.Report(diagnostic.Diagnostic{
-					Message:   fmt.Sprintf("strlen(%s) rescans an unchanged local string on every iteration", symbol.Name),
-					Filename:  ctx.File.Path,
-					Range:     ctx.Walk.Range(call),
-					Suggested: "compute the string length once before the loop",
+					Message:     fmt.Sprintf("strlen(%s) rescans an unchanged local string on every iteration", symbol.Name),
+					Filename:    ctx.File.Path,
+					Range:       ctx.Walk.Range(call),
+					Suggestions: []diagnostic.Suggestion{{Description: "compute the string length once before the loop"}},
 				})
 			}
 		})

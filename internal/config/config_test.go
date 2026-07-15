@@ -19,7 +19,11 @@ func (s stubRule) Run(_ *lint.Context)     {}
 func regWith(t *testing.T) *lint.Registrar {
 	t.Helper()
 	reg := lint.NewRegistrar()
-	reg.MustRegister(stubRule{m: lint.Metadata{ID: "alpha", Name: "Alpha", Summary: "alpha rule", Category: diagnostic.CategoryCorrectness, DefaultSeverity: diagnostic.SeverityWarning, AnalysisLevel: lint.SyntaxAnalysis, DefaultEnabled: true}})
+	reg.MustRegister(stubRule{m: lint.Metadata{
+		ID: "alpha", Name: "Alpha", Summary: "alpha rule", Category: diagnostic.CategoryCorrectness,
+		DefaultSeverity: diagnostic.SeverityWarning, AnalysisLevel: lint.SyntaxAnalysis, DefaultEnabled: true,
+		Options: []lint.Option{{Name: "threshold", Type: lint.OptionInteger, Default: int64(10), Minimum: 1, HasMinimum: true}},
+	}})
 	reg.MustRegister(stubRule{m: lint.Metadata{ID: "beta", Name: "Beta", Summary: "beta rule", Category: diagnostic.CategorySuspicious, DefaultSeverity: diagnostic.SeverityInfo, AnalysisLevel: lint.SyntaxAnalysis, DefaultEnabled: false}})
 	return reg
 }
@@ -143,8 +147,24 @@ func TestPerRuleConfigTable(t *testing.T) {
 	if r.SeverityFor("alpha", reg) != diagnostic.SeverityInfo {
 		t.Errorf("severity %v", r.SeverityFor("alpha", reg))
 	}
-	if r.RuleConfig["alpha"]["threshold"] != 20 {
+	if r.RuleConfig["alpha"]["threshold"] != int64(20) {
 		t.Errorf("threshold %v", r.RuleConfig["alpha"]["threshold"])
+	}
+}
+
+func TestPerRuleOptionValidation(t *testing.T) {
+	reg := regWith(t)
+	for _, rules := range []map[string]any{
+		{"alpha": map[string]any{"unknown": true}},
+		{"alpha": map[string]any{"threshold": "large"}},
+		{"alpha": map[string]any{"threshold": 0}},
+		{"beta": map[string]any{"threshold": 10}},
+	} {
+		f := config.Defaults()
+		f.Rules = rules
+		if _, err := config.Resolve(f, "", reg); err == nil {
+			t.Fatalf("invalid rule options accepted: %#v", rules)
+		}
 	}
 }
 
@@ -220,10 +240,10 @@ func TestRuleConfigForPathAppliesMatchingOverride(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v := r.RuleConfigForPath("testdata/x.pwn")["alpha"]["threshold"]; v != 5 {
+	if v := r.RuleConfigForPath("testdata/x.pwn")["alpha"]["threshold"]; v != int64(5) {
 		t.Errorf("overridden threshold = %v, want 5", v)
 	}
-	if v := r.RuleConfigForPath("other.pwn")["alpha"]["threshold"]; v != 20 {
+	if v := r.RuleConfigForPath("other.pwn")["alpha"]["threshold"]; v != int64(20) {
 		t.Errorf("non-matching path threshold = %v, want unchanged 20", v)
 	}
 }

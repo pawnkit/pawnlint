@@ -43,10 +43,10 @@ func (LegacyInclude) Run(ctx *lint.Context) {
 				return
 			}
 			ctx.Report(diagnostic.Diagnostic{
-				Message:   fmt.Sprintf("legacy include %q is a compatibility wrapper", path),
-				Filename:  ctx.File.Path,
-				Range:     ctx.Walk.Range(node.Field("path")),
-				Suggested: "include <" + replacement + "> directly",
+				Message:     fmt.Sprintf("legacy include %q is a compatibility wrapper", path),
+				Filename:    ctx.File.Path,
+				Range:       ctx.Walk.Range(node.Field("path")),
+				Suggestions: []diagnostic.Suggestion{{Description: "include <" + replacement + "> directly"}},
 			})
 		})
 	}

@@ -53,6 +53,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(correctness.PossiblyUninitialized{})
 	reg.MustRegister(correctness.DuplicateFunctionDefinition{})
 	reg.MustRegister(correctness.DuplicateGlobalDefinition{})
+	reg.MustRegister(correctness.IncludeCycle{})
 	reg.MustRegister(maintainability.UnusedFunction{})
 	reg.MustRegister(maintainability.UnusedGlobal{})
 	reg.MustRegister(suspicious.RecursiveCall{})

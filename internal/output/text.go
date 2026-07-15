@@ -32,7 +32,7 @@ func writeOneText(w io.Writer, d diagnostic.Diagnostic, sources SourceSet, c col
 		pos = lt.Lookup(d.Range.Start.Offset)
 	}
 	header := fmt.Sprintf("%s:%d:%d: %s[%s]:",
-		d.Filename, pos.Line, pos.Col, c.severity(d.Severity), d.RuleID)
+		d.Filename, pos.Line, pos.Col, c.severity(d.Severity), diagnosticID(d))
 	if _, err := fmt.Fprintln(w, header); err != nil {
 		return err
 	}
@@ -63,8 +63,8 @@ func writeOneText(w io.Writer, d diagnostic.Diagnostic, sources SourceSet, c col
 			return err
 		}
 	}
-	if d.Suggested != "" {
-		if _, err := fmt.Fprintln(w, "help: "+d.Suggested); err != nil {
+	for _, suggestion := range d.Suggestions {
+		if _, err := fmt.Fprintln(w, "help: "+suggestion.Description); err != nil {
 			return err
 		}
 	}

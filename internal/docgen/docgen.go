@@ -31,6 +31,7 @@ func writeIndex(dir string, metas []lint.Metadata) error {
 	var b strings.Builder
 	b.WriteString("# Rule index\n\n")
 	b.WriteString("Generated from rule metadata. Do not edit by hand.\n\n")
+	b.WriteString("Rules are stable unless their page marks them as preview.\n\n")
 	b.WriteString("| ID | Category | Severity | Default | Fixable | Summary |\n")
 	b.WriteString("| --- | --- | --- | --- | --- | --- |\n")
 	for _, m := range metas {
@@ -56,6 +57,9 @@ func writeRulePage(dir string, m lint.Metadata) error {
 	b.WriteString(fmt.Sprintf("| Category | %s |\n", m.Category))
 	b.WriteString(fmt.Sprintf("| Severity | %s |\n", m.DefaultSeverity))
 	b.WriteString(fmt.Sprintf("| Analysis | %s |\n", analysisName(m.AnalysisLevel)))
+	if m.Stability == lint.StabilityPreview {
+		b.WriteString("| Stability | preview |\n")
+	}
 	b.WriteString(fmt.Sprintf("| Default | %s |\n", onOff(m.DefaultEnabled)))
 	b.WriteString(fmt.Sprintf("| Fixable | %s |\n", yesNo(m.Fixable)))
 	if len(m.Tags) > 0 {
@@ -63,7 +67,33 @@ func writeRulePage(dir string, m lint.Metadata) error {
 	}
 	b.WriteString("\n## Details\n\n")
 	b.WriteString(m.Explanation + "\n")
+	if len(m.Options) > 0 {
+		b.WriteString("\n## Options\n\n")
+		b.WriteString("| Name | Type | Default | Constraint | Description |\n")
+		b.WriteString("| --- | --- | --- | --- | --- |\n")
+		for _, option := range m.Options {
+			b.WriteString(fmt.Sprintf("| `%s` | %s | `%v` | %s | %s |\n",
+				option.Name, option.Type, option.Default, optionConstraint(option), escapeMD(option.Summary)))
+		}
+	}
 	return os.WriteFile(filepath.Join(dir, m.ID+".md"), []byte(b.String()), 0o644)
+}
+
+func optionConstraint(option lint.Option) string {
+	var parts []string
+	if option.HasMinimum {
+		parts = append(parts, fmt.Sprintf("minimum %d", option.Minimum))
+	}
+	if option.HasMaximum {
+		parts = append(parts, fmt.Sprintf("maximum %d", option.Maximum))
+	}
+	if len(option.Choices) > 0 {
+		parts = append(parts, strings.Join(option.Choices, ", "))
+	}
+	if len(parts) == 0 {
+		return "—"
+	}
+	return strings.Join(parts, "; ")
 }
 
 func analysisName(l lint.AnalysisLevel) string {

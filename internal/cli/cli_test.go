@@ -83,6 +83,22 @@ func TestCLIFixAppliesAndRechecks(t *testing.T) {
 	}
 }
 
+func TestCLIFixAppliesExactParseRecovery(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "parse.pwn")
+	if err := os.WriteFile(path, []byte("main() { return (1; }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, stderr, code := runCLI(t, []string{"--fix-safe", "--format", "compact", path}, "")
+	if code != 0 || out != "" || stderr != "" {
+		t.Fatalf("code=%d output=%q stderr=%q", code, out, stderr)
+	}
+	fixed, err := os.ReadFile(path)
+	if err != nil || string(fixed) != "main() { return (1); }\n" {
+		t.Fatalf("fixed=%q err=%v", fixed, err)
+	}
+}
+
 func TestCLIDiffDoesNotWrite(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "fix.pwn")

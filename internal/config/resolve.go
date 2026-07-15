@@ -82,7 +82,7 @@ func Resolve(f File, sourcePath string, reg *lint.Registrar) (*Resolved, error) 
 
 	enabled := reg.EnabledForProfile(lint.Profile(profile))
 
-	delta, disabled, ruleConfig, errs := parseRuleTable(f.Rules, r.AllKnownRuleIDs)
+	delta, disabled, ruleConfig, errs := parseRuleTable(f.Rules, reg)
 	for id, sev := range delta {
 		enabled[id] = sev
 	}
@@ -101,7 +101,7 @@ func Resolve(f File, sourcePath string, reg *lint.Registrar) (*Resolved, error) 
 			errs = append(errs, fmt.Sprintf("config: overrides[%d] must configure at least one rule", i))
 			continue
 		}
-		ovEnabled, ovDisabled, ovRuleConfig, ovErrs := parseRuleTable(ov.Rules, r.AllKnownRuleIDs)
+		ovEnabled, ovDisabled, ovRuleConfig, ovErrs := parseRuleTable(ov.Rules, reg)
 		errs = append(errs, ovErrs...)
 		resolvedOverrides = append(resolvedOverrides, ResolvedOverride{
 			Paths:      ov.Paths,
@@ -124,12 +124,13 @@ func (r *Resolved) APIForTarget(target Target) (*api.Metadata, error) {
 	return loadAPIMetadata(r.Source.APIMetadata, r.SourcePath, string(target))
 }
 
-func parseRuleTable(rulesTOML map[string]any, known map[string]struct{}) (enabled map[string]diagnostic.Severity, disabled map[string]struct{}, ruleConfig map[string]map[string]any, errs []string) {
+func parseRuleTable(rulesTOML map[string]any, reg *lint.Registrar) (enabled map[string]diagnostic.Severity, disabled map[string]struct{}, ruleConfig map[string]map[string]any, errs []string) {
 	enabled = make(map[string]diagnostic.Severity)
 	disabled = make(map[string]struct{})
 	ruleConfig = make(map[string]map[string]any)
 	for id, v := range rulesTOML {
-		if _, ok := known[id]; !ok {
+		meta, ok := reg.Lookup(id)
+		if !ok {
 			errs = append(errs, fmt.Sprintf("config: unknown rule ID %q", id))
 			continue
 		}
@@ -159,12 +160,35 @@ func parseRuleTable(rulesTOML map[string]any, known map[string]struct{}) (enable
 				}
 				delete(cfg, "severity")
 			}
+			errs = append(errs, validateRuleOptions(id, cfg, meta.Options)...)
 			ruleConfig[id] = cfg
 		default:
 			errs = append(errs, fmt.Sprintf("config: rule %q: value must be a severity string or a table", id))
 		}
 	}
 	return enabled, disabled, ruleConfig, errs
+}
+
+func validateRuleOptions(ruleID string, values map[string]any, options []lint.Option) []string {
+	known := make(map[string]lint.Option, len(options))
+	for _, option := range options {
+		known[option.Name] = option
+	}
+	var errs []string
+	for name, value := range values {
+		option, ok := known[name]
+		if !ok {
+			errs = append(errs, fmt.Sprintf("config: rule %q: unknown option %q", ruleID, name))
+			continue
+		}
+		normalized, err := lint.NormalizeOption(option, value)
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("config: rule %q option %q: %v", ruleID, name, err))
+			continue
+		}
+		values[name] = normalized
+	}
+	return errs
 }
 
 func loadAPIMetadata(paths []string, sourcePath, target string) (*api.Metadata, error) {

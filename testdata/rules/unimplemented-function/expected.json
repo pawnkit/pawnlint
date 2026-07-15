@@ -9,7 +9,11 @@
       "startCol": 2,
       "endLine": 3,
       "endCol": 19,
-      "suggested": "Use `OnVehicleDamageStatusUpdate`."
+      "suggestions": [
+        {
+          "description": "Use `OnVehicleDamageStatusUpdate`."
+        }
+      ]
     },
     {
       "ruleId": "unimplemented-function",
@@ -19,7 +23,11 @@
       "startCol": 2,
       "endLine": 4,
       "endCol": 20,
-      "suggested": "Use `CreatePickup`."
+      "suggestions": [
+        {
+          "description": "Use `CreatePickup`."
+        }
+      ]
     },
     {
       "ruleId": "unimplemented-function",

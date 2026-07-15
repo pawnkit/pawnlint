@@ -33,6 +33,13 @@ func AllFormats() []string {
 
 type SourceSet map[string][]byte
 
+func diagnosticID(d diagnostic.Diagnostic) string {
+	if d.Code == "" {
+		return d.RuleID
+	}
+	return d.RuleID + "/" + d.Code
+}
+
 func (s SourceSet) lineTableFor(filename string) *source.LineTable {
 	src := s[filename]
 	return source.NewLineTable(src)

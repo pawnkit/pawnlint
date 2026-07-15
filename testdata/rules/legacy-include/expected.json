@@ -9,7 +9,11 @@
       "startCol": 10,
       "endLine": 1,
       "endCol": 19,
-      "suggested": "include \u003copen.mp\u003e directly"
+      "suggestions": [
+        {
+          "description": "include \u003copen.mp\u003e directly"
+        }
+      ]
     },
     {
       "ruleId": "legacy-include",
@@ -19,7 +23,11 @@
       "startCol": 10,
       "endLine": 2,
       "endCol": 22,
-      "suggested": "include \u003copen.mp\u003e directly"
+      "suggestions": [
+        {
+          "description": "include \u003copen.mp\u003e directly"
+        }
+      ]
     },
     {
       "ruleId": "legacy-include",
@@ -29,7 +37,11 @@
       "startCol": 10,
       "endLine": 3,
       "endCol": 21,
-      "suggested": "include \u003copen.mp\u003e directly"
+      "suggestions": [
+        {
+          "description": "include \u003copen.mp\u003e directly"
+        }
+      ]
     },
     {
       "ruleId": "legacy-include",
@@ -39,7 +51,11 @@
       "startCol": 10,
       "endLine": 4,
       "endCol": 21,
-      "suggested": "include \u003copen.mp\u003e directly"
+      "suggestions": [
+        {
+          "description": "include \u003copen.mp\u003e directly"
+        }
+      ]
     },
     {
       "ruleId": "legacy-include",
@@ -49,7 +65,11 @@
       "startCol": 10,
       "endLine": 5,
       "endCol": 18,
-      "suggested": "include \u003copen.mp\u003e directly"
+      "suggestions": [
+        {
+          "description": "include \u003copen.mp\u003e directly"
+        }
+      ]
     },
     {
       "ruleId": "legacy-include",
@@ -59,7 +79,11 @@
       "startCol": 13,
       "endLine": 6,
       "endCol": 23,
-      "suggested": "include \u003copen.mp\u003e directly"
+      "suggestions": [
+        {
+          "description": "include \u003copen.mp\u003e directly"
+        }
+      ]
     },
     {
       "ruleId": "legacy-include",
@@ -69,7 +93,11 @@
       "startCol": 10,
       "endLine": 7,
       "endCol": 22,
-      "suggested": "include \u003copen.mp\u003e directly"
+      "suggestions": [
+        {
+          "description": "include \u003copen.mp\u003e directly"
+        }
+      ]
     }
   ],
   "valid.pwn": []

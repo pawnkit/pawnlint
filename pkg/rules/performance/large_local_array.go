@@ -25,6 +25,10 @@ func (LargeLocalArray) Metadata() lint.Metadata {
 		DefaultEnabled:  false,
 		Fixable:         false,
 		Tags:            []string{"arrays", "stack", "memory", "performance"},
+		Options: []lint.Option{{
+			Name: "threshold", Summary: "Minimum local array capacity to report",
+			Type: lint.OptionInteger, Default: int64(1024), Minimum: 1, HasMinimum: true,
+		}},
 	}
 }
 
@@ -46,10 +50,10 @@ func (LargeLocalArray) Run(ctx *lint.Context) {
 			continue
 		}
 		ctx.Report(diagnostic.Diagnostic{
-			Message:   fmt.Sprintf("local array %q allocates %d stack cells", symbol.Name, capacity),
-			Filename:  ctx.File.Path,
-			Range:     ctx.Walk.Range(symbol.NameNode),
-			Suggested: fmt.Sprintf("reduce the array below %d cells or move storage out of the automatic stack", threshold),
+			Message:     fmt.Sprintf("local array %q allocates %d stack cells", symbol.Name, capacity),
+			Filename:    ctx.File.Path,
+			Range:       ctx.Walk.Range(symbol.NameNode),
+			Suggestions: []diagnostic.Suggestion{{Description: fmt.Sprintf("reduce the array below %d cells or move storage out of the automatic stack", threshold)}},
 		})
 	}
 }

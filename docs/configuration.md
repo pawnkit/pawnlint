@@ -211,6 +211,8 @@ matching `--target` simply means those specific rules stay quiet.
 ## Rule settings
 
 Set a rule to `error`, `warning`, `info`, `hint`, or `off`.
+Rule tables accept only the options documented on that rule's page. Option
+types, choices, and ranges are validated before linting.
 
 Configuration errors include unknown fields, rule IDs, profiles, targets, and
 severity names.

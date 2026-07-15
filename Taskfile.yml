@@ -13,7 +13,7 @@ tasks:
   test:
     desc: Run unit tests
     cmds:
-      - go test ./...
+      - go test -v ./...
 
   race:
     desc: Run unit tests with the race detector

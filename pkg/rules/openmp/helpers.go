@@ -5,8 +5,16 @@ import (
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/api"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
+	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 )
+
+func suggestions(description string) []diagnostic.Suggestion {
+	if description == "" {
+		return nil
+	}
+	return []diagnostic.Suggestion{{Description: description}}
+}
 
 func calledNative(ctx *lint.Context, call *parser.Node) (api.Native, string, bool) {
 	if call == nil || call.HasError || ctx.Walk.Uncertain(call) {

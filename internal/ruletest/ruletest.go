@@ -18,16 +18,21 @@ import (
 var update = flag.Bool("update", false, "regenerate expected.json golden files")
 
 type SnapshotEntry struct {
-	RuleID    string         `json:"ruleId"`
-	Severity  string         `json:"severity"`
-	Message   string         `json:"message"`
-	StartLine int            `json:"startLine"`
-	StartCol  int            `json:"startCol"`
-	EndLine   int            `json:"endLine"`
-	EndCol    int            `json:"endCol"`
-	Notes     []SnapshotNote `json:"notes,omitempty"`
-	Suggested string         `json:"suggested,omitempty"`
-	Fix       *SnapshotFix   `json:"fix,omitempty"`
+	RuleID      string               `json:"ruleId"`
+	Severity    string               `json:"severity"`
+	Message     string               `json:"message"`
+	StartLine   int                  `json:"startLine"`
+	StartCol    int                  `json:"startCol"`
+	EndLine     int                  `json:"endLine"`
+	EndCol      int                  `json:"endCol"`
+	Notes       []SnapshotNote       `json:"notes,omitempty"`
+	Suggestions []SnapshotSuggestion `json:"suggestions,omitempty"`
+	Fix         *SnapshotFix         `json:"fix,omitempty"`
+}
+
+type SnapshotSuggestion struct {
+	Description string         `json:"description"`
+	Edits       []SnapshotEdit `json:"edits,omitempty"`
 }
 
 type SnapshotNote struct {
@@ -78,7 +83,14 @@ func runRule(t *testing.T, path string, ruleID string, src []byte, target string
 		}
 		engine.Project = model
 	}
-	return engine.LintFile(path, src, m.AnalysisLevel, ruleSet, known, nil)
+	diagnostics := engine.LintFile(path, src, m.AnalysisLevel, ruleSet, known, nil)
+	filtered := diagnostics[:0]
+	for _, item := range diagnostics {
+		if item.RuleID == ruleID {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
 }
 
 func RunSnapshot(t *testing.T, ruleID, fixtureDir string) {
@@ -104,7 +116,11 @@ func RunSnapshot(t *testing.T, ruleID, fixtureDir string) {
 		if err != nil {
 			t.Fatalf("read %s: %v", full, err)
 		}
-		diags := runRule(t, "in/"+ruleID+"/"+name, ruleID, src, target)
+		inputPath := "in/" + ruleID + "/" + name
+		if metadata, ok := rules.Default().Lookup(ruleID); ok && metadata.AnalysisLevel == lint.ProjectAnalysis {
+			inputPath = full
+		}
+		diags := runRule(t, inputPath, ruleID, src, target)
 		entries := make([]SnapshotEntry, 0, len(diags))
 		for _, d := range diags {
 			entry := SnapshotEntry{
@@ -115,7 +131,6 @@ func RunSnapshot(t *testing.T, ruleID, fixtureDir string) {
 				StartCol:  d.Range.Start.Col,
 				EndLine:   d.Range.End.Line,
 				EndCol:    d.Range.End.Col,
-				Suggested: d.Suggested,
 			}
 			for _, note := range d.Notes {
 				entry.Notes = append(entry.Notes, SnapshotNote{
@@ -125,6 +140,17 @@ func RunSnapshot(t *testing.T, ruleID, fixtureDir string) {
 					EndLine:   note.Range.End.Line,
 					EndCol:    note.Range.End.Col,
 				})
+			}
+			for _, suggestion := range d.Suggestions {
+				item := SnapshotSuggestion{Description: suggestion.Description}
+				for _, edit := range suggestion.Edits {
+					item.Edits = append(item.Edits, SnapshotEdit{
+						StartOffset: edit.Range.Start.Offset,
+						EndOffset:   edit.Range.End.Offset,
+						NewText:     edit.NewText,
+					})
+				}
+				entry.Suggestions = append(entry.Suggestions, item)
 			}
 			if d.Fix != nil {
 				entry.Fix = &SnapshotFix{Description: d.Fix.Description}

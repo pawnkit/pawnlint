@@ -47,10 +47,10 @@ func (DeprecatedFunction) Run(ctx *lint.Context) {
 			return
 		}
 		ctx.Report(diagnostic.Diagnostic{
-			Message:   fmt.Sprintf("function %q is deprecated", name),
-			Filename:  ctx.File.Path,
-			Range:     ctx.Walk.Range(callee),
-			Suggested: entry.Suggested,
+			Message:     fmt.Sprintf("function %q is deprecated", name),
+			Filename:    ctx.File.Path,
+			Range:       ctx.Walk.Range(callee),
+			Suggestions: suggestions(entry.Suggested),
 		})
 	})
 }

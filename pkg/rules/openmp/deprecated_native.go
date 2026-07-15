@@ -32,10 +32,10 @@ func (DeprecatedNative) Run(ctx *lint.Context) {
 			return
 		}
 		ctx.Report(diagnostic.Diagnostic{
-			Message:   fmt.Sprintf("native %q is deprecated", name),
-			Filename:  ctx.File.Path,
-			Range:     ctx.Walk.Range(node.Field("function")),
-			Suggested: native.Deprecated,
+			Message:     fmt.Sprintf("native %q is deprecated", name),
+			Filename:    ctx.File.Path,
+			Range:       ctx.Walk.Range(node.Field("function")),
+			Suggestions: suggestions(native.Deprecated),
 		})
 	})
 }

@@ -9,7 +9,11 @@
       "startCol": 16,
       "endLine": 3,
       "endCol": 33,
-      "suggested": "This function is broken.  See: open.mp/docs/scripting/functions/GetPlayerPoolSize"
+      "suggestions": [
+        {
+          "description": "This function is broken.  See: open.mp/docs/scripting/functions/GetPlayerPoolSize"
+        }
+      ]
     },
     {
       "ruleId": "deprecated-function",
@@ -19,7 +23,11 @@
       "startCol": 17,
       "endLine": 4,
       "endCol": 35,
-      "suggested": "This function is broken.  See: open.mp/docs/scripting/functions/GetVehiclePoolSize"
+      "suggestions": [
+        {
+          "description": "This function is broken.  See: open.mp/docs/scripting/functions/GetVehiclePoolSize"
+        }
+      ]
     },
     {
       "ruleId": "deprecated-function",
@@ -29,7 +37,11 @@
       "startCol": 15,
       "endLine": 5,
       "endCol": 31,
-      "suggested": "This function is broken.  See: open.mp/docs/scripting/functions/GetActorPoolSize"
+      "suggestions": [
+        {
+          "description": "This function is broken.  See: open.mp/docs/scripting/functions/GetActorPoolSize"
+        }
+      ]
     }
   ],
   "valid.pwn": []

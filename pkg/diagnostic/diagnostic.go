@@ -63,6 +63,9 @@ const (
 	CategoryMaintainability
 	CategoryOpenMP
 	CategoryStyle
+	CategorySecurity
+	CategoryPortability
+	CategoryRestriction
 )
 
 func (c Category) String() string {
@@ -79,6 +82,12 @@ func (c Category) String() string {
 		return "openmp"
 	case CategoryStyle:
 		return "style"
+	case CategorySecurity:
+		return "security"
+	case CategoryPortability:
+		return "portability"
+	case CategoryRestriction:
+		return "restriction"
 	default:
 		return "unknown"
 	}
@@ -90,15 +99,21 @@ type RelatedLocation struct {
 }
 
 type Diagnostic struct {
-	RuleID    string
-	Severity  Severity
-	Category  Category
-	Message   string
-	Filename  string
-	Range     source.Range
-	Notes     []RelatedLocation
-	Suggested string
-	Fix       *Fix
+	RuleID      string
+	Code        string
+	Severity    Severity
+	Category    Category
+	Message     string
+	Filename    string
+	Range       source.Range
+	Notes       []RelatedLocation
+	Suggestions []Suggestion
+	Fix         *Fix
+}
+
+type Suggestion struct {
+	Description string
+	Edits       []Edit
 }
 
 type Fix struct {

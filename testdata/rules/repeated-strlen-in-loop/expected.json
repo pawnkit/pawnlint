@@ -9,7 +9,11 @@
       "startCol": 17,
       "endLine": 5,
       "endCol": 29,
-      "suggested": "compute the string length once before the loop"
+      "suggestions": [
+        {
+          "description": "compute the string length once before the loop"
+        }
+      ]
     },
     {
       "ruleId": "repeated-strlen-in-loop",
@@ -19,7 +23,11 @@
       "startCol": 26,
       "endLine": 9,
       "endCol": 38,
-      "suggested": "compute the string length once before the loop"
+      "suggestions": [
+        {
+          "description": "compute the string length once before the loop"
+        }
+      ]
     }
   ],
   "valid.pwn": []

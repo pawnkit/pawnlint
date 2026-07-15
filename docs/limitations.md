@@ -18,6 +18,7 @@
 
 - A fix is offered only when a diagnostic carries a proven-safe edit; coverage
   is intentionally small.
+- Exact pawn-parser recovery edits are available for supported syntax errors.
 - `--fix` and `--fix-safe` apply the same safe-edit set.
 - `--diff` previews changes without writing files.
 - Stdin input supports `--diff` but cannot be modified in place.
