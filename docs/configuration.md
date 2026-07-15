@@ -285,6 +285,20 @@ policies = [
 Boolean-name policies apply only to definite `bool` tags and use the same
 selectors, exclusions, and callback/native opt-ins.
 
+```toml
+[rules.restricted-syntax]
+severity = "warning"
+functions = ["LegacyFunction"]
+natives = ["printf"]
+includes = ["legacy/**"]
+globals = true
+recursion = true
+goto = true
+```
+
+Restricted calls require definite targets. Include restrictions match requested
+paths, and inactive or uncertain syntax is skipped.
+
 ## Precedence
 
 Highest priority first:

@@ -1,0 +1,1 @@
+#define RESTRICTED_VALUE (1)

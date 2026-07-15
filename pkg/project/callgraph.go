@@ -18,6 +18,7 @@ type CallGraph struct {
 	Functions []Declaration
 	Calls     []Call
 	outgoing  map[string][]Call
+	recursive [][]Declaration
 }
 
 func (m *Model) buildCallGraph() *CallGraph {
@@ -77,6 +78,7 @@ func (m *Model) buildCallGraph() *CallGraph {
 		key := declarationKey(call.Caller)
 		graph.outgoing[key] = append(graph.outgoing[key], call)
 	}
+	graph.recursive = graph.findRecursiveComponents()
 	return graph
 }
 
@@ -121,6 +123,17 @@ func (g *CallGraph) Outgoing(function Declaration) []Call {
 }
 
 func (g *CallGraph) RecursiveComponents() [][]Declaration {
+	if g == nil {
+		return nil
+	}
+	result := make([][]Declaration, len(g.recursive))
+	for index, component := range g.recursive {
+		result[index] = append([]Declaration(nil), component...)
+	}
+	return result
+}
+
+func (g *CallGraph) findRecursiveComponents() [][]Declaration {
 	if g == nil {
 		return nil
 	}

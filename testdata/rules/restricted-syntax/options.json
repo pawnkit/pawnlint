@@ -1,0 +1,8 @@
+{
+  "functions": ["LegacyFunction"],
+  "natives": ["RestrictedNative"],
+  "includes": ["restricted.inc"],
+  "globals": true,
+  "recursion": true,
+  "goto": true
+}

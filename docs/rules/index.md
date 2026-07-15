@@ -63,6 +63,7 @@ Rules are stable unless their page marks them as preview.
 | [`redundant-initialization`](redundant-initialization.md) | suspicious | warning | off | no | Reports local initial values overwritten before any read |
 | [`repeated-strlen-in-loop`](repeated-strlen-in-loop.md) | performance | warning | off | no | Reports loop conditions that repeatedly scan an unchanged local string |
 | [`required-call-order`](required-call-order.md) | correctness | error | off | no | Reports API calls missing a required earlier call |
+| [`restricted-syntax`](restricted-syntax.md) | restriction | warning | off | no | Reports configured language and dependency restrictions |
 | [`self-assignment`](self-assignment.md) | correctness | warning | on | yes | Reports assignments that store a symbol back into itself |
 | [`settimerex-format-argument-count`](settimerex-format-argument-count.md) | correctness | error | off | no | Reports SetTimerEx() calls whose specifier string and argument count differ |
 | [`shadowed-variable`](shadowed-variable.md) | maintainability | warning | off | no | Reports local declarations that hide an outer variable |

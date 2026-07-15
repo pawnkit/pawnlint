@@ -93,6 +93,7 @@
 - Enum prefixes require four definite entries and 75 percent agreement.
 - Identifier lengths apply only through configured ordered limits.
 - Boolean naming applies only to declarations with one definite `bool` tag.
+- Restricted calls and recursion require definite project resolution.
 - Callbacks and natives require explicit opt-in. Uncertain declarations and
   non-standard identifiers are skipped.
 

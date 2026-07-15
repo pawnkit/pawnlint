@@ -1,0 +1,80 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "restricted-syntax",
+      "severity": "warning",
+      "message": "call to function \"LegacyFunction\" is restricted",
+      "startLine": 1,
+      "startCol": 23,
+      "endLine": 1,
+      "endCol": 37
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "restricted-syntax",
+      "severity": "warning",
+      "message": "include \"restricted.inc\" is restricted by pattern \"restricted.inc\"",
+      "startLine": 1,
+      "startCol": 10,
+      "endLine": 1,
+      "endCol": 26
+    },
+    {
+      "ruleId": "restricted-syntax",
+      "severity": "warning",
+      "message": "global variable \"forbiddenGlobal\" is restricted",
+      "startLine": 5,
+      "startCol": 5,
+      "endLine": 5,
+      "endCol": 20
+    },
+    {
+      "ruleId": "restricted-syntax",
+      "severity": "warning",
+      "message": "function \"Recur\" uses restricted direct recursion",
+      "startLine": 12,
+      "startCol": 7,
+      "endLine": 12,
+      "endCol": 12,
+      "notes": [
+        {
+          "message": "recursive call to \"Recur\" is here",
+          "startLine": 14,
+          "startCol": 2,
+          "endLine": 14,
+          "endCol": 7
+        }
+      ]
+    },
+    {
+      "ruleId": "restricted-syntax",
+      "severity": "warning",
+      "message": "call to function \"LegacyFunction\" is restricted",
+      "startLine": 20,
+      "startCol": 2,
+      "endLine": 20,
+      "endCol": 16
+    },
+    {
+      "ruleId": "restricted-syntax",
+      "severity": "warning",
+      "message": "call to native \"RestrictedNative\" is restricted",
+      "startLine": 21,
+      "startCol": 2,
+      "endLine": 21,
+      "endCol": 18
+    },
+    {
+      "ruleId": "restricted-syntax",
+      "severity": "warning",
+      "message": "goto statement is restricted",
+      "startLine": 22,
+      "startCol": 2,
+      "endLine": 22,
+      "endCol": 16
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

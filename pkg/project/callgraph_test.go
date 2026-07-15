@@ -44,6 +44,10 @@ func TestCallGraphFindsDirectRecursion(t *testing.T) {
 	if len(components) != 1 || len(components[0]) != 1 || components[0][0].Name != "Recur" {
 		t.Fatalf("recursive components = %#v", components)
 	}
+	components[0][0].Name = "Changed"
+	if next := model.CallGraph.RecursiveComponents(); next[0][0].Name != "Recur" {
+		t.Fatalf("cached components were mutated: %#v", next)
+	}
 }
 
 func TestCallGraphKeepsSharedCSTContextsIndependent(t *testing.T) {
