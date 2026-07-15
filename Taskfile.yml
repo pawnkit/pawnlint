@@ -49,6 +49,12 @@ tasks:
     desc: Run benchmarks
     cmds:
       - go test ./internal/bench -run=^$ -bench=. -benchmem
+      - go test ./pkg/project -run=^$ -bench=. -benchmem
+
+  bench-realworld:
+    desc: Benchmark pinned real-world projects
+    cmds:
+      - scripts/realworld-bench.sh
 
   fuzz:
     desc: Run fuzz smoke tests

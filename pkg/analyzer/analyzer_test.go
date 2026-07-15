@@ -174,6 +174,29 @@ func TestAnalyzeIncrementalCache(t *testing.T) {
 	}
 }
 
+func TestAnalyzerSessionReusesProjectParsing(t *testing.T) {
+	dir := t.TempDir()
+	request := analyzer.Request{
+		WorkingDirectory: dir,
+		Sources: []analyzer.Source{{
+			Path:    "main.pwn",
+			Content: []byte("main() {}\n"),
+		}},
+	}
+	session := analyzer.New()
+	first, err := session.Analyze(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := session.Analyze(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first.Diagnostics) != len(second.Diagnostics) {
+		t.Fatalf("diagnostics changed: first=%d second=%d", len(first.Diagnostics), len(second.Diagnostics))
+	}
+}
+
 func diagnosticIndex(diagnostics []analyzer.Diagnostic, ruleID string) int {
 	for index, finding := range diagnostics {
 		if finding.RuleID == ruleID {

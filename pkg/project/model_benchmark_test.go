@@ -9,6 +9,31 @@ import (
 )
 
 func BenchmarkBuildContextualIncludes(b *testing.B) {
+	dir, entry, source := contextualIncludeBenchmark(b)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := Build([]Source{{Path: entry, Content: source}}, Options{WorkingDir: dir, DefinesComplete: true}); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkBuildContextualIncludesCompact(b *testing.B) {
+	dir, entry, source := contextualIncludeBenchmark(b)
+	features := AllFeatures()
+	cache := NewParseCache()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := Build([]Source{{Path: entry, Content: source}}, Options{WorkingDir: dir, DefinesComplete: true, ReleaseExpanded: true, Features: &features, ParseCache: cache}); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func contextualIncludeBenchmark(b *testing.B) (string, string, []byte) {
+	b.Helper()
 	dir := b.TempDir()
 	var root strings.Builder
 	for i := 0; i < 25; i++ {
@@ -23,11 +48,5 @@ func BenchmarkBuildContextualIncludes(b *testing.B) {
 	root.WriteString("main() {}\n")
 	entry := filepath.Join(dir, "main.pwn")
 	source := []byte(root.String())
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		if _, err := Build([]Source{{Path: entry, Content: source}}, Options{WorkingDir: dir, DefinesComplete: true}); err != nil {
-			b.Fatal(err)
-		}
-	}
+	return dir, entry, source
 }

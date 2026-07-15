@@ -31,7 +31,14 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines []str
 	physical := m.physical[canonical]
 	if physical == nil {
 		var parsed *parser.File
-		if m.options.ObserveTiming == nil {
+		if m.options.ParseCache != nil {
+			started := time.Now()
+			var cached bool
+			parsed, cached = m.options.ParseCache.parse(canonical, source)
+			if !cached && m.options.ObserveTiming != nil {
+				m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
+			}
+		} else if m.options.ObserveTiming == nil {
 			parsed = parser.Parse(source)
 		} else {
 			started := time.Now()

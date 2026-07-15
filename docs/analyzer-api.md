@@ -13,6 +13,13 @@ result, err := analyzer.Analyze(ctx, analyzer.Request{
 })
 ```
 
+Reuse an analyzer in long-lived processes to cache unchanged parsed files:
+
+```go
+session := analyzer.New()
+result, err := session.Analyze(ctx, request)
+```
+
 `Result.Diagnostics` contains public one-based positions and byte offsets.
 `SafeEdits` contains machine-safe actions. `Suggestions` contains non-applicable
 guidance and optional edits. Each action references its diagnostic index.

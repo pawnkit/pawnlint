@@ -24,6 +24,7 @@ type Options struct {
 	DefinesComplete bool
 	ReleaseExpanded bool
 	Features        *Features
+	ParseCache      *ParseCache
 	ObserveTiming   func(TimingEvent)
 }
 

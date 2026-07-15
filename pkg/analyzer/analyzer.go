@@ -1,6 +1,10 @@
 package analyzer
 
-import "context"
+import (
+	"context"
+
+	"github.com/pawnkit/pawnlint/pkg/project"
+)
 
 type Source struct {
 	Path    string
@@ -73,6 +77,21 @@ type RuleMigration struct {
 	Replacement string
 }
 
+type Analyzer struct {
+	parseCache *project.ParseCache
+}
+
+func New() *Analyzer {
+	return &Analyzer{parseCache: project.NewParseCache()}
+}
+
+func (a *Analyzer) Analyze(ctx context.Context, request Request) (Result, error) {
+	if a == nil {
+		return Analyze(ctx, request)
+	}
+	return analyze(ctx, request, a.parseCache)
+}
+
 func Analyze(ctx context.Context, request Request) (Result, error) {
-	return analyze(ctx, request)
+	return analyze(ctx, request, nil)
 }

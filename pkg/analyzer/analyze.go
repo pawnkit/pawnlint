@@ -30,7 +30,7 @@ type analysisContext struct {
 	entry           string
 }
 
-func analyze(ctx context.Context, request Request) (Result, error) {
+func analyze(ctx context.Context, request Request, parseCache *project.ParseCache) (Result, error) {
 	if ctx == nil {
 		return Result{}, fmt.Errorf("analyzer: nil context")
 	}
@@ -73,6 +73,7 @@ func analyze(ctx context.Context, request Request) (Result, error) {
 			DefinesComplete: settings.definesComplete,
 			ReleaseExpanded: true,
 			Features:        &projectFeatures,
+			ParseCache:      parseCache,
 		})
 		if err != nil {
 			return Result{}, fmt.Errorf("analyzer: build project: %w", err)
