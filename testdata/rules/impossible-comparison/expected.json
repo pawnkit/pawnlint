@@ -1,0 +1,79 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "impossible-comparison",
+      "severity": "warning",
+      "message": "comparison \"\u003e\" is always false",
+      "startLine": 3,
+      "startCol": 9,
+      "endLine": 3,
+      "endCol": 29
+    },
+    {
+      "ruleId": "impossible-comparison",
+      "severity": "warning",
+      "message": "comparison \"\u003c=\" is always true",
+      "startLine": 5,
+      "startCol": 9,
+      "endLine": 5,
+      "endCol": 25
+    },
+    {
+      "ruleId": "impossible-comparison",
+      "severity": "warning",
+      "message": "comparison \"\u003e=\" is always false",
+      "startLine": 7,
+      "startCol": 9,
+      "endLine": 7,
+      "endCol": 25
+    },
+    {
+      "ruleId": "impossible-comparison",
+      "severity": "warning",
+      "message": "comparison \"\u003c\" is always false",
+      "startLine": 9,
+      "startCol": 9,
+      "endLine": 9,
+      "endCol": 24
+    },
+    {
+      "ruleId": "impossible-comparison",
+      "severity": "warning",
+      "message": "comparison \"==\" is always false",
+      "startLine": 11,
+      "startCol": 9,
+      "endLine": 11,
+      "endCol": 26
+    },
+    {
+      "ruleId": "impossible-comparison",
+      "severity": "warning",
+      "message": "comparison \"!=\" is always true",
+      "startLine": 13,
+      "startCol": 9,
+      "endLine": 13,
+      "endCol": 27
+    },
+    {
+      "ruleId": "impossible-comparison",
+      "severity": "warning",
+      "message": "comparison \"\u003c\" is always false",
+      "startLine": 15,
+      "startCol": 9,
+      "endLine": 15,
+      "endCol": 26
+    },
+    {
+      "ruleId": "impossible-comparison",
+      "severity": "warning",
+      "message": "comparison \"\u003e\" is always false",
+      "startLine": 17,
+      "startCol": 9,
+      "endLine": 17,
+      "endCol": 48
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

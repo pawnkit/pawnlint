@@ -41,6 +41,7 @@ Rules are stable unless their page marks them as preview.
 | [`identical-branches`](identical-branches.md) | suspicious | warning | off | no | Reports if and ternary branches with identical code |
 | [`identifier-length`](identifier-length.md) | style | warning | off | no | Reports declarations outside configured name-length limits |
 | [`ignored-return-value`](ignored-return-value.md) | correctness | warning | off | no | Reports discarded results from APIs marked must-use |
+| [`impossible-comparison`](impossible-comparison.md) | correctness | warning | on | no | Reports comparisons that cannot produce both results |
 | [`include-cycle`](include-cycle.md) | correctness | error | on | no | Reports cycles in the resolved include graph |
 | [`include-layering`](include-layering.md) | restriction | error | off | no | Reports dependencies outside a source layer's allowlist |
 | [`inconsistent-enum-prefix`](inconsistent-enum-prefix.md) | style | warning | off | no | Reports enum entries that omit a dominant member prefix |
