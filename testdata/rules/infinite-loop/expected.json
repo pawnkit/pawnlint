@@ -1,0 +1,52 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "infinite-loop",
+      "severity": "warning",
+      "message": "loop condition is always true and the loop has no exit",
+      "startLine": 3,
+      "startCol": 11,
+      "endLine": 3,
+      "endCol": 14
+    },
+    {
+      "ruleId": "infinite-loop",
+      "severity": "warning",
+      "message": "loop condition is always true and the loop has no exit",
+      "startLine": 11,
+      "startCol": 5,
+      "endLine": 11,
+      "endCol": 8
+    },
+    {
+      "ruleId": "infinite-loop",
+      "severity": "warning",
+      "message": "loop condition is always true and the loop has no exit",
+      "startLine": 20,
+      "startCol": 11,
+      "endLine": 20,
+      "endCol": 20
+    },
+    {
+      "ruleId": "infinite-loop",
+      "severity": "warning",
+      "message": "loop condition is always true and the loop has no exit",
+      "startLine": 28,
+      "startCol": 11,
+      "endLine": 28,
+      "endCol": 17
+    },
+    {
+      "ruleId": "infinite-loop",
+      "severity": "warning",
+      "message": "loop condition is always true and the loop has no exit",
+      "startLine": 44,
+      "startCol": 11,
+      "endLine": 44,
+      "endCol": 17
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

@@ -45,6 +45,7 @@ Rules are stable unless their page marks them as preview.
 | [`include-cycle`](include-cycle.md) | correctness | error | on | no | Reports cycles in the resolved include graph |
 | [`include-layering`](include-layering.md) | restriction | error | off | no | Reports dependencies outside a source layer's allowlist |
 | [`inconsistent-enum-prefix`](inconsistent-enum-prefix.md) | style | warning | off | no | Reports enum entries that omit a dominant member prefix |
+| [`infinite-loop`](infinite-loop.md) | correctness | warning | on | no | Reports loops proven unable to exit |
 | [`invalid-sentinel-comparison`](invalid-sentinel-comparison.md) | correctness | error | off | no | Reports a native's result compared against the wrong INVALID_* constant |
 | [`invalid-shift-count`](invalid-shift-count.md) | correctness | error | on | no | Reports constant shift counts outside the 32-bit cell width |
 | [`invariant-loop-condition`](invariant-loop-condition.md) | correctness | warning | on | no | Reports loop conditions unchanged by their loop |

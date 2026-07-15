@@ -1,0 +1,7 @@
+Broken()
+{
+    while ()
+    {
+        print("broken");
+    }
+}
