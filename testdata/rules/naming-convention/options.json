@@ -1,0 +1,14 @@
+{
+  "conventions": [
+    {"kinds": ["function"], "storage": ["native"], "include-natives": true, "prefix": "N_", "case": "PascalCase"},
+    {"kinds": ["global"], "storage": ["const"], "case": "UPPER_SNAKE_CASE"},
+    {"kinds": ["local", "parameter"], "tags": ["Float"], "prefix": "f_", "case": "camelCase"},
+    {"kinds": ["global"], "tags": ["Timer"], "prefix": "g_", "suffix": "Timer", "pattern": "^g_[A-Za-z0-9]+Timer$"},
+    {"kinds": ["global"], "prefix": "g_", "case": "camelCase"},
+    {"kinds": ["function"], "case": "PascalCase", "exclude": ["^main$"]},
+    {"kinds": ["local", "parameter"], "scopes": ["local"], "case": "camelCase", "exclude": ["^ignored_"]},
+    {"kinds": ["enum"], "case": "PascalCase"},
+    {"kinds": ["enum-entry"], "case": "UPPER_SNAKE_CASE"},
+    {"kinds": ["label"], "case": "snake_case"}
+  ]
+}

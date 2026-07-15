@@ -84,6 +84,13 @@
 - Macro-generated includes are not expanded; uncertain includes are skipped.
 - Contexts track macro names, not values; identical contexts share one instance.
 
+## Naming policy
+
+- Naming conventions apply only when configured and use the first matching
+  selector.
+- Callbacks and natives require explicit opt-in. Uncertain declarations and
+  non-standard identifiers are skipped.
+
 ## Control flow
 
 - Tracks reachability, explicit assignment, and constant values for scalar

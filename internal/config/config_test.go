@@ -168,6 +168,42 @@ func TestPerRuleOptionValidation(t *testing.T) {
 	}
 }
 
+func TestPerRuleObjectListOption(t *testing.T) {
+	reg := lint.NewRegistrar()
+	reg.MustRegister(stubRule{m: lint.Metadata{
+		ID: "naming", Name: "Naming", Summary: "naming", Category: diagnostic.CategoryStyle,
+		DefaultSeverity: diagnostic.SeverityWarning, AnalysisLevel: lint.SemanticAnalysis,
+		Options: []lint.Option{{
+			Name: "conventions", Type: lint.OptionObjectList,
+			Fields: []lint.Option{{Name: "kinds", Type: lint.OptionStringList, Choices: []string{"function", "local"}}, {Name: "case", Type: lint.OptionString, Required: true}},
+		}},
+	}})
+	file, err := config.DecodeBytes([]byte(`[rules.naming]
+severity = "warning"
+conventions = [{ kinds = ["function"], case = "PascalCase" }]
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := config.Resolve(file, "", reg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	conventions, ok := resolved.RuleConfig["naming"]["conventions"].([]map[string]any)
+	if !ok || len(conventions) != 1 || conventions[0]["case"] != "PascalCase" {
+		t.Fatalf("conventions = %#v", resolved.RuleConfig["naming"]["conventions"])
+	}
+	invalid, err := config.DecodeBytes([]byte(`[rules.naming]
+conventions = [{ kinds = ["function"], unknown = true }]
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := config.Resolve(invalid, "", reg); err == nil {
+		t.Fatal("unknown object field was accepted")
+	}
+}
+
 func TestEnabledForPathAppliesMatchingOverride(t *testing.T) {
 	reg := regWith(t)
 	f := config.Defaults()

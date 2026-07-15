@@ -102,7 +102,7 @@ func RunSnapshot(t *testing.T, ruleID, fixtureDir string) {
 	if _, err := os.Stat(dir); err != nil {
 		t.Skipf("no fixtures for %s at %s", ruleID, dir)
 	}
-	fixtureNames := []string{"valid.pwn", "invalid.pwn", "edge-cases.pwn"}
+	fixtureNames := []string{"valid.pwn", "invalid.pwn", "edge-cases.pwn", "malformed.pwn"}
 	target := ""
 	if value, err := os.ReadFile(filepath.Join(dir, "target.txt")); err == nil {
 		target = strings.TrimSpace(string(value))

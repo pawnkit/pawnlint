@@ -232,6 +232,23 @@ types, choices, and ranges are validated before linting.
 Configuration errors include unknown fields, rule IDs, profiles, targets, and
 severity names.
 
+### Naming conventions
+
+```toml
+[rules.naming-convention]
+severity = "warning"
+conventions = [
+  { kinds = ["function"], case = "PascalCase", exclude = ["^main$"] },
+  { kinds = ["global"], storage = ["const"], case = "UPPER_SNAKE_CASE" },
+  { kinds = ["local", "parameter"], case = "camelCase" }
+]
+```
+
+Conventions are checked in order. Selectors support `kinds`, `scopes`,
+`storage`, and `tags`. Policies support `case`, `prefix`, `suffix`, `pattern`,
+and `exclude`. Callbacks and natives require `include-callbacks` or
+`include-natives`.
+
 ## Precedence
 
 Highest priority first:

@@ -1,0 +1,116 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "naming-convention",
+      "severity": "warning",
+      "message": "function name \"badForward\" must use PascalCase",
+      "startLine": 5,
+      "startCol": 8,
+      "endLine": 5,
+      "endCol": 18
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "naming-convention",
+      "severity": "warning",
+      "message": "function name \"bad_native\" must start with \"N_\"",
+      "startLine": 1,
+      "startCol": 8,
+      "endLine": 1,
+      "endCol": 18
+    },
+    {
+      "ruleId": "naming-convention",
+      "severity": "warning",
+      "message": "global name \"max_clients\" must use UPPER_SNAKE_CASE",
+      "startLine": 3,
+      "startCol": 11,
+      "endLine": 3,
+      "endCol": 22
+    },
+    {
+      "ruleId": "naming-convention",
+      "severity": "warning",
+      "message": "global name \"globalScore\" must start with \"g_\"",
+      "startLine": 4,
+      "startCol": 5,
+      "endLine": 4,
+      "endCol": 16
+    },
+    {
+      "ruleId": "naming-convention",
+      "severity": "warning",
+      "message": "global name \"g_round_Timer\" must match pattern \"^g_[A-Za-z0-9]+Timer$\"",
+      "startLine": 5,
+      "startCol": 11,
+      "endLine": 5,
+      "endCol": 24
+    },
+    {
+      "ruleId": "naming-convention",
+      "severity": "warning",
+      "message": "enum name \"player_state\" must use PascalCase",
+      "startLine": 7,
+      "startCol": 6,
+      "endLine": 7,
+      "endCol": 18
+    },
+    {
+      "ruleId": "naming-convention",
+      "severity": "warning",
+      "message": "enum-entry name \"player_none\" must use UPPER_SNAKE_CASE",
+      "startLine": 9,
+      "startCol": 2,
+      "endLine": 9,
+      "endCol": 13
+    },
+    {
+      "ruleId": "naming-convention",
+      "severity": "warning",
+      "message": "function name \"load_player\" must use PascalCase",
+      "startLine": 12,
+      "startCol": 7,
+      "endLine": 12,
+      "endCol": 18
+    },
+    {
+      "ruleId": "naming-convention",
+      "severity": "warning",
+      "message": "parameter name \"speed\" must start with \"f_\"",
+      "startLine": 12,
+      "startCol": 25,
+      "endLine": 12,
+      "endCol": 30
+    },
+    {
+      "ruleId": "naming-convention",
+      "severity": "warning",
+      "message": "parameter name \"BadParameter\" must use camelCase",
+      "startLine": 12,
+      "startCol": 32,
+      "endLine": 12,
+      "endCol": 44
+    },
+    {
+      "ruleId": "naming-convention",
+      "severity": "warning",
+      "message": "local name \"BadLocal\" must use camelCase",
+      "startLine": 14,
+      "startCol": 6,
+      "endLine": 14,
+      "endCol": 14
+    },
+    {
+      "ruleId": "naming-convention",
+      "severity": "warning",
+      "message": "label name \"BadLabel\" must use snake_case",
+      "startLine": 15,
+      "startCol": 1,
+      "endLine": 15,
+      "endCol": 9
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

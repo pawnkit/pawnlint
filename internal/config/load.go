@@ -79,10 +79,24 @@ func decodeTOML(b []byte) (File, error) {
 	if err != nil {
 		return File{}, fmt.Errorf("config: %w", err)
 	}
-	if undecoded := meta.Undecoded(); len(undecoded) > 0 {
+	if undecoded := fixedUndecodedKeys(meta.Undecoded()); len(undecoded) > 0 {
 		return f, &UnknownFieldsError{Fields: keysAsStrings(undecoded)}
 	}
 	return withDefaultRules(f), nil
+}
+
+func fixedUndecodedKeys(keys []toml.Key) []toml.Key {
+	var result []toml.Key
+	for _, key := range keys {
+		dynamic := len(key) >= 2 && key[0] == "rules"
+		for index := 1; !dynamic && index < len(key); index++ {
+			dynamic = key[index-1] == "overrides" && key[index] == "rules"
+		}
+		if !dynamic {
+			result = append(result, key)
+		}
+	}
+	return result
 }
 
 func decodeJSON(b []byte) (File, error) {

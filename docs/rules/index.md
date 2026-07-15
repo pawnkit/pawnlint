@@ -43,6 +43,7 @@ Rules are stable unless their page marks them as preview.
 | [`missing-include`](missing-include.md) | correctness | error | on | no | Reports required includes that cannot be resolved |
 | [`missing-return-value`](missing-return-value.md) | correctness | warning | on | no | Reports value-returning functions with paths that return no value |
 | [`misspelled-callback`](misspelled-callback.md) | suspicious | warning | off | no | Reports public functions one edit away from a target callback |
+| [`naming-convention`](naming-convention.md) | style | warning | off | no | Reports declarations that violate configured naming policies |
 | [`native-argument-count`](native-argument-count.md) | correctness | error | off | no | Reports calls with an impossible number of arguments for a known native |
 | [`negative-or-zero-array-size`](negative-or-zero-array-size.md) | correctness | error | on | no | Reports array dimensions that evaluate to zero or less |
 | [`non-callable-symbol`](non-callable-symbol.md) | correctness | error | on | no | Reports calls whose callee resolves to a variable, not a function |
