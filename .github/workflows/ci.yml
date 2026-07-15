@@ -75,10 +75,10 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
-      - run: go test ./source/walk -run=^$ -fuzz=FuzzWalk -fuzztime=30s
-      - run: go test ./lint/suppress -run=^$ -fuzz=FuzzSuppression -fuzztime=30s
-      - run: go test ./semantic -run=^$ -fuzz=FuzzBuild -fuzztime=30s
-      - run: go test ./rules/correctness -run=^$ -fuzz=FuzzMalformed -fuzztime=30s
+      - run: go test ./internal/source/walk -run=^$ -fuzz=FuzzWalk -fuzztime=30s
+      - run: go test ./pkg/lint/suppress -run=^$ -fuzz=FuzzSuppression -fuzztime=30s
+      - run: go test ./internal/semantic -run=^$ -fuzz=FuzzBuild -fuzztime=30s
+      - run: go test ./pkg/rules/correctness -run=^$ -fuzz=FuzzMalformed -fuzztime=30s
 
   release-check:
     name: Release snapshot
