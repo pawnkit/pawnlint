@@ -7,6 +7,7 @@ Rules are stable unless their page marks them as preview.
 | ID | Category | Severity | Default | Fixable | Summary |
 | --- | --- | --- | --- | --- | --- |
 | [`ambiguous-include`](ambiguous-include.md) | portability | warning | on | no | Reports includes shadowed by another matching file |
+| [`argument-tag-mismatch`](argument-tag-mismatch.md) | correctness | warning | on | no | Reports arguments incompatible with definite parameter tags |
 | [`argument-value-range`](argument-value-range.md) | correctness | error | on | no | Reports constant arguments outside API parameter bounds |
 | [`assignment-in-condition`](assignment-in-condition.md) | suspicious | warning | on | no | An assignment used as an if/while condition is often a typo for == |
 | [`boolean-complexity`](boolean-complexity.md) | maintainability | warning | off | no | Reports boolean expressions with too many logical operators |

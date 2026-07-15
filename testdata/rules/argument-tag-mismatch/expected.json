@@ -1,0 +1,61 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "argument-tag-mismatch",
+      "severity": "warning",
+      "message": "argument 1 to \"Use\" expects tag Float, but has no tag",
+      "startLine": 8,
+      "startCol": 9,
+      "endLine": 8,
+      "endCol": 12
+    },
+    {
+      "ruleId": "argument-tag-mismatch",
+      "severity": "warning",
+      "message": "argument 3 to \"Use\" expects no tag, but has tag Float",
+      "startLine": 8,
+      "startCol": 19,
+      "endLine": 8,
+      "endCol": 20
+    },
+    {
+      "ruleId": "argument-tag-mismatch",
+      "severity": "warning",
+      "message": "argument 1 to \"Use\" expects tag Float, but has tag bool",
+      "startLine": 9,
+      "startCol": 9,
+      "endLine": 9,
+      "endCol": 10
+    },
+    {
+      "ruleId": "argument-tag-mismatch",
+      "severity": "warning",
+      "message": "argument 2 to \"Use\" expects tag bool, but has tag Float",
+      "startLine": 9,
+      "startCol": 12,
+      "endLine": 9,
+      "endCol": 13
+    },
+    {
+      "ruleId": "argument-tag-mismatch",
+      "severity": "warning",
+      "message": "argument 1 to \"Measure\" expects tag Float, but has no tag",
+      "startLine": 10,
+      "startCol": 13,
+      "endLine": 10,
+      "endCol": 16
+    },
+    {
+      "ruleId": "argument-tag-mismatch",
+      "severity": "warning",
+      "message": "argument 2 to \"Measure\" expects tag WEAPON, but has tag bool",
+      "startLine": 11,
+      "startCol": 16,
+      "endLine": 11,
+      "endCol": 17
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

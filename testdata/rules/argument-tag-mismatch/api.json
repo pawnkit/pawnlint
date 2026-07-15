@@ -1,0 +1,10 @@
+{
+  "natives": {
+    "Measure": {
+      "parameters": [
+        {"name": "distance", "tag": "Float"},
+        {"name": "weapon", "tag": "WEAPON"}
+      ]
+    }
+  }
+}
