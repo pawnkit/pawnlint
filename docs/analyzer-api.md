@@ -16,6 +16,7 @@ result, err := analyzer.Analyze(ctx, analyzer.Request{
 `Result.Diagnostics` contains public one-based positions and byte offsets.
 `SafeEdits` contains machine-safe actions. `Suggestions` contains non-applicable
 guidance and optional edits. Each action references its diagnostic index.
+`Migrations` reports deprecated configuration rule IDs.
 
 Configuration, build contexts, variants, overrides, baselines, and diagnostic
 limits match the CLI. Requested buffers replace disk content. Build file globs

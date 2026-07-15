@@ -21,6 +21,7 @@ func TestGenerateApplyAndPrune(t *testing.T) {
 		{RuleID: "division-by-zero", Message: "division by zero", Filename: path, Range: table.Range(17, 22)},
 		{RuleID: "division-by-zero", Message: "division by zero", Filename: path, Range: table.Range(32, 37)},
 		{RuleID: "parse-error", Message: "expected expression", Filename: path, Range: table.Range(0, 4)},
+		{RuleID: "deprecated-rule-id", Message: "deprecated rule", Filename: path, Range: table.Range(0, 4)},
 	}
 	generated := baseline.Generate(diagnostics, sources, dir)
 	if len(generated.Entries) != 2 || generated.Entries[0].Fingerprint == generated.Entries[1].Fingerprint || generated.Entries[0].Path != "main.pwn" {

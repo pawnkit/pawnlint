@@ -46,6 +46,11 @@ set `profile`, `lint`, `rules`, and `overrides`. Later presets override earlier
 ones, then the local config wins. Only listed files are loaded; source, build,
 target, and API context remain in the local config.
 
+## Rule aliases
+
+Renamed rule IDs continue to work in configs, CLI overrides, and suppressions.
+pawnlint reports the replacement ID; new configuration should use it directly.
+
 ## Baselines
 
 Set `baseline` to suppress matching existing findings. Run `pawnlint

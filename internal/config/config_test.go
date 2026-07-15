@@ -187,6 +187,39 @@ no-such-rule = "warning"
 	}
 }
 
+func TestRuleAliasResolvesWithMigration(t *testing.T) {
+	reg := regWith(t)
+	reg.MustRegisterAlias("old-alpha", "alpha")
+	file := config.Defaults()
+	file.Rules = map[string]any{"old-alpha": map[string]any{"severity": "error", "threshold": 4}}
+	resolved, err := config.Resolve(file, "", reg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.Enabled["alpha"] != diagnostic.SeverityError || resolved.RuleConfig["alpha"]["threshold"] != int64(4) {
+		t.Fatalf("resolved = %+v", resolved)
+	}
+	if len(resolved.RuleMigrations) != 1 || resolved.RuleMigrations[0].Deprecated != "old-alpha" || resolved.RuleMigrations[0].Replacement != "alpha" {
+		t.Fatalf("migrations = %+v", resolved.RuleMigrations)
+	}
+	if err := resolved.ApplyCLIOverrides("", "", []string{"old-alpha"}, nil, reg); err != nil {
+		t.Fatal(err)
+	}
+	if len(resolved.RuleMigrations) != 1 {
+		t.Fatalf("migrations = %+v", resolved.RuleMigrations)
+	}
+}
+
+func TestRuleAliasRejectsDuplicateCanonicalConfiguration(t *testing.T) {
+	reg := regWith(t)
+	reg.MustRegisterAlias("old-alpha", "alpha")
+	file := config.Defaults()
+	file.Rules = map[string]any{"old-alpha": "warning", "alpha": "error"}
+	if _, err := config.Resolve(file, "", reg); err == nil || !strings.Contains(err.Error(), "configured by both") {
+		t.Fatalf("error = %v", err)
+	}
+}
+
 func TestInvalidSeverity(t *testing.T) {
 	reg := regWith(t)
 	content := `[rules]

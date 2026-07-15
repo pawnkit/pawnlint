@@ -59,6 +59,12 @@ type Result struct {
 	Diagnostics []Diagnostic
 	SafeEdits   []Action
 	Suggestions []Action
+	Migrations  []RuleMigration
+}
+
+type RuleMigration struct {
+	Deprecated  string
+	Replacement string
 }
 
 func Analyze(ctx context.Context, request Request) (Result, error) {

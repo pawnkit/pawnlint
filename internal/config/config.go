@@ -89,6 +89,12 @@ type Resolved struct {
 	API             *api.Metadata
 	AllKnownRuleIDs map[string]struct{}
 	Overrides       []ResolvedOverride
+	RuleMigrations  []RuleMigration
+}
+
+type RuleMigration struct {
+	Deprecated  string
+	Replacement string
 }
 
 func (r *Resolved) IsEnabled(ruleID string) bool {

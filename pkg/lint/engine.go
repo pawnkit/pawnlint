@@ -51,6 +51,8 @@ const ParseErrorID = "parse-error"
 
 const InternalErrorID = "internal-error"
 
+const DeprecatedRuleID = "deprecated-rule-id"
+
 func levelAllowed(l AnalysisLevel, max AnalysisLevel) bool {
 	return l <= max
 }
@@ -107,6 +109,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	lt := m.LineTable
 
 	supps := suppress.FromFile(path, src, pf)
+	supps, ruleMigrations := e.normalizeSuppressionAliases(supps, m.LineTable)
 	matcher := suppress.NewMatcher(supps)
 	used := make([]bool, len(supps))
 
@@ -243,6 +246,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 			projectFile := e.Project.File(d.Filename)
 			if projectFile != nil {
 				directives := suppress.FromFile(projectFile.Path, projectFile.Source, projectFile.Parsed)
+				directives, _ = e.normalizeSuppressionAliases(directives, projectFile.Walk.LineTable)
 				projectMatcher := suppress.NewMatcher(directives)
 				line := d.Range.Start.Line
 				if line == 0 {
@@ -270,6 +274,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	}
 	out = append(out, parseErrors...)
 	out = append(out, internalErrors...)
+	out = append(out, ruleMigrations...)
 
 	diagnostic.Sort(out)
 	return out

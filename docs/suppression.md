@@ -25,6 +25,7 @@ Use comma-separated IDs for several rules or `all` for every rule:
 ```
 
 Always pair block `disable` and `enable` directives.
+Deprecated rule IDs still suppress their replacement and report a migration diagnostic.
 
 Enable `suppression-reason` to require explanations:
 

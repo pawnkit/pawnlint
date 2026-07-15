@@ -107,7 +107,11 @@ func analyze(ctx context.Context, request Request) (Result, error) {
 	if limit := resolved.Source.Lint.MaxDiagnostics; limit > 0 && len(merged) > limit {
 		merged = merged[:limit]
 	}
-	return analyzerResult(merged), nil
+	result := analyzerResult(merged)
+	for _, migration := range resolved.RuleMigrations {
+		result.Migrations = append(result.Migrations, RuleMigration{Deprecated: migration.Deprecated, Replacement: migration.Replacement})
+	}
+	return result, nil
 }
 
 func analyzerConfig(request Request, reg *lint.Registrar) (*config.Resolved, string, error) {

@@ -58,11 +58,15 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 		return exitOK
 	}
 	if opts.Explain != "" {
-		m, ok := reg.Lookup(opts.Explain)
+		id, deprecated, ok := reg.ResolveID(opts.Explain)
 		if !ok {
 			_, _ = fmt.Fprintf(stderr, "pawnlint: unknown rule %q\n", opts.Explain)
 			return exitUsage
 		}
+		if deprecated {
+			writeRuleMigration(stderr, config.RuleMigration{Deprecated: opts.Explain, Replacement: id})
+		}
+		m, _ := reg.Lookup(id)
 		_, _ = fmt.Fprint(stdout, config.ExplainText(m))
 		return exitOK
 	}
@@ -99,6 +103,9 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 		_, _ = fmt.Fprintf(stderr, "pawnlint: %v\n", err)
 		return exitUsage
 	}
+	for _, migration := range resolved.RuleMigrations {
+		writeRuleMigration(stderr, migration)
+	}
 	if (opts.GenerateBaseline || opts.PruneBaseline) && baselineSetting(opts, resolved) == "" {
 		_, _ = fmt.Fprintln(stderr, "pawnlint: baseline update requires --baseline or a configured baseline")
 		return exitUsage
@@ -115,6 +122,10 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 		return exitUsage
 	}
 	return runFiles(opts, stdout, stderr, reg, resolved, timings)
+}
+
+func writeRuleMigration(w io.Writer, migration config.RuleMigration) {
+	_, _ = fmt.Fprintf(w, "pawnlint: rule ID %q is deprecated; use %q\n", migration.Deprecated, migration.Replacement)
 }
 
 type kongEagerExit struct{ code int }

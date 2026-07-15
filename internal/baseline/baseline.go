@@ -223,7 +223,7 @@ func fingerprintDiagnostics(diagnostics []diagnostic.Diagnostic, sources map[str
 }
 
 func eligible(diag diagnostic.Diagnostic) bool {
-	return diag.RuleID != "" && diag.RuleID != "parse-error" && diag.RuleID != "internal-error" && diag.Message != ""
+	return diag.RuleID != "" && diag.RuleID != "parse-error" && diag.RuleID != "internal-error" && diag.RuleID != "deprecated-rule-id" && diag.Message != ""
 }
 
 func relativePath(projectDir, path string) string {

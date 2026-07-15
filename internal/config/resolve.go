@@ -23,6 +23,9 @@ func Resolve(f File, sourcePath string, reg *lint.Registrar) (*Resolved, error) 
 	for _, id := range reg.IDs() {
 		r.AllKnownRuleIDs[id] = struct{}{}
 	}
+	for _, alias := range reg.Aliases() {
+		r.AllKnownRuleIDs[alias.Deprecated] = struct{}{}
+	}
 
 	profile := strings.TrimSpace(f.Profile)
 	if profile == "" {
@@ -82,7 +85,8 @@ func Resolve(f File, sourcePath string, reg *lint.Registrar) (*Resolved, error) 
 
 	enabled := reg.EnabledForProfile(lint.Profile(profile))
 
-	delta, disabled, ruleConfig, errs := parseRuleTable(f.Rules, reg)
+	delta, disabled, ruleConfig, migrations, errs := parseRuleTable(f.Rules, reg)
+	r.RuleMigrations = appendRuleMigrations(r.RuleMigrations, migrations...)
 	for id, sev := range delta {
 		enabled[id] = sev
 	}
@@ -101,7 +105,8 @@ func Resolve(f File, sourcePath string, reg *lint.Registrar) (*Resolved, error) 
 			errs = append(errs, fmt.Sprintf("config: overrides[%d] must configure at least one rule", i))
 			continue
 		}
-		ovEnabled, ovDisabled, ovRuleConfig, ovErrs := parseRuleTable(ov.Rules, reg)
+		ovEnabled, ovDisabled, ovRuleConfig, ovMigrations, ovErrs := parseRuleTable(ov.Rules, reg)
+		r.RuleMigrations = appendRuleMigrations(r.RuleMigrations, ovMigrations...)
 		errs = append(errs, ovErrs...)
 		resolvedOverrides = append(resolvedOverrides, ResolvedOverride{
 			Paths:      ov.Paths,
@@ -124,21 +129,37 @@ func (r *Resolved) APIForTarget(target Target) (*api.Metadata, error) {
 	return loadAPIMetadata(r.Source.APIMetadata, r.SourcePath, string(target))
 }
 
-func parseRuleTable(rulesTOML map[string]any, reg *lint.Registrar) (enabled map[string]diagnostic.Severity, disabled map[string]struct{}, ruleConfig map[string]map[string]any, errs []string) {
+func parseRuleTable(rulesTOML map[string]any, reg *lint.Registrar) (enabled map[string]diagnostic.Severity, disabled map[string]struct{}, ruleConfig map[string]map[string]any, migrations []RuleMigration, errs []string) {
 	enabled = make(map[string]diagnostic.Severity)
 	disabled = make(map[string]struct{})
 	ruleConfig = make(map[string]map[string]any)
-	for id, v := range rulesTOML {
-		meta, ok := reg.Lookup(id)
+	ids := make([]string, 0, len(rulesTOML))
+	for id := range rulesTOML {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	seen := make(map[string]string, len(ids))
+	for _, configuredID := range ids {
+		v := rulesTOML[configuredID]
+		id, deprecated, ok := reg.ResolveID(configuredID)
 		if !ok {
-			errs = append(errs, fmt.Sprintf("config: unknown rule ID %q", id))
+			errs = append(errs, fmt.Sprintf("config: unknown rule ID %q", configuredID))
 			continue
 		}
+		if previous, duplicate := seen[id]; duplicate {
+			errs = append(errs, fmt.Sprintf("config: rule %q is configured by both %q and %q", id, previous, configuredID))
+			continue
+		}
+		seen[id] = configuredID
+		if deprecated {
+			migrations = append(migrations, RuleMigration{Deprecated: configuredID, Replacement: id})
+		}
+		meta, _ := reg.Lookup(id)
 		switch tv := v.(type) {
 		case string:
 			sev, ok := diagnostic.ParseSeverity(tv)
 			if !ok {
-				errs = append(errs, fmt.Sprintf("config: rule %q: invalid severity %q", id, tv))
+				errs = append(errs, fmt.Sprintf("config: rule %q: invalid severity %q", configuredID, tv))
 				continue
 			}
 			if sev == diagnostic.SeverityOff {
@@ -152,7 +173,7 @@ func parseRuleTable(rulesTOML map[string]any, reg *lint.Registrar) (enabled map[
 				sevStr, _ := sevRaw.(string)
 				sev, ok := diagnostic.ParseSeverity(sevStr)
 				if !ok {
-					errs = append(errs, fmt.Sprintf("config: rule %q: invalid severity %q", id, sevStr))
+					errs = append(errs, fmt.Sprintf("config: rule %q: invalid severity %q", configuredID, sevStr))
 				} else if sev == diagnostic.SeverityOff {
 					disabled[id] = struct{}{}
 				} else {
@@ -160,13 +181,29 @@ func parseRuleTable(rulesTOML map[string]any, reg *lint.Registrar) (enabled map[
 				}
 				delete(cfg, "severity")
 			}
-			errs = append(errs, validateRuleOptions(id, cfg, meta.Options)...)
+			errs = append(errs, validateRuleOptions(configuredID, cfg, meta.Options)...)
 			ruleConfig[id] = cfg
 		default:
-			errs = append(errs, fmt.Sprintf("config: rule %q: value must be a severity string or a table", id))
+			errs = append(errs, fmt.Sprintf("config: rule %q: value must be a severity string or a table", configuredID))
 		}
 	}
-	return enabled, disabled, ruleConfig, errs
+	return enabled, disabled, ruleConfig, migrations, errs
+}
+
+func appendRuleMigrations(existing []RuleMigration, additions ...RuleMigration) []RuleMigration {
+	seen := make(map[string]struct{}, len(existing)+len(additions))
+	for _, migration := range existing {
+		seen[migration.Deprecated] = struct{}{}
+	}
+	for _, migration := range additions {
+		if _, duplicate := seen[migration.Deprecated]; duplicate {
+			continue
+		}
+		seen[migration.Deprecated] = struct{}{}
+		existing = append(existing, migration)
+	}
+	sort.Slice(existing, func(i, j int) bool { return existing[i].Deprecated < existing[j].Deprecated })
+	return existing
 }
 
 func validateRuleOptions(ruleID string, values map[string]any, options []lint.Option) []string {

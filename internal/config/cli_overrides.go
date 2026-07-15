@@ -15,7 +15,14 @@ func (r *Resolved) ApplyCLIOverrides(profile, target string, enable, disable []s
 		r.Profile = profile
 		r.Source.Profile = profile
 		enabled := reg.EnabledForProfile(lint.Profile(profile))
-		for id, value := range r.Source.Rules {
+		for configuredID, value := range r.Source.Rules {
+			id, deprecated, known := reg.ResolveID(configuredID)
+			if !known {
+				continue
+			}
+			if deprecated {
+				r.RuleMigrations = appendRuleMigrations(r.RuleMigrations, RuleMigration{Deprecated: configuredID, Replacement: id})
+			}
 			sev, ok := configuredSeverity(value)
 			if !ok {
 				continue
@@ -43,19 +50,24 @@ func (r *Resolved) ApplyCLIOverrides(profile, target string, enable, disable []s
 		}
 		r.API = metadata
 	}
-	for _, id := range enable {
-		if _, known := r.AllKnownRuleIDs[id]; !known {
-			return fmt.Errorf("unknown rule ID %q in --enable", id)
-		}
-		m, ok := reg.Lookup(id)
+	for _, configuredID := range enable {
+		id, deprecated, ok := reg.ResolveID(configuredID)
 		if !ok {
-			return fmt.Errorf("unknown rule ID %q in --enable", id)
+			return fmt.Errorf("unknown rule ID %q in --enable", configuredID)
 		}
+		if deprecated {
+			r.RuleMigrations = appendRuleMigrations(r.RuleMigrations, RuleMigration{Deprecated: configuredID, Replacement: id})
+		}
+		m, _ := reg.Lookup(id)
 		r.Enabled[id] = m.DefaultSeverity
 	}
-	for _, id := range disable {
-		if _, known := r.AllKnownRuleIDs[id]; !known {
-			return fmt.Errorf("unknown rule ID %q in --disable", id)
+	for _, configuredID := range disable {
+		id, deprecated, ok := reg.ResolveID(configuredID)
+		if !ok {
+			return fmt.Errorf("unknown rule ID %q in --disable", configuredID)
+		}
+		if deprecated {
+			r.RuleMigrations = appendRuleMigrations(r.RuleMigrations, RuleMigration{Deprecated: configuredID, Replacement: id})
 		}
 		delete(r.Enabled, id)
 	}

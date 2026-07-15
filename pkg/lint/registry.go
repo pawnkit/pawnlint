@@ -94,6 +94,12 @@ type entry struct {
 type Registrar struct {
 	entries []entry
 	byID    map[string]int
+	aliases map[string]string
+}
+
+type RuleAlias struct {
+	Deprecated  string
+	Replacement string
 }
 
 type Rule interface {
@@ -102,7 +108,7 @@ type Rule interface {
 }
 
 func NewRegistrar() *Registrar {
-	return &Registrar{byID: make(map[string]int)}
+	return &Registrar{byID: make(map[string]int), aliases: make(map[string]string)}
 }
 
 func (reg *Registrar) Register(r Rule) error {
@@ -122,9 +128,55 @@ func (reg *Registrar) Register(r Rule) error {
 	if _, ok := reg.byID[meta.ID]; ok {
 		return fmt.Errorf("lint: duplicate rule ID %q", meta.ID)
 	}
+	if _, ok := reg.aliases[meta.ID]; ok {
+		return fmt.Errorf("lint: rule ID %q conflicts with an alias", meta.ID)
+	}
 	reg.byID[meta.ID] = len(reg.entries)
 	reg.entries = append(reg.entries, entry{rule: r, meta: meta})
 	return nil
+}
+
+func (reg *Registrar) RegisterAlias(deprecated, replacement string) error {
+	if deprecated == "" || replacement == "" || deprecated == replacement {
+		return fmt.Errorf("lint: invalid rule alias %q -> %q", deprecated, replacement)
+	}
+	if _, exists := reg.byID[deprecated]; exists {
+		return fmt.Errorf("lint: alias %q conflicts with a rule", deprecated)
+	}
+	if _, exists := reg.aliases[deprecated]; exists {
+		return fmt.Errorf("lint: duplicate rule alias %q", deprecated)
+	}
+	if _, exists := reg.byID[replacement]; !exists {
+		return fmt.Errorf("lint: alias %q targets unknown rule %q", deprecated, replacement)
+	}
+	reg.aliases[deprecated] = replacement
+	return nil
+}
+
+func (reg *Registrar) MustRegisterAlias(deprecated, replacement string) {
+	if err := reg.RegisterAlias(deprecated, replacement); err != nil {
+		panic(err)
+	}
+}
+
+func (reg *Registrar) ResolveID(id string) (string, bool, bool) {
+	if _, exists := reg.byID[id]; exists {
+		return id, false, true
+	}
+	replacement, exists := reg.aliases[id]
+	if !exists {
+		return "", false, false
+	}
+	return replacement, true, true
+}
+
+func (reg *Registrar) Aliases() []RuleAlias {
+	result := make([]RuleAlias, 0, len(reg.aliases))
+	for deprecated, replacement := range reg.aliases {
+		result = append(result, RuleAlias{Deprecated: deprecated, Replacement: replacement})
+	}
+	sort.Slice(result, func(i, j int) bool { return result[i].Deprecated < result[j].Deprecated })
+	return result
 }
 
 func (reg *Registrar) MustRegister(r Rule) {
@@ -150,6 +202,10 @@ func (reg *Registrar) All() []Metadata {
 }
 
 func (reg *Registrar) Lookup(id string) (Metadata, bool) {
+	id, _, ok := reg.ResolveID(id)
+	if !ok {
+		return Metadata{}, false
+	}
 	i, ok := reg.byID[id]
 	if !ok {
 		return Metadata{}, false
@@ -158,6 +214,10 @@ func (reg *Registrar) Lookup(id string) (Metadata, bool) {
 }
 
 func (reg *Registrar) Rule(id string) (Rule, bool) {
+	id, _, ok := reg.ResolveID(id)
+	if !ok {
+		return nil, false
+	}
 	i, ok := reg.byID[id]
 	if !ok {
 		return nil, false

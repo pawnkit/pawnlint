@@ -1,6 +1,7 @@
 package lint_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/pawnkit/pawnlint/internal/api"
@@ -326,6 +327,41 @@ func TestEngineReportsTimings(t *testing.T) {
 	}
 }
 
+func TestDeprecatedSuppressionAliasResolves(t *testing.T) {
+	reg := lint.NewRegistrar()
+	reg.MustRegister(aliasSuppressionRule{})
+	reg.MustRegisterAlias("old-rule", "canonical-rule")
+	engine := lint.NewEngine(reg)
+	src := []byte("// pawnlint-disable-next-line old-rule\nvalue;\n")
+	diagnostics := engine.LintFile("x.pwn", src, lint.SyntaxAnalysis, map[string]diagnostic.Severity{
+		"canonical-rule": diagnostic.SeverityWarning,
+	}, map[string]struct{}{"canonical-rule": {}, "old-rule": {}}, nil)
+	if len(diagnostics) != 1 || diagnostics[0].RuleID != lint.DeprecatedRuleID || !strings.Contains(diagnostics[0].Message, "canonical-rule") {
+		t.Fatalf("diagnostics = %+v", diagnostics)
+	}
+}
+
+func TestRegistrarAliases(t *testing.T) {
+	reg := lint.NewRegistrar()
+	reg.MustRegister(recordingRule{id: "canonical", ran: &[]string{}})
+	reg.MustRegisterAlias("old", "canonical")
+	if id, deprecated, known := reg.ResolveID("old"); id != "canonical" || !deprecated || !known {
+		t.Fatalf("resolve = %q, %v, %v", id, deprecated, known)
+	}
+	if aliases := reg.Aliases(); len(aliases) != 1 || aliases[0].Deprecated != "old" || aliases[0].Replacement != "canonical" {
+		t.Fatalf("aliases = %+v", aliases)
+	}
+	if metadata, found := reg.Lookup("old"); !found || metadata.ID != "canonical" {
+		t.Fatalf("metadata = %+v, found = %v", metadata, found)
+	}
+	if err := reg.RegisterAlias("missing", "unknown"); err == nil {
+		t.Fatal("unknown alias target accepted")
+	}
+	if err := reg.RegisterAlias("old", "canonical"); err == nil {
+		t.Fatal("duplicate alias accepted")
+	}
+}
+
 type dupRule struct{}
 
 func (dupRule) Metadata() lint.Metadata {
@@ -383,6 +419,17 @@ func (emptyRangeRule) Metadata() lint.Metadata {
 
 func (emptyRangeRule) Run(ctx *lint.Context) {
 	ctx.Report(diagnostic.Diagnostic{Message: "empty range"})
+}
+
+type aliasSuppressionRule struct{}
+
+func (aliasSuppressionRule) Metadata() lint.Metadata {
+	return lint.Metadata{ID: "canonical-rule", Name: "canonical", Summary: "canonical", DefaultSeverity: diagnostic.SeverityWarning}
+}
+
+func (aliasSuppressionRule) Run(ctx *lint.Context) {
+	offset := strings.Index(string(ctx.File.Source), "value")
+	ctx.Report(diagnostic.Diagnostic{Message: "finding", Range: ctx.File.LineTable.Range(offset, offset+5)})
 }
 
 type controlFlowProbe struct {
