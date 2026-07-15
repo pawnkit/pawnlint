@@ -17,6 +17,7 @@ result, err := analyzer.Analyze(ctx, analyzer.Request{
 `SafeEdits` contains machine-safe actions. `Suggestions` contains non-applicable
 guidance and optional edits. Each action references its diagnostic index.
 `Migrations` reports deprecated configuration rule IDs.
+`Cache` reports context hits and misses when `cache` is configured.
 
 Configuration, build contexts, variants, overrides, baselines, and diagnostic
 limits match the CLI. Requested buffers replace disk content. Build file globs

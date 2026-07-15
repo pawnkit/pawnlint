@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/pawnkit/pawnlint/internal/api"
 	"github.com/pawnkit/pawnlint/internal/baseline"
+	"github.com/pawnkit/pawnlint/internal/cache"
 	"github.com/pawnkit/pawnlint/internal/config"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
@@ -17,6 +19,7 @@ import (
 )
 
 type analysisContext struct {
+	name            string
 	workingDir      string
 	includePaths    []string
 	defines         []string
@@ -48,7 +51,8 @@ func analyze(ctx context.Context, request Request) (Result, error) {
 	}
 	perContext := make([][]diagnostic.Diagnostic, 0, len(contexts))
 	allSources := make(map[string][]byte)
-	for _, settings := range contexts {
+	cacheStats := CacheStats{}
+	for contextIndex, settings := range contexts {
 		if err := ctx.Err(); err != nil {
 			return Result{}, err
 		}
@@ -77,19 +81,30 @@ func analyze(ctx context.Context, request Request) (Result, error) {
 		engine.Target = settings.target
 		engine.API = settings.api
 		engine.Project = model
-		var findings []diagnostic.Diagnostic
-		for _, source := range provided {
-			if err := ctx.Err(); err != nil {
-				return Result{}, err
+		findings := cachedAnalyzerDiagnostics(resolved, projectDir, contextIndex, settings, model, provided, func() ([]diagnostic.Diagnostic, error) {
+			var diagnostics []diagnostic.Diagnostic
+			for _, source := range provided {
+				if err := ctx.Err(); err != nil {
+					return nil, err
+				}
+				file := model.File(source.Path)
+				if file == nil {
+					return nil, fmt.Errorf("analyzer: source %q is unavailable in the project", source.Path)
+				}
+				relative := relativeAnalyzerPath(projectDir, source.Path)
+				diagnostics = append(diagnostics, engine.LintProjectFile(file, lint.ProjectAnalysis, resolved.EnabledForPath(relative), resolved.AllKnownRuleIDs, resolved.RuleConfigForPath(relative))...)
 			}
-			file := model.File(source.Path)
-			if file == nil {
-				return Result{}, fmt.Errorf("analyzer: source %q is unavailable in the project", source.Path)
-			}
-			relative := relativeAnalyzerPath(projectDir, source.Path)
-			findings = append(findings, engine.LintProjectFile(file, lint.ProjectAnalysis, resolved.EnabledForPath(relative), resolved.AllKnownRuleIDs, resolved.RuleConfigForPath(relative))...)
+			return diagnostics, nil
+		})
+		if findings.err != nil {
+			return Result{}, findings.err
 		}
-		perContext = append(perContext, findings)
+		if findings.cached {
+			cacheStats.Hits++
+		} else if resolved.Source.Cache != "" {
+			cacheStats.Misses++
+		}
+		perContext = append(perContext, findings.diagnostics)
 	}
 	merged := mergeAnalyzerDiagnostics(perContext, variants)
 	diagnostic.Sort(merged)
@@ -108,6 +123,7 @@ func analyze(ctx context.Context, request Request) (Result, error) {
 		merged = merged[:limit]
 	}
 	result := analyzerResult(merged)
+	result.Cache = cacheStats
 	for _, migration := range resolved.RuleMigrations {
 		result.Migrations = append(result.Migrations, RuleMigration{Deprecated: migration.Deprecated, Replacement: migration.Replacement})
 	}
@@ -196,6 +212,7 @@ func analyzerContexts(buildName, requestedWorkingDirectory string, resolved *con
 		contexts := make([]analysisContext, 0, len(variants))
 		for _, variant := range variants {
 			contexts = append(contexts, analysisContext{
+				name:         variant.Name,
 				workingDir:   workingDir,
 				includePaths: includePaths,
 				defines:      append([]string(nil), variant.Defines...),
@@ -229,6 +246,7 @@ func analyzerContexts(buildName, requestedWorkingDirectory string, resolved *con
 			return nil, false, err
 		}
 		contexts = append(contexts, analysisContext{
+			name:            build.Name,
 			workingDir:      workingDir,
 			includePaths:    includePaths,
 			defines:         defines,
@@ -239,6 +257,73 @@ func analyzerContexts(buildName, requestedWorkingDirectory string, resolved *con
 		})
 	}
 	return contexts, false, nil
+}
+
+type analyzerCacheResult struct {
+	diagnostics []diagnostic.Diagnostic
+	cached      bool
+	err         error
+}
+
+type analyzerCacheConfig struct {
+	Source     config.File
+	Target     string
+	Defines    []string
+	Enabled    map[string]diagnostic.Severity
+	RuleConfig map[string]map[string]any
+	Overrides  []config.ResolvedOverride
+	Targets    []string
+}
+
+func cachedAnalyzerDiagnostics(resolved *config.Resolved, projectDir string, contextIndex int, settings analysisContext, model *project.Model, targets []project.Source, analyze func() ([]diagnostic.Diagnostic, error)) analyzerCacheResult {
+	if resolved.Source.Cache == "" {
+		diagnostics, err := analyze()
+		return analyzerCacheResult{diagnostics: diagnostics, err: err}
+	}
+	directory := resolveAnalyzerPath(projectDir, resolved.Source.Cache)
+	cacheSources := make([]cache.Source, 0, len(model.Files))
+	seen := make(map[string]struct{}, len(model.Files))
+	for _, file := range model.Files {
+		path := filepath.Clean(file.Path)
+		if _, duplicate := seen[path]; duplicate {
+			continue
+		}
+		seen[path] = struct{}{}
+		cacheSources = append(cacheSources, cache.Source{Path: path, Content: file.Source})
+	}
+	targetPaths := make([]string, len(targets))
+	for index, target := range targets {
+		targetPaths[index] = filepath.Clean(target.Path)
+	}
+	sort.Strings(targetPaths)
+	contextName := fmt.Sprintf("%d:%s", contextIndex, settings.name)
+	key, err := cache.Key(cache.KeyInput{
+		Context: contextName,
+		Config: analyzerCacheConfig{
+			Source:     resolved.Source,
+			Target:     settings.target,
+			Defines:    settings.defines,
+			Enabled:    resolved.Enabled,
+			RuleConfig: resolved.RuleConfig,
+			Overrides:  resolved.Overrides,
+			Targets:    targetPaths,
+		},
+		API:     settings.api,
+		Sources: cacheSources,
+	})
+	if err != nil {
+		diagnostics, analyzeErr := analyze()
+		return analyzerCacheResult{diagnostics: diagnostics, err: analyzeErr}
+	}
+	slot := cache.Slot("analyzer\x00" + projectDir + "\x00" + contextName + "\x00" + strings.Join(targetPaths, "\x00"))
+	if diagnostics, hit := cache.Load(directory, slot, key); hit && cache.Validate(diagnostics, cacheSources) {
+		return analyzerCacheResult{diagnostics: diagnostics, cached: true}
+	}
+	diagnostics, err := analyze()
+	if err == nil {
+		_ = cache.Write(directory, slot, key, diagnostics)
+	}
+	return analyzerCacheResult{diagnostics: diagnostics, err: err}
 }
 
 func mergeAnalyzerDiagnostics(contexts [][]diagnostic.Diagnostic, variants bool) []diagnostic.Diagnostic {

@@ -108,6 +108,47 @@ func TestAnalyzeHonorsCancellation(t *testing.T) {
 	}
 }
 
+func TestAnalyzeIncrementalCache(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "pawnlint.toml")
+	if err := os.WriteFile(configPath, []byte("cache = \".pawnlint-cache\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	request := analyzer.Request{
+		ConfigPath: configPath,
+		Sources: []analyzer.Source{{
+			Path:    "main.pwn",
+			Content: []byte("main() { if (value); { return; } }\n"),
+		}},
+	}
+	first, err := analyzer.Analyze(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.Cache.Hits != 0 || first.Cache.Misses != 1 || diagnosticIndex(first.Diagnostics, "empty-condition-body") < 0 {
+		t.Fatalf("first result = %+v", first)
+	}
+	second, err := analyzer.Analyze(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.Cache.Hits != 1 || second.Cache.Misses != 0 || diagnosticIndex(second.Diagnostics, "empty-condition-body") < 0 {
+		t.Fatalf("second result = %+v", second)
+	}
+	request.Sources[0].Content = append(request.Sources[0].Content, '\n')
+	changed, err := analyzer.Analyze(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changed.Cache.Hits != 0 || changed.Cache.Misses != 1 {
+		t.Fatalf("changed cache stats = %+v", changed.Cache)
+	}
+	entries, err := filepath.Glob(filepath.Join(dir, ".pawnlint-cache", "*.json"))
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("cache entries = %v, err = %v", entries, err)
+	}
+}
+
 func diagnosticIndex(diagnostics []analyzer.Diagnostic, ruleID string) int {
 	for index, finding := range diagnostics {
 		if finding.RuleID == ruleID {

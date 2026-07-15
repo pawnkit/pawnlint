@@ -42,7 +42,7 @@ func loadPresets(path string, stack []string) (File, error) {
 }
 
 func validatePreset(path string, file File) error {
-	if file.Target != "" || file.Include != nil || file.Exclude != nil || file.Defines != nil || file.IncludePaths != nil || file.APIMetadata != nil || file.Baseline != "" || file.Builds != nil || file.Variants != nil {
+	if file.Target != "" || file.Include != nil || file.Exclude != nil || file.Defines != nil || file.IncludePaths != nil || file.APIMetadata != nil || file.Baseline != "" || file.Cache != "" || file.Builds != nil || file.Variants != nil {
 		return fmt.Errorf("config: preset %s may only contain presets, profile, lint, rules, and overrides", path)
 	}
 	return nil
@@ -72,6 +72,7 @@ func mergePreset(base, override File) File {
 	result.IncludePaths = cloneStrings(override.IncludePaths)
 	result.APIMetadata = cloneStrings(override.APIMetadata)
 	result.Baseline = override.Baseline
+	result.Cache = override.Cache
 	result.Builds = append([]Build(nil), override.Builds...)
 	result.Variants = append([]Variant(nil), override.Variants...)
 	return withDefaultRules(result)

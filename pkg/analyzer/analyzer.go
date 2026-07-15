@@ -60,6 +60,12 @@ type Result struct {
 	SafeEdits   []Action
 	Suggestions []Action
 	Migrations  []RuleMigration
+	Cache       CacheStats
+}
+
+type CacheStats struct {
+	Hits   int
+	Misses int
 }
 
 type RuleMigration struct {

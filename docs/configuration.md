@@ -19,6 +19,7 @@ defines = []
 include-paths = []
 api-metadata = ["pawnlint-api.json"]
 baseline = "pawnlint-baseline.json"
+cache = ".pawnlint-cache"
 
 [lint]
 warnings-as-errors = false
@@ -38,6 +39,14 @@ discarded-expression = "off"
 - Relative `api-metadata` entries resolve the same way; later files override
   earlier entries for the same key.
 - A relative `baseline` path resolves from the configuration file.
+
+## Cache
+
+Set `cache` to reuse diagnostics when resolved sources, effective configuration,
+API metadata, pawn-parser, and pawnlint rule code are unchanged. Relative paths
+resolve from the configuration file. Cache errors are treated as misses, and the
+project graph is still rebuilt to validate includes. The directory can be deleted
+at any time.
 
 ## Presets
 
@@ -108,6 +117,7 @@ syntax differs. The example above in JSON:
   "include-paths": [],
   "api-metadata": ["pawnlint-api.json"],
   "baseline": "pawnlint-baseline.json",
+  "cache": ".pawnlint-cache",
   "lint": {
     "warnings-as-errors": false,
     "max-diagnostics": 0
@@ -130,6 +140,7 @@ defines: []
 include-paths: []
 api-metadata: ["pawnlint-api.json"]
 baseline: pawnlint-baseline.json
+cache: .pawnlint-cache
 lint:
   warnings-as-errors: false
   max-diagnostics: 0

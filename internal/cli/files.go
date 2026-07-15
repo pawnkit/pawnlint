@@ -67,7 +67,8 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 
 	sources := output.SourceSet{}
 	perVariant := make([][]diagnostic.Diagnostic, 0, len(variants))
-	for _, variant := range variants {
+	cacheDirectory := configuredCacheDirectory(r, projectDir)
+	for variantIndex, variant := range variants {
 		var started time.Time
 		if timings != nil {
 			started = time.Now()
@@ -90,21 +91,28 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 		for _, file := range model.Files {
 			sources[file.Path] = file.Source
 		}
-		perFile := make([][]diagnostic.Diagnostic, len(files))
-		var eg errgroup.Group
-		eg.SetLimit(max(runtime.GOMAXPROCS(0), 1))
-		for i, f := range files {
-			eg.Go(func() error {
-				rel := discovery.RelPath(projectDir, f.Path)
-				perFile[i] = engine.LintFile(f.Path, f.Content, lint.ProjectAnalysis, r.EnabledForPath(rel), r.AllKnownRuleIDs, r.RuleConfigForPath(rel))
-				return nil
-			})
+		targetPaths := make([]string, len(files))
+		for index, file := range files {
+			targetPaths[index] = file.Path
 		}
-		_ = eg.Wait()
-		var diags []diagnostic.Diagnostic
-		for _, fd := range perFile {
-			diags = append(diags, fd...)
-		}
+		diags := cachedDiagnostics(cacheDirectory, "paths:"+projectDir, fmt.Sprintf("variant:%d:%s", variantIndex, variant.Name), r, string(r.Target), variant.Defines, r.API, model, targetPaths, func() []diagnostic.Diagnostic {
+			perFile := make([][]diagnostic.Diagnostic, len(files))
+			var eg errgroup.Group
+			eg.SetLimit(max(runtime.GOMAXPROCS(0), 1))
+			for i, f := range files {
+				eg.Go(func() error {
+					rel := discovery.RelPath(projectDir, f.Path)
+					perFile[i] = engine.LintFile(f.Path, f.Content, lint.ProjectAnalysis, r.EnabledForPath(rel), r.AllKnownRuleIDs, r.RuleConfigForPath(rel))
+					return nil
+				})
+			}
+			_ = eg.Wait()
+			var diagnostics []diagnostic.Diagnostic
+			for _, fileDiagnostics := range perFile {
+				diagnostics = append(diagnostics, fileDiagnostics...)
+			}
+			return diagnostics
+		})
 		perVariant = append(perVariant, diags)
 	}
 	all := mergeVariantDiagnostics(perVariant)
@@ -143,6 +151,7 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *config.Resolved, projectDir string, timings *runTimings) int {
 	sources := output.SourceSet{}
 	perBuild := make([][]diagnostic.Diagnostic, 0, len(r.Source.Builds))
+	cacheDirectory := configuredCacheDirectory(r, projectDir)
 	for _, build := range r.Source.Builds {
 		workingDir := resolveBuildPath(projectDir, build.WorkingDirectory)
 		entry := resolveBuildPath(workingDir, build.Entry)
@@ -190,21 +199,28 @@ func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registra
 			engine.ObserveTiming = timings.observeLint
 		}
 		files := configuredBuildFiles(model, entry, workingDir, build.Files, build.Exclude)
-		perFile := make([][]diagnostic.Diagnostic, len(files))
-		var eg errgroup.Group
-		eg.SetLimit(max(runtime.GOMAXPROCS(0), 1))
-		for i, file := range files {
-			eg.Go(func() error {
-				rel := discovery.RelPath(projectDir, file.Path)
-				perFile[i] = engine.LintProjectFile(file, lint.ProjectAnalysis, r.EnabledForPath(rel), r.AllKnownRuleIDs, r.RuleConfigForPath(rel))
-				return nil
-			})
+		targetPaths := make([]string, len(files))
+		for index, file := range files {
+			targetPaths[index] = file.Path
 		}
-		_ = eg.Wait()
-		var diagnostics []diagnostic.Diagnostic
-		for _, fileDiagnostics := range perFile {
-			diagnostics = append(diagnostics, fileDiagnostics...)
-		}
+		diagnostics := cachedDiagnostics(cacheDirectory, "build:"+projectDir+":"+build.Name, "build:"+build.Name, r, string(target), defines, metadata, model, targetPaths, func() []diagnostic.Diagnostic {
+			perFile := make([][]diagnostic.Diagnostic, len(files))
+			var eg errgroup.Group
+			eg.SetLimit(max(runtime.GOMAXPROCS(0), 1))
+			for i, file := range files {
+				eg.Go(func() error {
+					rel := discovery.RelPath(projectDir, file.Path)
+					perFile[i] = engine.LintProjectFile(file, lint.ProjectAnalysis, r.EnabledForPath(rel), r.AllKnownRuleIDs, r.RuleConfigForPath(rel))
+					return nil
+				})
+			}
+			_ = eg.Wait()
+			var findings []diagnostic.Diagnostic
+			for _, fileDiagnostics := range perFile {
+				findings = append(findings, fileDiagnostics...)
+			}
+			return findings
+		})
 		perBuild = append(perBuild, diagnostics)
 		for _, file := range model.Files {
 			sources[file.Path] = file.Source

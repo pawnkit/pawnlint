@@ -1,5 +1,8 @@
 # Limitations
 
+The incremental cache reuses rule diagnostics after rebuilding the project graph;
+it does not cache parser or semantic models.
+
 ## Current analysis
 
 - Syntax analysis

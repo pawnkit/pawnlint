@@ -69,6 +69,9 @@ api-metadata = []
 # Existing findings baseline. Paths are relative to this configuration file.
 # baseline = "pawnlint-baseline.json"
 
+# Incremental diagnostic cache. Paths are relative to this configuration file.
+# cache = ".pawnlint-cache"
+
 [lint]
 # Treat warnings as errors when the failure threshold is reached.
 warnings-as-errors = false

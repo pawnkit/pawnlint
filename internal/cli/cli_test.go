@@ -103,6 +103,46 @@ func TestCLITimings(t *testing.T) {
 	}
 }
 
+func TestCLIIncrementalCache(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "pawnlint.toml")
+	sourcePath := filepath.Join(dir, "main.pwn")
+	if err := os.WriteFile(configPath, []byte("cache = \".pawnlint-cache\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(sourcePath, []byte("main() { if (value); { return; } }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	args := []string{"--config", configPath, "--format", "compact", sourcePath}
+	first, firstErr, firstCode := runCLI(t, args, "")
+	second, secondErr, secondCode := runCLI(t, args, "")
+	if firstCode != 1 || secondCode != 1 || first != second || firstErr != "" || secondErr != "" {
+		t.Fatalf("first=(%d, %q, %q), second=(%d, %q, %q)", firstCode, first, firstErr, secondCode, second, secondErr)
+	}
+	entries, err := filepath.Glob(filepath.Join(dir, ".pawnlint-cache", "*.json"))
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("cache entries = %v, err = %v", entries, err)
+	}
+	before, err := os.ReadFile(entries[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(sourcePath, []byte("main() { if (other); { return; } }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, _, code := runCLI(t, args, "")
+	if code != 1 {
+		t.Fatalf("changed source code = %d", code)
+	}
+	after, err := os.ReadFile(entries[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(before, after) {
+		t.Fatal("source change did not replace cache entry")
+	}
+}
+
 func TestCLIBaselineGenerateApplyAndPrune(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "pawnlint.toml")

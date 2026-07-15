@@ -38,6 +38,7 @@ type File struct {
 	IncludePaths []string       `toml:"include-paths" json:"include-paths" yaml:"include-paths"`
 	APIMetadata  []string       `toml:"api-metadata" json:"api-metadata" yaml:"api-metadata"`
 	Baseline     string         `toml:"baseline" json:"baseline" yaml:"baseline"`
+	Cache        string         `toml:"cache" json:"cache" yaml:"cache"`
 	Lint         LintSection    `toml:"lint" json:"lint" yaml:"lint"`
 	Rules        map[string]any `toml:"rules" json:"rules" yaml:"rules"`
 	Builds       []Build        `toml:"builds" json:"builds" yaml:"builds"`
