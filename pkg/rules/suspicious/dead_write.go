@@ -82,7 +82,7 @@ func deadWriteCandidates(ctx *lint.Context, function *controlflow.Function) []wr
 		}
 		symbol := ctx.Semantic.Resolve(left)
 		block := function.Block(assignment)
-		if symbol == nil || symbol.Ambiguous || symbol.Kind != semantic.SymbolLocal || !function.ReachableBlock(block) {
+		if symbol == nil || symbol.Ambiguous || symbol.Kind != semantic.SymbolLocal || symbol.Function != function.Node || !function.ReachableBlock(block) {
 			continue
 		}
 		result = append(result, writeCandidate{left: left, symbol: symbol, block: block})

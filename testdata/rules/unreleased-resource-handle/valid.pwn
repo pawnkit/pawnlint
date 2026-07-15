@@ -32,3 +32,24 @@ stock AssignAndCloseFile()
 	file = fopen("assigned.log");
 	fclose(file);
 }
+
+stock LoadGuarded()
+{
+	new File:file;
+	file = fopen("guarded.log");
+	if (file)
+	{
+		fclose(file);
+	}
+}
+
+stock LoadEarlyReturn()
+{
+	new File:file;
+	file = fopen("guarded2.log");
+	if (!file)
+	{
+		return;
+	}
+	fclose(file);
+}

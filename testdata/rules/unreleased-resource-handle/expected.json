@@ -54,6 +54,15 @@
       "startCol": 9,
       "endLine": 22,
       "endCol": 30
+    },
+    {
+      "ruleId": "unreleased-resource-handle",
+      "severity": "warning",
+      "message": "resource handle \"file\" returned by \"fopen\" may reach function exit without being released",
+      "startLine": 28,
+      "startCol": 9,
+      "endLine": 28,
+      "endCol": 27
     }
   ],
   "valid.pwn": []

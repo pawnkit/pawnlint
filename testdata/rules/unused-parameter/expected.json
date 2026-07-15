@@ -18,6 +18,24 @@
       "startCol": 13,
       "endLine": 6,
       "endCol": 17
+    },
+    {
+      "ruleId": "unused-parameter",
+      "severity": "warning",
+      "message": "parameter \"value\" is never used",
+      "startLine": 10,
+      "startCol": 24,
+      "endLine": 10,
+      "endCol": 29
+    },
+    {
+      "ruleId": "unused-parameter",
+      "severity": "warning",
+      "message": "parameter \"value\" is never used",
+      "startLine": 14,
+      "startCol": 23,
+      "endLine": 14,
+      "endCol": 28
     }
   ],
   "valid.pwn": []

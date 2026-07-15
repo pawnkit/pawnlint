@@ -45,7 +45,7 @@ func (DiscardedExpression) Run(ctx *lint.Context) {
 		if m.Uncertain(n) {
 			return
 		}
-		if hasSideEffect(expr) {
+		if hasSideEffect(expr, ctx.File.Source) {
 			return
 		}
 		if isLikelyMacroOrLabel(ctx, expr) {
@@ -88,9 +88,6 @@ func hasMacroPrefix(ctx *lint.Context, expr *parser.Node) bool {
 		if previous.Kind == token.ColonColon || previous.Kind == token.KwEnum {
 			return true
 		}
-		if previous.Kind == token.Identifier && previous.Text(ctx.File.Source) == "stop" {
-			return true
-		}
 		if previous.Kind == token.Semicolon || previous.Kind == token.LBrace || previous.Kind == token.RBrace {
 			break
 		}
@@ -98,7 +95,7 @@ func hasMacroPrefix(ctx *lint.Context, expr *parser.Node) bool {
 	return false
 }
 
-func hasSideEffect(n *parser.Node) bool {
+func hasSideEffect(n *parser.Node, source []byte) bool {
 	if n == nil {
 		return false
 	}
@@ -111,12 +108,16 @@ func hasSideEffect(n *parser.Node) bool {
 		return true
 	case parser.KindMacroInvocation, parser.KindMacroInvocationBlock:
 		return true
+	case parser.KindUnaryExpression:
+		if n.Tok.Kind == token.Identifier && n.Tok.Text(source) == "stop" {
+			return true
+		}
 	}
 	if n.Tok.Kind == token.PlusPlus || n.Tok.Kind == token.MinusMinus {
 		return true
 	}
 	for _, c := range n.Children {
-		if hasSideEffect(c) {
+		if hasSideEffect(c, source) {
 			return true
 		}
 	}

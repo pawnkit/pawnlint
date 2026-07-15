@@ -166,6 +166,10 @@ func (InvalidArraySize) Run(ctx *lint.Context) {
 		return
 	}
 	ctx.Walk.IterKind(parser.KindDimension, func(node *parser.Node) {
+		parent := ctx.Walk.Parent(node)
+		if parent == nil || (parent.Kind != parser.KindVariableDeclarator && parent.Kind != parser.KindParameter) {
+			return
+		}
 		size := node.Field("size")
 		value, ok := ctx.Semantic.Eval(size)
 		if !ok || value > 0 {

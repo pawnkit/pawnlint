@@ -26,3 +26,19 @@ do_condition()
     }
     while (value);
 }
+
+captured_by_inline(playerid)
+{
+    new ret;
+
+    inline Response(response)
+    {
+        if (response)
+        {
+            ret = DoWork(playerid);
+            Use(ret);
+        }
+    }
+
+    ShowDialog(playerid, using inline Response);
+}

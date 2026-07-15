@@ -21,3 +21,13 @@ stock AssignFile()
 	new File:file;
 	file = fopen("assigned.log");
 }
+
+stock LoadGuardedLeak()
+{
+	new File:file;
+	file = fopen("leaky.log");
+	if (file)
+	{
+		fread(file, buffer, 32);
+	}
+}

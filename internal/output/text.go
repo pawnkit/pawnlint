@@ -82,9 +82,26 @@ func buildCaret(lt *source.LineTable, r source.Range, prefixLen int) string {
 	if width <= 0 {
 		width = 1
 	}
-	pad := strings.Repeat(" ", prefixLen+startLine.Col-1)
+	indent := startLine.Col - 1
+	lineText := lt.LineText(startLine.Line)
+	if indent > len(lineText) {
+		indent = len(lineText)
+	}
+	pad := strings.Repeat(" ", prefixLen) + mirrorIndent(lineText[:indent])
 	carets := strings.Repeat("^", width)
 	return pad + carets
+}
+
+func mirrorIndent(prefix string) string {
+	out := make([]byte, len(prefix))
+	for i := 0; i < len(prefix); i++ {
+		if prefix[i] == '\t' {
+			out[i] = '\t'
+		} else {
+			out[i] = ' '
+		}
+	}
+	return string(out)
 }
 
 type colorizer struct {

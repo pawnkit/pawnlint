@@ -15,4 +15,7 @@ Reports unused parameters in non-public function definitions
 
 An unused parameter may indicate dead code or an incomplete function. Public
 and command-handler functions are skipped because external signatures may require every parameter.
-Names beginning with `_` are treated as intentionally unused.
+Functions wrapped by a hooking library (`hook`, `inline`, and similar
+single-word prefixes) are skipped for the same reason. Names beginning with
+`_` or listed in a `#pragma unused` directive in the same function are
+treated as intentionally unused.

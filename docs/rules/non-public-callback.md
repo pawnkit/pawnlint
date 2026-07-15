@@ -25,5 +25,7 @@ OnPlayerConnect(playerid)
 ```
 
 The rule reports functions whose name is an exact, case-sensitive match for a
-known callback but that lack the `public` qualifier. No fix is offered
-because a same-named private helper may be intentional.
+known callback but that lack the `public` qualifier. Functions wrapped by a
+hooking library (`hook OnPlayerConnect(...)`, y_hooks' convention) are skipped,
+since the wrapper dispatches the callback itself. No fix is offered because a
+same-named private helper may be intentional.

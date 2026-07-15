@@ -57,6 +57,37 @@ func TestTextClipsMultilineCaret(t *testing.T) {
 	}
 }
 
+func TestTextCaretMirrorsTabIndent(t *testing.T) {
+	src := []byte("main()\n{\n\t\tif(playerid + 1)\n\t\t{\n\t\t}\n}\n")
+	lt := source.NewLineTable(src)
+	d := diags()[0]
+	d.Filename = "x.pwn"
+	d.Range = lt.Range(12, 25) // "playerid + 1"
+	var b bytes.Buffer
+	if err := output.Write(&b, output.FormatText, []diagnostic.Diagnostic{d}, output.SourceSet{"x.pwn": src}, false); err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(b.String(), "\n")
+	var srcLine, caretLine string
+	for i, l := range lines {
+		if strings.HasPrefix(l, "3 | ") {
+			srcLine = l
+			caretLine = lines[i+1]
+		}
+	}
+	if srcLine == "" {
+		t.Fatalf("missing source line: %q", b.String())
+	}
+	prefixLen := len("3 | ")
+	wantIndent := srcLine[prefixLen : prefixLen+2]
+	if wantIndent != "\t\t" {
+		t.Fatalf("test setup: expected tab indent, got %q", wantIndent)
+	}
+	if !strings.HasPrefix(caretLine, strings.Repeat(" ", prefixLen)+"\t\t") {
+		t.Fatalf("caret line does not mirror source tabs: %q", caretLine)
+	}
+}
+
 func TestCompact(t *testing.T) {
 	var b bytes.Buffer
 	if err := output.Write(&b, output.FormatCompact, diags(), nil, false); err != nil {

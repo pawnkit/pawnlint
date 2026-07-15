@@ -99,6 +99,62 @@ func TestDiscoverExplicitFile(t *testing.T) {
 	}
 }
 
+func TestDiscoverExplicitDirIgnoresInclude(t *testing.T) {
+	root := t.TempDir()
+	mk := func(rel string) {
+		full := filepath.Join(root, rel)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte("main(){}\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	mk("gamemodes/main.pwn")
+	mk("vendor/v.pwn")
+
+	otherCwd := t.TempDir()
+	files, err := project.Discover(project.Options{
+		Roots:      []string{filepath.Join(root, "gamemodes")},
+		WorkingDir: otherCwd,
+		Include:    []string{"gamemodes/**/*.pwn"},
+		Exclude:    []string{"vendor/**"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 1 {
+		t.Fatalf("explicit dir root was filtered by Include (relative to unrelated WorkingDir): %+v", files)
+	}
+}
+
+func TestDiscoverExplicitDirStillRespectsExclude(t *testing.T) {
+	root := t.TempDir()
+	mk := func(rel string) {
+		full := filepath.Join(root, rel)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte("main(){}\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	mk("gamemodes/main.pwn")
+	mk("gamemodes/vendor/v.pwn")
+
+	files, err := project.Discover(project.Options{
+		Roots:      []string{root},
+		WorkingDir: root,
+		Exclude:    []string{"gamemodes/vendor/**"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 1 {
+		t.Fatalf("Exclude was not applied to explicit dir root: %+v", files)
+	}
+}
+
 func TestDiscoverExplicitFileOverridesExclude(t *testing.T) {
 	root := t.TempDir()
 	p := filepath.Join(root, "vendor", "x.pwn")

@@ -12,3 +12,8 @@ static UpdateScore(playerid)
 {
     return playerid;
 }
+
+hook OnPlayerDisconnect(playerid, reason)
+{
+    return 1;
+}

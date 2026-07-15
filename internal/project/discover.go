@@ -92,9 +92,6 @@ func walkDir(root string, opts Options, add func(string)) error {
 		if isExcludedRel(rel, opts) {
 			return nil
 		}
-		if hasInclude(opts) && !matchesAny(opts.Include, rel) {
-			return nil
-		}
 		add(path)
 		return nil
 	})
@@ -151,20 +148,9 @@ func globWalk(base, pattern string, opts Options) ([]string, error) {
 	return out, err
 }
 
-func hasInclude(opts Options) bool { return len(opts.Include) > 0 }
-
 func isPawnFile(path string) bool {
 	ext := strings.ToLower(filepath.Ext(path))
 	return ext == ".pwn" || ext == ".inc"
-}
-
-func matchesAny(globs []string, path string) bool {
-	for _, g := range globs {
-		if MatchGlob(g, path) {
-			return true
-		}
-	}
-	return false
 }
 
 type PathError struct {

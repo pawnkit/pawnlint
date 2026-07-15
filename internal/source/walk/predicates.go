@@ -37,6 +37,11 @@ func HasChildToken(node *parser.Node, kind token.Kind) bool {
 	return false
 }
 
+func HasWrapperStorageQualifier(node *parser.Node) bool {
+	storage := node.Field("storage")
+	return storage != nil && storage.Tok.Kind == token.Identifier
+}
+
 func ReferencesByAmpersand(tokens []token.Token, node *parser.Node) bool {
 	if node == nil {
 		return false

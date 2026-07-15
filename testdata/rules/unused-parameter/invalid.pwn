@@ -6,3 +6,12 @@ stock Add(left, right)
 stock Empty(argc)
 {
 }
+
+stock OtherPragmaScope(value)
+{
+}
+
+stock UnrelatedPragma(value)
+{
+    #pragma unused OtherPragmaScope
+}
