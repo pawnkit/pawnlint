@@ -1,0 +1,43 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "narrowing-conversion",
+      "severity": "warning",
+      "message": "value may not fit in an unsigned packed character",
+      "startLine": 4,
+      "startCol": 17,
+      "endLine": 4,
+      "endCol": 20
+    },
+    {
+      "ruleId": "narrowing-conversion",
+      "severity": "warning",
+      "message": "value may not fit in an unsigned packed character",
+      "startLine": 5,
+      "startCol": 17,
+      "endLine": 5,
+      "endCol": 19
+    },
+    {
+      "ruleId": "narrowing-conversion",
+      "severity": "warning",
+      "message": "value may not fit in an unsigned packed character",
+      "startLine": 6,
+      "startCol": 17,
+      "endLine": 6,
+      "endCol": 36
+    },
+    {
+      "ruleId": "narrowing-conversion",
+      "severity": "warning",
+      "message": "value may not fit in an unsigned packed character",
+      "startLine": 7,
+      "startCol": 32,
+      "endLine": 7,
+      "endCol": 45
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

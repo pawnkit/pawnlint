@@ -61,6 +61,7 @@ Rules are stable unless their page marks them as preview.
 | [`misspelled-callback`](misspelled-callback.md) | suspicious | warning | off | no | Reports public functions one edit away from a target callback |
 | [`multiple-declarations`](multiple-declarations.md) | style | warning | off | no | Reports statements that declare multiple variables |
 | [`naming-convention`](naming-convention.md) | style | warning | off | no | Reports declarations that violate configured naming policies |
+| [`narrowing-conversion`](narrowing-conversion.md) | correctness | warning | off | no | Reports values that may not fit in packed characters |
 | [`native-argument-count`](native-argument-count.md) | correctness | error | off | no | Reports calls with an impossible number of arguments for a known native |
 | [`negative-or-zero-array-size`](negative-or-zero-array-size.md) | correctness | error | on | no | Reports array dimensions that evaluate to zero or less |
 | [`non-callable-symbol`](non-callable-symbol.md) | correctness | error | on | no | Reports calls whose callee resolves to a variable, not a function |

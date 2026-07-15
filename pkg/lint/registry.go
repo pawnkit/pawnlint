@@ -51,6 +51,7 @@ var curate = map[Profile]map[string]struct{}{
 		"redundant-tag":          {},
 		"redundant-else":         {},
 		"incomplete-enum-switch": {},
+		"narrowing-conversion":   {},
 	},
 }
 
