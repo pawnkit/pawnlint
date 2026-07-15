@@ -1,0 +1,9 @@
+{
+  "natives": {
+    "PureNative": {"pure": true, "parameters": [{"name": "value"}]},
+    "MutableNative": {"parameters": [{"name": "value"}]}
+  },
+  "functions": {
+    "PureFunction": {"pure": true, "parameters": [{"name": "value"}]}
+  }
+}

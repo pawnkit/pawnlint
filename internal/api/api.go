@@ -31,6 +31,7 @@ type Native struct {
 	Release         string      `json:"release,omitempty"`
 	MustUse         bool        `json:"mustUse,omitempty"`
 	RequiresBefore  []string    `json:"requiresBefore,omitempty"`
+	Pure            bool        `json:"pure,omitempty"`
 }
 
 type Function struct {
@@ -38,6 +39,7 @@ type Function struct {
 	ReturnTag  string      `json:"returnTag,omitempty"`
 	Parameters []Parameter `json:"parameters,omitempty"`
 	Release    string      `json:"release,omitempty"`
+	Pure       bool        `json:"pure,omitempty"`
 }
 
 type Constant struct {
@@ -69,9 +71,27 @@ func Callbacks(target string) map[string]Callback {
 
 func Natives(target string) map[string]Native {
 	if target == "samp" {
-		return sampAPINatives
+		return pureSampNatives
 	}
-	return openMPNatives
+	return pureOpenMPNatives
+}
+
+func markPureNatives(source map[string]Native) map[string]Native {
+	result := copyMap(source)
+	for _, name := range pureNativeNames {
+		if native, ok := result[name]; ok {
+			native.Pure = true
+			result[name] = native
+		}
+	}
+	return result
+}
+
+var pureNativeNames = []string{
+	"abs", "clamp", "float", "floatabs", "floatadd", "floatcmp", "floatcos",
+	"floatdiv", "floatfract", "floatlog", "floatmul", "floatpower", "floatround",
+	"floatsin", "floatsqroot", "floatsub", "floattan", "ispacked", "max", "min",
+	"strcmp", "strfind", "strfloat", "strlen", "strval", "swapchars", "tolower", "toupper",
 }
 
 var sampAPINatives = func() map[string]Native {
@@ -86,6 +106,9 @@ var sampAPINatives = func() map[string]Native {
 	}
 	return result
 }()
+
+var pureOpenMPNatives = markPureNatives(openMPNatives)
+var pureSampNatives = markPureNatives(sampAPINatives)
 
 func Constants(target string) map[string]Constant {
 	if target == "samp" {

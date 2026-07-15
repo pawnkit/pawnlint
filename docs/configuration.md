@@ -183,6 +183,10 @@ Use JSON to describe plugin or project APIs:
     },
     "Plugin_Parse": {
       "parameters": [{"name": "result", "reference": true, "output": true}]
+    },
+    "Plugin_Clamp": {
+      "pure": true,
+      "parameters": [{"name": "value"}]
     }
   },
   "functions": {
@@ -195,6 +199,10 @@ Use JSON to describe plugin or project APIs:
     },
     "InspectLog": {
       "parameters": [{"name": "file", "tag": "File", "ownership": "borrowed"}]
+    },
+    "Normalize": {
+      "pure": true,
+      "parameters": [{"name": "value"}]
     }
   },
   "constants": {
@@ -206,7 +214,8 @@ Use JSON to describe plugin or project APIs:
 Function ownership contracts apply only to unambiguous project definitions.
 `release` marks an owned return value. Scalar input parameters may use
 `ownership` values `borrowed` or `transferred`. Native entries also support
-`deprecated`, `mustUse`, `requiresBefore`, `formatParameter`, and `buffers`.
+`pure` marks deterministic calls without observable effects. Native entries also
+support `deprecated`, `mustUse`, `requiresBefore`, `formatParameter`, and `buffers`.
 Invalid fields and relations are configuration errors.
 
 ## Profiles

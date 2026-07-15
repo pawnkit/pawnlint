@@ -123,6 +123,9 @@ func (m *Metadata) validate(path string) error {
 				problems = append(problems, fmt.Sprintf("native %s has invalid buffer relation %d:%d", name, buffer.Parameter, buffer.SizeParameter))
 			}
 		}
+		if native.Pure && (native.Release != "" || len(native.RequiresBefore) != 0 || len(native.Buffers) != 0 || mutableParameters(native.Parameters)) {
+			problems = append(problems, fmt.Sprintf("native %s has effects incompatible with pure", name))
+		}
 		seenRequirements := make(map[string]struct{}, len(native.RequiresBefore))
 		for _, requirement := range native.RequiresBefore {
 			if strings.TrimSpace(requirement) == "" {
@@ -146,6 +149,9 @@ func (m *Metadata) validate(path string) error {
 		function.Name = name
 		m.Functions[name] = function
 		validateParameters("function "+name, function.Parameters, &problems)
+		if function.Pure && (function.Release != "" || mutableParameters(function.Parameters)) {
+			problems = append(problems, fmt.Sprintf("function %s has effects incompatible with pure", name))
+		}
 	}
 	for name, constant := range m.Constants {
 		if strings.TrimSpace(name) == "" {
@@ -160,6 +166,15 @@ func (m *Metadata) validate(path string) error {
 	}
 	sort.Strings(problems)
 	return fmt.Errorf("API metadata %s: %s", path, strings.Join(problems, "; "))
+}
+
+func mutableParameters(parameters []Parameter) bool {
+	for _, parameter := range parameters {
+		if parameter.Output || parameter.Reference || parameter.ArrayRank > 0 && !parameter.Const {
+			return true
+		}
+	}
+	return false
 }
 
 func validateNativeRelations(natives map[string]Native) error {

@@ -1,0 +1,35 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "loop-invariant-call",
+      "severity": "warning",
+      "message": "pure call \"PureNative\" uses unchanged arguments inside the loop",
+      "startLine": 12,
+      "startCol": 18,
+      "endLine": 12,
+      "endCol": 35,
+      "suggestions": [
+        {
+          "description": "compute the result once before the loop"
+        }
+      ]
+    },
+    {
+      "ruleId": "loop-invariant-call",
+      "severity": "warning",
+      "message": "pure call \"PureFunction\" uses unchanged arguments inside the loop",
+      "startLine": 13,
+      "startCol": 18,
+      "endLine": 13,
+      "endCol": 33,
+      "suggestions": [
+        {
+          "description": "compute the result once before the loop"
+        }
+      ]
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

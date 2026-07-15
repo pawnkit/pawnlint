@@ -55,6 +55,7 @@ var curate = map[Profile]map[string]struct{}{
 		"signedness-mismatch":      {},
 		"macro-repeated-parameter": {},
 		"statement-macro-hazard":   {},
+		"loop-invariant-call":      {},
 	},
 }
 

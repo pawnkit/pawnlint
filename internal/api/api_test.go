@@ -70,12 +70,14 @@ func TestLoadAndMergeUserMetadata(t *testing.T) {
   "natives": {
     "Plugin_Init": {},
     "Plugin_Open": {"returnTag": "PluginHandle", "release": "Plugin_Close", "mustUse": true, "requiresBefore": ["Plugin_Init"]},
-    "Plugin_Close": {"parameters": [{"name": "handle", "tag": "PluginHandle", "minimum": 1, "maximum": 8}]}
+    "Plugin_Close": {"parameters": [{"name": "handle", "tag": "PluginHandle", "minimum": 1, "maximum": 8}]},
+    "Plugin_Clamp": {"pure": true, "parameters": [{"name": "value"}]}
   },
   "functions": {
     "OpenLog": {"returnTag": "File", "release": "CloseLog"},
     "CloseLog": {"parameters": [{"name": "file", "tag": "File", "ownership": "transferred"}]},
-    "InspectLog": {"parameters": [{"name": "file", "tag": "File", "ownership": "borrowed"}]}
+    "InspectLog": {"parameters": [{"name": "file", "tag": "File", "ownership": "borrowed"}]},
+    "Normalize": {"pure": true, "parameters": [{"name": "value"}]}
   },
   "constants": {"PLUGIN_LIMIT": {}}
 }`
@@ -91,8 +93,31 @@ func TestLoadAndMergeUserMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 	closeParameter := metadata.Natives["Plugin_Close"].Parameters[0]
-	if metadata.Natives["Plugin_Open"].Release != "Plugin_Close" || !metadata.Natives["Plugin_Open"].MustUse || len(metadata.Natives["Plugin_Open"].RequiresBefore) != 1 || closeParameter.Minimum == nil || *closeParameter.Minimum != 1 || closeParameter.Maximum == nil || *closeParameter.Maximum != 8 || metadata.Functions["OpenLog"].Release != "CloseLog" || metadata.Functions["CloseLog"].Parameters[0].Ownership != "transferred" || metadata.Functions["InspectLog"].Parameters[0].Ownership != "borrowed" || metadata.Callbacks["OnPluginEvent"].Name != "OnPluginEvent" || metadata.Constants["PLUGIN_LIMIT"].Name != "PLUGIN_LIMIT" {
+	if metadata.Natives["Plugin_Open"].Release != "Plugin_Close" || !metadata.Natives["Plugin_Open"].MustUse || len(metadata.Natives["Plugin_Open"].RequiresBefore) != 1 || closeParameter.Minimum == nil || *closeParameter.Minimum != 1 || closeParameter.Maximum == nil || *closeParameter.Maximum != 8 || !metadata.Natives["Plugin_Clamp"].Pure || metadata.Functions["OpenLog"].Release != "CloseLog" || metadata.Functions["CloseLog"].Parameters[0].Ownership != "transferred" || metadata.Functions["InspectLog"].Parameters[0].Ownership != "borrowed" || !metadata.Functions["Normalize"].Pure || metadata.Callbacks["OnPluginEvent"].Name != "OnPluginEvent" || metadata.Constants["PLUGIN_LIMIT"].Name != "PLUGIN_LIMIT" {
 		t.Fatalf("metadata = %#v", metadata)
+	}
+}
+
+func TestBuiltinPureNatives(t *testing.T) {
+	natives := Natives("openmp")
+	if !natives["floatabs"].Pure || !natives["strlen"].Pure || natives["random"].Pure {
+		t.Fatal("builtin native purity is incorrect")
+	}
+}
+
+func TestLoadUserMetadataRejectsInvalidPurity(t *testing.T) {
+	for _, source := range []string{
+		`{"natives":{"Mutate":{"pure":true,"parameters":[{"output":true}]}}}`,
+		`{"natives":{"Acquire":{"pure":true,"release":"Close"},"Close":{}}}`,
+		`{"functions":{"Mutate":{"pure":true,"parameters":[{"reference":true}]}}}`,
+	} {
+		path := filepath.Join(t.TempDir(), "api.json")
+		if err := os.WriteFile(path, []byte(source), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Load(path); err == nil {
+			t.Fatalf("invalid purity accepted: %s", source)
+		}
 	}
 }
 

@@ -54,6 +54,7 @@ Rules are stable unless their page marks them as preview.
 | [`invariant-loop-condition`](invariant-loop-condition.md) | correctness | warning | on | no | Reports loop conditions unchanged by their loop |
 | [`large-local-array`](large-local-array.md) | performance | warning | off | no | Reports large automatic arrays allocated on the Pawn stack |
 | [`legacy-include`](legacy-include.md) | openmp | warning | off | no | Reports official SA-MP wrapper includes when targeting open.mp |
+| [`loop-invariant-call`](loop-invariant-call.md) | performance | warning | off | no | Reports pure calls repeated with unchanged arguments in loops |
 | [`macro-repeated-parameter`](macro-repeated-parameter.md) | correctness | warning | off | no | Reports macro parameters evaluated more than once |
 | [`magic-value`](magic-value.md) | maintainability | warning | off | no | Reports unexplained numeric and string literals |
 | [`maximum-nesting`](maximum-nesting.md) | maintainability | warning | off | no | Reports functions with deeply nested control statements |
