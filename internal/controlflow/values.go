@@ -24,7 +24,7 @@ type valueEvent struct {
 	zero   bool
 }
 
-func buildValueFlow(function *Function, tree *walk.Model, semantics *semantic.Model) {
+func buildValueFlow(function *Function, tree *walk.Model, semantics *semantic.Model, options Options) {
 	function.valueIn = make(map[*Block]map[*semantic.Symbol]int64)
 	function.valueEvents = make(map[*Block][]valueEvent)
 	if function.Uncertain || semantics == nil {
@@ -79,33 +79,27 @@ func buildValueFlow(function *Function, tree *walk.Model, semantics *semantic.Mo
 		if block == nil {
 			continue
 		}
-		seen := make(map[*semantic.Symbol]struct{})
-		callee := node.Field("function")
-		resolvedCall := callee != nil && callee.Kind == parser.KindIdentifier
-		if resolvedCall {
-			symbol := semantics.Resolve(callee)
-			resolvedCall = symbol != nil && symbol.Kind == semantic.SymbolFunction
+		arguments := node.Field("arguments")
+		if arguments == nil {
+			continue
 		}
-		if !resolvedCall {
-			for symbol := range tracked {
+		effects, known := callEffects(node, semantics, options)
+		indexes := effects.MutatedArguments
+		if !known || !effects.Complete {
+			indexes = make([]int, len(arguments.Children))
+			for index := range arguments.Children {
+				indexes[index] = index
+			}
+		}
+		seen := make(map[*semantic.Symbol]struct{})
+		for _, index := range indexes {
+			if index < 0 || index >= len(arguments.Children) {
+				continue
+			}
+			symbol := callArgumentSymbol(arguments.Children[index], semantics)
+			if _, tracked := tracked[symbol]; tracked {
 				seen[symbol] = struct{}{}
 			}
-		}
-		var visit func(*parser.Node)
-		visit = func(current *parser.Node) {
-			if current.Kind == parser.KindIdentifier {
-				symbol := semantics.Resolve(current)
-				if _, ok := tracked[symbol]; ok {
-					seen[symbol] = struct{}{}
-				}
-			}
-			for _, child := range current.Children {
-				visit(child)
-			}
-		}
-		arguments := node.Field("arguments")
-		if arguments != nil {
-			visit(arguments)
 		}
 		for symbol := range seen {
 			function.valueEvents[block] = append(function.valueEvents[block], valueEvent{kind: valueInvalidate, offset: node.End, symbol: symbol})
@@ -120,6 +114,61 @@ func buildValueFlow(function *Function, tree *walk.Model, semantics *semantic.Mo
 		})
 	}
 	propagateValues(function, semantics)
+}
+
+func callEffects(call *parser.Node, semantics *semantic.Model, options Options) (CallEffects, bool) {
+	if options.ResolveCallEffects != nil {
+		if effects, known := options.ResolveCallEffects(call); known {
+			return effects, true
+		}
+	}
+	callee := call.Field("function")
+	if callee == nil || callee.Kind != parser.KindIdentifier {
+		return CallEffects{}, false
+	}
+	symbol := semantics.Resolve(callee)
+	if symbol == nil || symbol.Kind != semantic.SymbolFunction || symbol.Ambiguous || symbol.Decl == nil {
+		return CallEffects{}, false
+	}
+	parameters := symbol.Decl.Field("parameters")
+	if parameters == nil {
+		return CallEffects{Complete: true}, true
+	}
+	effects := CallEffects{Complete: true}
+	index := 0
+	for _, parameter := range parameters.Children {
+		if parameter.Kind != parser.KindParameter {
+			continue
+		}
+		if walk.ReferencesByAmpersand(semantics.File.Tokens, parameter) || hasCallEffectDimension(parameter) {
+			effects.MutatedArguments = append(effects.MutatedArguments, index)
+		}
+		index++
+	}
+	return effects, true
+}
+
+func callArgumentSymbol(node *parser.Node, semantics *semantic.Model) *semantic.Symbol {
+	for node != nil {
+		switch node.Kind {
+		case parser.KindIdentifier:
+			return semantics.Resolve(node)
+		case parser.KindParenthesizedExpression, parser.KindTaggedExpression:
+			node = node.Field("expression")
+		default:
+			return nil
+		}
+	}
+	return nil
+}
+
+func hasCallEffectDimension(node *parser.Node) bool {
+	for _, child := range node.Children {
+		if child.Kind == parser.KindDimension {
+			return true
+		}
+	}
+	return false
 }
 
 func valueSymbol(tree *walk.Model, function *Function, symbol *semantic.Symbol) bool {

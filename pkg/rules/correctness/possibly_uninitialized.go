@@ -21,7 +21,7 @@ func (PossiblyUninitialized) Metadata() lint.Metadata {
 		ID:              "possibly-uninitialized",
 		Name:            "Possibly uninitialized",
 		Summary:         "Reports local variables read before an explicit assignment on every path",
-		Explanation:     "Pawn zero-fills local cells, but the compiler still tracks whether a local received an explicit value. This rule reports reads that can occur before an initializer or assignment. Unknown and by-reference call arguments stop tracking conservatively, while API parameters marked as outputs establish assignment.",
+		Explanation:     "Pawn zero-fills local cells, but the compiler still tracks whether a local received an explicit value. This rule reports reads that can occur before an initializer or assignment. Resolved function effects distinguish read-only and mutating arguments. Unknown reference arguments stop tracking, while API parameters marked as outputs establish assignment.",
 		Category:        diagnostic.CategoryCorrectness,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.ControlFlowAnalysis,
@@ -188,6 +188,35 @@ func callArgumentEffect(ctx *lint.Context, node *parser.Node) (argumentEffect, b
 		return argumentEffectUnknown, true
 	}
 	name := ctx.Walk.Text(callee)
+	if ctx.Project != nil && ctx.ProjectFile != nil {
+		variants := ctx.Project.FunctionVariants(ctx.ProjectFile, callee)
+		if len(variants) != 0 {
+			projectFunction := false
+			for _, variant := range variants {
+				if variant.Node == nil || walk.HasChildToken(variant.Node, token.KwNative) {
+					continue
+				}
+				projectFunction = true
+				effects, known := ctx.Project.FunctionEffects(variant)
+				if !known || !effects.Complete {
+					return argumentEffectUnknown, true
+				}
+				for _, mutated := range effects.MutatedParameters {
+					if mutated == index {
+						return argumentEffectUnknown, true
+					}
+				}
+			}
+			if projectFunction {
+				return argumentEffectRead, true
+			}
+		}
+		for _, declaration := range ctx.Project.Declarations[name] {
+			if declaration.Kind == semantic.SymbolFunction && len(variants) == 0 {
+				return argumentEffectUnknown, true
+			}
+		}
+	}
 	if native, ok := ctx.Natives()[name]; ok {
 		parameter, ok := nativeParameter(native.Parameters, index)
 		if !ok {

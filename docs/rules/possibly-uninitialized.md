@@ -13,4 +13,4 @@ Reports local variables read before an explicit assignment on every path
 
 ## Details
 
-Pawn zero-fills local cells, but the compiler still tracks whether a local received an explicit value. This rule reports reads that can occur before an initializer or assignment. Unknown and by-reference call arguments stop tracking conservatively, while API parameters marked as outputs establish assignment.
+Pawn zero-fills local cells, but the compiler still tracks whether a local received an explicit value. This rule reports reads that can occur before an initializer or assignment. Resolved function effects distinguish read-only and mutating arguments. Unknown reference arguments stop tracking, while API parameters marked as outputs establish assignment.

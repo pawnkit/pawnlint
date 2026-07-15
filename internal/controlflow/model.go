@@ -40,6 +40,9 @@ type Function struct {
 	fallthroughExits []*Block
 	valueIn          map[*Block]map[*semantic.Symbol]int64
 	valueEvents      map[*Block][]valueEvent
+	aliasIn          map[*Block]aliasState
+	aliasEvents      map[*Block][]aliasEvent
+	aliasIndexes     map[*semantic.Symbol]int
 }
 
 type Model struct {
@@ -48,7 +51,20 @@ type Model struct {
 	semantics *semantic.Model
 }
 
+type CallEffects struct {
+	Complete         bool
+	MutatedArguments []int
+}
+
+type Options struct {
+	ResolveCallEffects func(*parser.Node) (CallEffects, bool)
+}
+
 func Build(tree *walk.Model, semantics *semantic.Model) *Model {
+	return BuildWithOptions(tree, semantics, Options{})
+}
+
+func BuildWithOptions(tree *walk.Model, semantics *semantic.Model, options Options) *Model {
 	model := &Model{byNode: make(map[*parser.Node]*Function), semantics: semantics}
 	if tree == nil {
 		return model
@@ -59,7 +75,8 @@ func Build(tree *walk.Model, semantics *semantic.Model) *Model {
 		}
 		builder := newBuilder(tree, semantics, node)
 		function := builder.build()
-		buildValueFlow(function, tree, semantics)
+		buildValueFlow(function, tree, semantics, options)
+		buildAliasFlow(function, tree, semantics, options)
 		model.Functions = append(model.Functions, function)
 		model.byNode[node] = function
 	}

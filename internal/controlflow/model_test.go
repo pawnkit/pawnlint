@@ -153,6 +153,54 @@ func TestValuePropagationInvalidatesCallArguments(t *testing.T) {
 	}
 }
 
+func TestValuePropagationKeepsByValueCallArguments(t *testing.T) {
+	file := parser.Parse([]byte("Read(value) {} main() { new value = 1; Read(value); if (value == 1) {} }"))
+	tree := walk.New("x.pwn", file)
+	semantics := semantic.Build(file, tree)
+	model := controlflow.Build(tree, semantics)
+	condition := tree.OfKind(parser.KindIfStatement)[0].Field("condition")
+	value, ok := model.Eval(condition)
+	if !ok || value != 1 {
+		t.Fatalf("condition = %d, %v", value, ok)
+	}
+}
+
+func TestValuePropagationInvalidatesReferenceArguments(t *testing.T) {
+	file := parser.Parse([]byte("Change(&value) { value = 2; } main() { new value = 1; Change(value); if (value == 1) {} }"))
+	tree := walk.New("x.pwn", file)
+	semantics := semantic.Build(file, tree)
+	model := controlflow.Build(tree, semantics)
+	condition := tree.OfKind(parser.KindIfStatement)[0].Field("condition")
+	if _, ok := model.Eval(condition); ok {
+		t.Fatal("reference argument value is known")
+	}
+}
+
+func TestValuePropagationKeepsSubscriptIndexes(t *testing.T) {
+	file := parser.Parse([]byte("Change(values[]) {} main() { new values[2]; new index = 1; Change(values[index]); if (index == 1) {} }"))
+	tree := walk.New("x.pwn", file)
+	semantics := semantic.Build(file, tree)
+	model := controlflow.Build(tree, semantics)
+	condition := tree.OfKind(parser.KindIfStatement)[0].Field("condition")
+	value, ok := model.Eval(condition)
+	if !ok || value != 1 {
+		t.Fatalf("condition = %d, %v", value, ok)
+	}
+}
+
+func TestValuePropagationUsesResolvedCallEffects(t *testing.T) {
+	file := parser.Parse([]byte("Change(value) {} main() { new value = 1; Change(value); if (value == 1) {} }"))
+	tree := walk.New("x.pwn", file)
+	semantics := semantic.Build(file, tree)
+	model := controlflow.BuildWithOptions(tree, semantics, controlflow.Options{ResolveCallEffects: func(call *parser.Node) (controlflow.CallEffects, bool) {
+		return controlflow.CallEffects{Complete: true, MutatedArguments: []int{0}}, true
+	}})
+	condition := tree.OfKind(parser.KindIfStatement)[0].Field("condition")
+	if _, ok := model.Eval(condition); ok {
+		t.Fatal("resolved mutation was ignored")
+	}
+}
+
 func TestValuePropagationKeepsLoopInvariant(t *testing.T) {
 	file := parser.Parse([]byte("forward Check(); main() { new value = 2; while (Check()) {} if (value == 2) {} }"))
 	tree := walk.New("x.pwn", file)

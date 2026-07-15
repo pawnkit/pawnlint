@@ -142,10 +142,10 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	}
 	if needFlow {
 		if e.ObserveTiming == nil {
-			flow = controlflow.Build(m, semantics)
+			flow = controlflow.BuildWithOptions(m, semantics, e.controlFlowOptions(contextFile, m))
 		} else {
 			started := time.Now()
-			flow = controlflow.Build(m, semantics)
+			flow = controlflow.BuildWithOptions(m, semantics, e.controlFlowOptions(contextFile, m))
 			e.observe(TimingEvent{Stage: TimingControlFlow, Duration: time.Since(started)})
 		}
 	}

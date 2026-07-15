@@ -14,7 +14,7 @@ it does not cache parser or semantic models.
 ## Not implemented yet
 
 - Operator-overload and advanced tag compatibility analysis
-- General interprocedural and alias-aware data-flow analysis
+- General interprocedural data-flow analysis
 - Complete API constant and behavioral metadata
 
 ## Fixes
@@ -120,10 +120,12 @@ it does not cache parser or semantic models.
 
 - Tracks reachability, explicit assignment, and constant values for scalar
   non-static locals.
+- Tracks definite scalar alias classes through direct copies and branch joins.
 - Redundant initialization requires a pure scalar initializer and direct
   standalone overwrites.
 - A value stays known only when every incoming path agrees.
-- Calls invalidate local arguments when reference behavior is unknown.
+- Calls invalidate exact mutated arguments when source, project, or API effects
+  are known. Unknown calls invalidate direct scalar arguments.
 
 ## Dynamic calls
 
