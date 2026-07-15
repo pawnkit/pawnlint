@@ -1,0 +1,151 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "unconditional-recursion",
+      "severity": "warning",
+      "message": "function \"Direct\" unconditionally calls itself",
+      "startLine": 1,
+      "startCol": 1,
+      "endLine": 1,
+      "endCol": 7,
+      "notes": [
+        {
+          "message": "recursive call to \"Direct\" is here",
+          "startLine": 3,
+          "startCol": 5,
+          "endLine": 3,
+          "endCol": 11
+        }
+      ]
+    },
+    {
+      "ruleId": "unconditional-recursion",
+      "severity": "warning",
+      "message": "function \"ReturnDirect\" unconditionally calls itself",
+      "startLine": 6,
+      "startCol": 1,
+      "endLine": 6,
+      "endCol": 13,
+      "notes": [
+        {
+          "message": "recursive call to \"ReturnDirect\" is here",
+          "startLine": 8,
+          "startCol": 12,
+          "endLine": 8,
+          "endCol": 24
+        }
+      ]
+    },
+    {
+      "ruleId": "unconditional-recursion",
+      "severity": "warning",
+      "message": "function \"BothBranches\" unconditionally calls itself",
+      "startLine": 11,
+      "startCol": 1,
+      "endLine": 11,
+      "endCol": 13,
+      "notes": [
+        {
+          "message": "recursive call to \"BothBranches\" is here",
+          "startLine": 14,
+          "startCol": 9,
+          "endLine": 14,
+          "endCol": 21
+        }
+      ]
+    },
+    {
+      "ruleId": "unconditional-recursion",
+      "severity": "warning",
+      "message": "function \"MutualA\" cannot return without calling recursive cycle MutualA -\u003e MutualB",
+      "startLine": 19,
+      "startCol": 1,
+      "endLine": 19,
+      "endCol": 8,
+      "notes": [
+        {
+          "message": "recursive call to \"MutualB\" is here",
+          "startLine": 21,
+          "startCol": 5,
+          "endLine": 21,
+          "endCol": 12
+        }
+      ]
+    },
+    {
+      "ruleId": "unconditional-recursion",
+      "severity": "warning",
+      "message": "function \"MutualB\" cannot return without calling recursive cycle MutualA -\u003e MutualB",
+      "startLine": 24,
+      "startCol": 1,
+      "endLine": 24,
+      "endCol": 8,
+      "notes": [
+        {
+          "message": "recursive call to \"MutualA\" is here",
+          "startLine": 26,
+          "startCol": 5,
+          "endLine": 26,
+          "endCol": 12
+        }
+      ]
+    },
+    {
+      "ruleId": "unconditional-recursion",
+      "severity": "warning",
+      "message": "function \"AllSwitch\" unconditionally calls itself",
+      "startLine": 29,
+      "startCol": 1,
+      "endLine": 29,
+      "endCol": 10,
+      "notes": [
+        {
+          "message": "recursive call to \"AllSwitch\" is here",
+          "startLine": 34,
+          "startCol": 13,
+          "endLine": 34,
+          "endCol": 22
+        }
+      ]
+    },
+    {
+      "ruleId": "unconditional-recursion",
+      "severity": "warning",
+      "message": "function \"LeftShortCircuit\" unconditionally calls itself",
+      "startLine": 40,
+      "startCol": 1,
+      "endLine": 40,
+      "endCol": 17,
+      "notes": [
+        {
+          "message": "recursive call to \"LeftShortCircuit\" is here",
+          "startLine": 42,
+          "startCol": 5,
+          "endLine": 42,
+          "endCol": 21
+        }
+      ]
+    },
+    {
+      "ruleId": "unconditional-recursion",
+      "severity": "warning",
+      "message": "function \"TernaryCondition\" unconditionally calls itself",
+      "startLine": 45,
+      "startCol": 1,
+      "endLine": 45,
+      "endCol": 17,
+      "notes": [
+        {
+          "message": "recursive call to \"TernaryCondition\" is here",
+          "startLine": 47,
+          "startCol": 12,
+          "endLine": 47,
+          "endCol": 28
+        }
+      ]
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

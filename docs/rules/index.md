@@ -94,6 +94,7 @@ Rules are stable unless their page marks them as preview.
 | [`todo-policy`](todo-policy.md) | restriction | warning | off | no | Reports task comments that violate configured metadata policy |
 | [`too-many-globals`](too-many-globals.md) | maintainability | warning | off | no | Reports files with too many global variables |
 | [`too-many-parameters`](too-many-parameters.md) | maintainability | warning | off | no | Reports functions with too many parameters |
+| [`unconditional-recursion`](unconditional-recursion.md) | correctness | warning | on | no | Reports recursive cycles with no terminating path |
 | [`unescaped-sql-format`](unescaped-sql-format.md) | correctness | warning | off | no | Reports mysql_format calls using %s for a non-literal string argument |
 | [`unimplemented-function`](unimplemented-function.md) | openmp | error | off | no | Reports legacy API calls intentionally not implemented by open.mp |
 | [`unknown-suppression`](unknown-suppression.md) | maintainability | warning | on | no | Reports unknown, malformed, or unused pawnlint suppression directives |
