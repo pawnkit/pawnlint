@@ -1,0 +1,43 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "unsafe-string-termination",
+      "severity": "warning",
+      "message": "raw copy into \"first\" may be used as a string without EOS termination",
+      "startLine": 7,
+      "startCol": 5,
+      "endLine": 7,
+      "endCol": 37
+    },
+    {
+      "ruleId": "unsafe-string-termination",
+      "severity": "warning",
+      "message": "raw copy into \"second\" may be used as a string without EOS termination",
+      "startLine": 9,
+      "startCol": 5,
+      "endLine": 9,
+      "endCol": 38
+    },
+    {
+      "ruleId": "unsafe-string-termination",
+      "severity": "warning",
+      "message": "raw copy into \"conditional\" may be used as a string without EOS termination",
+      "startLine": 11,
+      "startCol": 5,
+      "endLine": 11,
+      "endCol": 43
+    },
+    {
+      "ruleId": "unsafe-string-termination",
+      "severity": "warning",
+      "message": "raw copy into \"concatenated\" may be used as a string without EOS termination",
+      "startLine": 16,
+      "startCol": 5,
+      "endLine": 16,
+      "endCol": 44
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

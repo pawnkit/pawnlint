@@ -61,6 +61,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(correctness.SignednessMismatch{})
 	reg.MustRegister(correctness.UnitMismatch{})
 	reg.MustRegister(correctness.ArgumentTagMismatch{})
+	reg.MustRegister(correctness.UnsafeStringTermination{})
 	reg.MustRegister(correctness.DuplicateSwitchCase{})
 	reg.MustRegister(correctness.OutOfBoundsConstantIndex{})
 	reg.MustRegister(suspicious.DuplicateCondition{})

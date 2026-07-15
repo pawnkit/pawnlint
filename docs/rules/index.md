@@ -107,6 +107,7 @@ Rules are stable unless their page marks them as preview.
 | [`unparenthesized-macro`](unparenthesized-macro.md) | correctness | warning | on | yes | Reports function-like macros whose replacement list or parameters lack protective parentheses |
 | [`unreachable-code`](unreachable-code.md) | correctness | warning | on | no | Reports statements that cannot be executed |
 | [`unreleased-resource-handle`](unreleased-resource-handle.md) | correctness | warning | off | no | Reports local resource handles that can reach function exit without release |
+| [`unsafe-string-termination`](unsafe-string-termination.md) | correctness | warning | on | no | Reports raw copies used as strings without EOS termination |
 | [`unused-function`](unused-function.md) | maintainability | warning | off | no | Reports internal functions unused by any translation unit |
 | [`unused-global`](unused-global.md) | maintainability | warning | off | no | Reports global variables unused by any translation unit |
 | [`unused-include`](unused-include.md) | maintainability | warning | off | no | Reports includes with no contribution to a complete build |
