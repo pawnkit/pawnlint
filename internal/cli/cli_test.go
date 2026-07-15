@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pawnkit/pawnlint/internal/baseline"
 	"github.com/pawnkit/pawnlint/internal/cli"
 )
 
@@ -62,6 +63,112 @@ func TestCLIBadColor(t *testing.T) {
 	_, _, code := runCLI(t, []string{"--color", "sometimes", "x.pwn"}, "")
 	if code != 2 {
 		t.Errorf("bad color code=%d want 2", code)
+	}
+}
+
+func TestCLIBaselineGenerateApplyAndPrune(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "pawnlint.toml")
+	baselinePath := filepath.Join(dir, "pawnlint-baseline.json")
+	sourcePath := filepath.Join(dir, "main.pwn")
+	bad := []byte("main() { if (value); { return; } }\n")
+	if err := os.WriteFile(configPath, []byte("baseline = \"pawnlint-baseline.json\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(sourcePath, bad, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, stderr, code := runCLI(t, []string{"--config", configPath, "--generate-baseline", "--format", "compact", sourcePath}, "")
+	if code != 0 || out != "" || !strings.Contains(stderr, "wrote") {
+		t.Fatalf("generate: code=%d output=%q stderr=%q", code, out, stderr)
+	}
+	generated, err := baseline.Load(baselinePath)
+	if err != nil || len(generated.Entries) == 0 {
+		t.Fatalf("generated = %#v, err = %v", generated, err)
+	}
+	out, stderr, code = runCLI(t, []string{"--config", configPath, "--format", "compact", sourcePath}, "")
+	if code != 0 || out != "" || stderr != "" {
+		t.Fatalf("apply: code=%d output=%q stderr=%q", code, out, stderr)
+	}
+	if err := os.WriteFile(sourcePath, []byte("main() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, stderr, code = runCLI(t, []string{"--config", configPath, "--prune-baseline", "--format", "compact", sourcePath}, "")
+	if code != 0 || out != "" || !strings.Contains(stderr, "pruned") {
+		t.Fatalf("prune: code=%d output=%q stderr=%q", code, out, stderr)
+	}
+	pruned, err := baseline.Load(baselinePath)
+	if err != nil || len(pruned.Entries) != 0 {
+		t.Fatalf("pruned = %#v, err = %v", pruned, err)
+	}
+	if err := os.WriteFile(sourcePath, bad, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, _, code = runCLI(t, []string{"--config", configPath, "--format", "compact", sourcePath}, "")
+	if code != 1 || !strings.Contains(out, "empty-condition-body") {
+		t.Fatalf("new finding: code=%d output=%q", code, out)
+	}
+}
+
+func TestCLIBaselineValidation(t *testing.T) {
+	dir := t.TempDir()
+	sourcePath := filepath.Join(dir, "main.pwn")
+	if err := os.WriteFile(sourcePath, []byte("main() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, stderr, code := runCLI(t, []string{"--generate-baseline", sourcePath}, "")
+	if code != 2 || !strings.Contains(stderr, "requires --baseline") {
+		t.Fatalf("missing path: code=%d stderr=%q", code, stderr)
+	}
+	_, stderr, code = runCLI(t, []string{"--baseline", filepath.Join(dir, "missing.json"), sourcePath}, "")
+	if code != 2 || !strings.Contains(stderr, "baseline") {
+		t.Fatalf("missing file: code=%d stderr=%q", code, stderr)
+	}
+	_, stderr, code = runCLI(t, []string{"--baseline", filepath.Join(dir, "baseline.json"), "--generate-baseline", "--prune-baseline", sourcePath}, "")
+	if code != 2 || !strings.Contains(stderr, "cannot be combined") {
+		t.Fatalf("conflict: code=%d stderr=%q", code, stderr)
+	}
+}
+
+func TestCLIBaselineOverrideResolvesFromWorkingDirectory(t *testing.T) {
+	configDir := t.TempDir()
+	workingDir := t.TempDir()
+	configPath := filepath.Join(configDir, "pawnlint.toml")
+	sourcePath := filepath.Join(workingDir, "main.pwn")
+	if err := os.WriteFile(configPath, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(sourcePath, []byte("main() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(workingDir)
+	_, stderr, code := runCLI(t, []string{"--config", configPath, "--baseline", "baseline.json", "--generate-baseline", sourcePath}, "")
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%q", code, stderr)
+	}
+	if _, err := baseline.Load(filepath.Join(workingDir, "baseline.json")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(configDir, "baseline.json")); !os.IsNotExist(err) {
+		t.Fatalf("config-relative override exists: %v", err)
+	}
+}
+
+func TestCLIConfiguredBaselineWithRelativeConfigPath(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "pawnlint.toml"), []byte("baseline = \"baseline.json\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "main.pwn"), []byte("main() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(dir)
+	_, stderr, code := runCLI(t, []string{"--config", "pawnlint.toml", "--generate-baseline", "main.pwn"}, "")
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%q", code, stderr)
+	}
+	if _, err := baseline.Load(filepath.Join(dir, "baseline.json")); err != nil {
+		t.Fatal(err)
 	}
 }
 

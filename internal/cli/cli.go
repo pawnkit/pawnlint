@@ -24,23 +24,26 @@ const (
 )
 
 type cli struct {
-	Paths      []string         `arg:"" optional:"" name:"path" help:"files or directories to lint" predictor:"path"`
-	Config     string           `help:"path to a pawnlint config file" predictor:"path"`
-	Profile    string           `help:"rule profile (recommended|strict|all)"`
-	Target     string           `help:"target dialect (openmp|samp)"`
-	Enable     []string         `help:"enable a rule by id (repeatable)"`
-	Disable    []string         `help:"disable a rule by id (repeatable)"`
-	Format     string           `default:"text" help:"output format (text|compact|json|jsonl|sarif|github)"`
-	ListRules  bool             `help:"list all rules and exit"`
-	Explain    string           `help:"print documentation for a rule and exit"`
-	InitConfig bool             `help:"write a commented pawnlint.toml with defaults and exit"`
-	Stdin      bool             `help:"read source from stdin"`
-	StdinName  string           `name:"stdin-filename" help:"virtual filename for stdin input"`
-	Fix        bool             `help:"apply machine-safe fixes"`
-	FixSafe    bool             `help:"apply only machine-safe fixes"`
-	Diff       bool             `help:"print a diff of available fixes"`
-	Color      string           `default:"auto" help:"colour: auto|always|never"`
-	Version    kong.VersionFlag `short:"V" help:"print version and exit"`
+	Paths            []string         `arg:"" optional:"" name:"path" help:"files or directories to lint" predictor:"path"`
+	Config           string           `help:"path to a pawnlint config file" predictor:"path"`
+	Profile          string           `help:"rule profile (recommended|strict|all)"`
+	Target           string           `help:"target dialect (openmp|samp)"`
+	Enable           []string         `help:"enable a rule by id (repeatable)"`
+	Disable          []string         `help:"disable a rule by id (repeatable)"`
+	Format           string           `default:"text" help:"output format (text|compact|json|jsonl|sarif|github)"`
+	ListRules        bool             `help:"list all rules and exit"`
+	Explain          string           `help:"print documentation for a rule and exit"`
+	InitConfig       bool             `help:"write a commented pawnlint.toml with defaults and exit"`
+	Stdin            bool             `help:"read source from stdin"`
+	StdinName        string           `name:"stdin-filename" help:"virtual filename for stdin input"`
+	Fix              bool             `help:"apply machine-safe fixes"`
+	FixSafe          bool             `help:"apply only machine-safe fixes"`
+	Diff             bool             `help:"print a diff of available fixes"`
+	Baseline         string           `help:"baseline file path" predictor:"path"`
+	GenerateBaseline bool             `help:"replace the baseline with current findings"`
+	PruneBaseline    bool             `help:"remove baseline entries without matching findings"`
+	Color            string           `default:"auto" help:"colour: auto|always|never"`
+	Version          kong.VersionFlag `short:"V" help:"print version and exit"`
 }
 
 func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
@@ -78,6 +81,14 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 		_, _ = fmt.Fprintln(stderr, "pawnlint: --diff cannot be combined with --fix or --fix-safe")
 		return exitUsage
 	}
+	if opts.GenerateBaseline && opts.PruneBaseline {
+		_, _ = fmt.Fprintln(stderr, "pawnlint: --generate-baseline cannot be combined with --prune-baseline")
+		return exitUsage
+	}
+	if opts.Diff && (opts.GenerateBaseline || opts.PruneBaseline) {
+		_, _ = fmt.Fprintln(stderr, "pawnlint: --diff cannot be combined with baseline updates")
+		return exitUsage
+	}
 	if opts.Stdin && (opts.Fix || opts.FixSafe) {
 		_, _ = fmt.Fprintln(stderr, "pawnlint: --fix and --fix-safe cannot write stdin")
 		return exitUsage
@@ -85,6 +96,10 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 	resolved, err := resolveConfig(opts, reg)
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "pawnlint: %v\n", err)
+		return exitUsage
+	}
+	if (opts.GenerateBaseline || opts.PruneBaseline) && baselineSetting(opts, resolved) == "" {
+		_, _ = fmt.Fprintln(stderr, "pawnlint: baseline update requires --baseline or a configured baseline")
 		return exitUsage
 	}
 	if opts.Stdin {

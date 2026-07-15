@@ -63,6 +63,9 @@ include-paths = []
 # Additional API metadata JSON files.
 api-metadata = []
 
+# Existing findings baseline. Paths are relative to this configuration file.
+# baseline = "pawnlint-baseline.json"
+
 [lint]
 # Treat warnings as errors when the failure threshold is reached.
 warnings-as-errors = false

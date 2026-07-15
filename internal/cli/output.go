@@ -4,13 +4,42 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
+	"github.com/pawnkit/pawnlint/internal/baseline"
 	"github.com/pawnkit/pawnlint/internal/config"
 	"github.com/pawnkit/pawnlint/internal/output"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 )
 
 func emit(opts *cli, stdout, stderr io.Writer, diags []diagnostic.Diagnostic, sources output.SourceSet, r *config.Resolved) int {
+	baselinePath, projectDir := resolvedBaselinePath(opts, r)
+	if baselinePath != "" {
+		if opts.GenerateBaseline {
+			generated := baseline.Generate(diags, map[string][]byte(sources), projectDir)
+			if err := baseline.Write(baselinePath, generated); err != nil {
+				_, _ = fmt.Fprintf(stderr, "pawnlint: %v\n", err)
+				return exitInternal
+			}
+			_, _ = fmt.Fprintf(stderr, "pawnlint: wrote %d baseline entries to %s\n", len(generated.Entries), baselinePath)
+			diags = baseline.Apply(generated, diags, map[string][]byte(sources), projectDir).Remaining
+		} else {
+			configured, err := baseline.Load(baselinePath)
+			if err != nil {
+				_, _ = fmt.Fprintf(stderr, "pawnlint: %v\n", err)
+				return exitUsage
+			}
+			matched := baseline.Apply(configured, diags, map[string][]byte(sources), projectDir)
+			diags = matched.Remaining
+			if opts.PruneBaseline {
+				if err := baseline.Write(baselinePath, matched.Current); err != nil {
+					_, _ = fmt.Fprintf(stderr, "pawnlint: %v\n", err)
+					return exitInternal
+				}
+				_, _ = fmt.Fprintf(stderr, "pawnlint: pruned %d stale baseline entries from %s\n", matched.Stale, baselinePath)
+			}
+		}
+	}
 	diagnostic.Sort(diags)
 	fail := reachedThreshold(r, diags)
 	if limit := r.Source.Lint.MaxDiagnostics; limit > 0 && len(diags) > limit {
@@ -25,6 +54,36 @@ func emit(opts *cli, stdout, stderr io.Writer, diags []diagnostic.Diagnostic, so
 		return exitFindings
 	}
 	return exitOK
+}
+
+func baselineSetting(opts *cli, r *config.Resolved) string {
+	if opts.Baseline != "" {
+		return opts.Baseline
+	}
+	return r.Source.Baseline
+}
+
+func resolvedBaselinePath(opts *cli, r *config.Resolved) (string, string) {
+	cwd, _ := os.Getwd()
+	projectDir := cwd
+	if r.SourcePath != "" {
+		projectDir = filepath.Dir(r.SourcePath)
+		if !filepath.IsAbs(projectDir) {
+			projectDir = filepath.Join(cwd, projectDir)
+		}
+	}
+	path := baselineSetting(opts, r)
+	if path == "" {
+		return "", filepath.Clean(projectDir)
+	}
+	baseDir := projectDir
+	if opts.Baseline != "" {
+		baseDir = cwd
+	}
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(baseDir, path)
+	}
+	return filepath.Clean(path), filepath.Clean(projectDir)
 }
 
 func isTerminal(w io.Writer) bool {

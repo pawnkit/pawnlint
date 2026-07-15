@@ -17,6 +17,7 @@ exclude = ["vendor/**", "generated/**"]
 defines = []
 include-paths = []
 api-metadata = ["pawnlint-api.json"]
+baseline = "pawnlint-baseline.json"
 
 [lint]
 warnings-as-errors = false
@@ -35,6 +36,14 @@ discarded-expression = "off"
 - Relative `include-paths` entries resolve from the configuration file.
 - Relative `api-metadata` entries resolve the same way; later files override
   earlier entries for the same key.
+- A relative `baseline` path resolves from the configuration file.
+
+## Baselines
+
+Set `baseline` to suppress matching existing findings. Run `pawnlint
+--generate-baseline paths...` to replace it or `pawnlint --prune-baseline
+paths...` to remove resolved entries. `--baseline <path>` overrides the
+configured path. Parser and internal errors are never baselined.
 
 ## Builds
 
@@ -78,6 +87,7 @@ syntax differs. The example above in JSON:
   "defines": [],
   "include-paths": [],
   "api-metadata": ["pawnlint-api.json"],
+  "baseline": "pawnlint-baseline.json",
   "lint": {
     "warnings-as-errors": false,
     "max-diagnostics": 0
@@ -98,6 +108,7 @@ exclude: ["vendor/**", "generated/**"]
 defines: []
 include-paths: []
 api-metadata: ["pawnlint-api.json"]
+baseline: pawnlint-baseline.json
 lint:
   warnings-as-errors: false
   max-diagnostics: 0
