@@ -1,0 +1,112 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "redundant-tag",
+      "severity": "warning",
+      "message": "tag override \"Float\" is redundant",
+      "startLine": 9,
+      "startCol": 12,
+      "endLine": 9,
+      "endCol": 17
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "redundant-tag",
+      "severity": "warning",
+      "message": "tag override \"Float\" is redundant",
+      "startLine": 8,
+      "startCol": 12,
+      "endLine": 8,
+      "endCol": 17,
+      "fix": {
+        "description": "remove the redundant tag override",
+        "edits": [
+          {
+            "startOffset": 74,
+            "endOffset": 80,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "redundant-tag",
+      "severity": "warning",
+      "message": "tag override \"Float\" is redundant",
+      "startLine": 14,
+      "startCol": 22,
+      "endLine": 14,
+      "endCol": 27,
+      "fix": {
+        "description": "remove the redundant tag override",
+        "edits": [
+          {
+            "startOffset": 148,
+            "endOffset": 154,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "redundant-tag",
+      "severity": "warning",
+      "message": "tag override \"bool\" is redundant",
+      "startLine": 16,
+      "startCol": 22,
+      "endLine": 16,
+      "endCol": 26,
+      "fix": {
+        "description": "remove the redundant tag override",
+        "edits": [
+          {
+            "startOffset": 210,
+            "endOffset": 215,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "redundant-tag",
+      "severity": "warning",
+      "message": "tag override \"Colour\" is redundant",
+      "startLine": 18,
+      "startCol": 29,
+      "endLine": 18,
+      "endCol": 35,
+      "fix": {
+        "description": "remove the redundant tag override",
+        "edits": [
+          {
+            "startOffset": 286,
+            "endOffset": 293,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "redundant-tag",
+      "severity": "warning",
+      "message": "tag override \"Float\" is redundant",
+      "startLine": 19,
+      "startCol": 24,
+      "endLine": 19,
+      "endCol": 29,
+      "fix": {
+        "description": "remove the redundant tag override",
+        "edits": [
+          {
+            "startOffset": 324,
+            "endOffset": 330,
+            "newText": ""
+          }
+        ]
+      }
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

@@ -43,6 +43,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(maintainability.DeclarationOrder{})
 	reg.MustRegister(maintainability.PreferConst{})
 	reg.MustRegister(maintainability.RedundantForward{})
+	reg.MustRegister(maintainability.RedundantTag{})
 	reg.MustRegister(correctness.DivisionByZero{})
 	reg.MustRegister(correctness.InvalidShiftCount{})
 	reg.MustRegister(correctness.InvalidArraySize{})

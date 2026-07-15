@@ -24,6 +24,7 @@ func FuzzBuild(f *testing.F) {
 		for _, node := range model.Walk.All() {
 			_, _ = model.Eval(node)
 			_ = model.ExpressionTags(node)
+			_, _ = model.ExpressionTag(node)
 			_ = model.Boolean(node)
 		}
 	})

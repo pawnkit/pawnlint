@@ -48,6 +48,7 @@ var curate = map[Profile]map[string]struct{}{
 		"too-many-parameters": {},
 		"prefer-const":        {},
 		"redundant-forward":   {},
+		"redundant-tag":       {},
 	},
 }
 
