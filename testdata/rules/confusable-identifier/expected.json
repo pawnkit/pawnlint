@@ -1,0 +1,79 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "confusable-identifier",
+      "severity": "warning",
+      "message": "global name \"Player0\" is visually confusable with \"PlayerO\"",
+      "startLine": 2,
+      "startCol": 5,
+      "endLine": 2,
+      "endCol": 12,
+      "notes": [
+        {
+          "message": "conflicting declaration is here",
+          "startLine": 1,
+          "startCol": 5,
+          "endLine": 1,
+          "endCol": 12
+        }
+      ]
+    },
+    {
+      "ruleId": "confusable-identifier",
+      "severity": "warning",
+      "message": "function name \"Load1\" is visually confusable with \"LoadI\"",
+      "startLine": 9,
+      "startCol": 7,
+      "endLine": 9,
+      "endCol": 12,
+      "notes": [
+        {
+          "message": "conflicting declaration is here",
+          "startLine": 4,
+          "startCol": 7,
+          "endLine": 4,
+          "endCol": 12
+        }
+      ]
+    },
+    {
+      "ruleId": "confusable-identifier",
+      "severity": "warning",
+      "message": "local name \"length\" is visually confusable with \"Iength\"",
+      "startLine": 16,
+      "startCol": 6,
+      "endLine": 16,
+      "endCol": 12,
+      "notes": [
+        {
+          "message": "conflicting declaration is here",
+          "startLine": 14,
+          "startCol": 15,
+          "endLine": 14,
+          "endCol": 21
+        }
+      ]
+    },
+    {
+      "ruleId": "confusable-identifier",
+      "severity": "warning",
+      "message": "local name \"slotl\" is visually confusable with \"slot1\"",
+      "startLine": 18,
+      "startCol": 6,
+      "endLine": 18,
+      "endCol": 11,
+      "notes": [
+        {
+          "message": "conflicting declaration is here",
+          "startLine": 17,
+          "startCol": 6,
+          "endLine": 17,
+          "endCol": 11
+        }
+      ]
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

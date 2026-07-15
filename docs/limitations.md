@@ -89,6 +89,7 @@
 - Naming conventions apply only when configured and use the first matching
   selector.
 - Disallowed-name policies apply only to configured exact names or patterns.
+- Confusable names cover the Pawn ASCII groups `0/O/o` and `1/I/l`.
 - Callbacks and natives require explicit opt-in. Uncertain declarations and
   non-standard identifiers are skipped.
 
