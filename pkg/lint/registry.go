@@ -54,6 +54,7 @@ var curate = map[Profile]map[string]struct{}{
 		"narrowing-conversion":     {},
 		"signedness-mismatch":      {},
 		"macro-repeated-parameter": {},
+		"statement-macro-hazard":   {},
 	},
 }
 

@@ -19,6 +19,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(correctness.SelfAssignment{})
 	reg.MustRegister(correctness.UnparenthesizedMacro{})
 	reg.MustRegister(correctness.MacroRepeatedParameter{})
+	reg.MustRegister(correctness.StatementMacroHazard{})
 	reg.MustRegister(maintainability.UnusedLocal{})
 	reg.MustRegister(maintainability.UnusedParameter{})
 	reg.MustRegister(maintainability.ShadowedVariable{})

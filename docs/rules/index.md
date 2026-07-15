@@ -91,6 +91,7 @@ Rules are stable unless their page marks them as preview.
 | [`shadowed-variable`](shadowed-variable.md) | maintainability | warning | off | no | Reports local declarations that hide an outer variable |
 | [`signedness-mismatch`](signedness-mismatch.md) | correctness | warning | off | no | Reports packed-character comparisons with negative values |
 | [`sscanf-format-argument-count`](sscanf-format-argument-count.md) | correctness | error | off | no | Reports sscanf() calls whose format string and argument count differ |
+| [`statement-macro-hazard`](statement-macro-hazard.md) | correctness | warning | off | no | Reports statement macros unsafe in unbraced control flow |
 | [`suppression-reason`](suppression-reason.md) | restriction | warning | off | no | Reports suppression directives without an adequate reason |
 | [`suspicious-comma-expression`](suspicious-comma-expression.md) | suspicious | warning | on | no | The comma operator chains sub-expressions; it is rarely intended in statements or returns |
 | [`suspicious-negation`](suspicious-negation.md) | suspicious | warning | on | no | '!' binds tighter than &/\|/^/==/!=, so !x & y is (!x) & y |

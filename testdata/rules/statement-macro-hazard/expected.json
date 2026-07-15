@@ -1,0 +1,34 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "statement-macro-hazard",
+      "severity": "warning",
+      "message": "macro \"TWO\" expands to multiple unwrapped statements",
+      "startLine": 1,
+      "startCol": 16,
+      "endLine": 1,
+      "endCol": 35
+    },
+    {
+      "ruleId": "statement-macro-hazard",
+      "severity": "warning",
+      "message": "macro \"TERMINATED\" includes a terminating semicolon that can break surrounding control flow",
+      "startLine": 2,
+      "startCol": 23,
+      "endLine": 2,
+      "endCol": 31
+    },
+    {
+      "ruleId": "statement-macro-hazard",
+      "severity": "warning",
+      "message": "macro \"CONDITIONAL\" expands to an unmatched if statement",
+      "startLine": 3,
+      "startCol": 24,
+      "endLine": 3,
+      "endCol": 37
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
