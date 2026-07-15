@@ -93,6 +93,7 @@ type Model struct {
 	ambiguousIncludes []IncludeIssue
 	duplicateIncludes []IncludeIssue
 	unusedIncludes    []IncludeIssue
+	symbolConflicts   []SymbolConflict
 	byCanonical       map[string]*File
 	byContext         map[string]*File
 	physical          map[string]*physicalFile
@@ -156,6 +157,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 	})
 	model.buildDeclarations()
 	model.buildUnits()
+	model.symbolConflicts = model.buildConflictingIncludeSymbols()
 	model.includeCycles = model.buildIncludeCycles()
 	model.buildIncludeIssues()
 	model.buildReferences()

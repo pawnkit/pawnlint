@@ -1,0 +1,6 @@
+{
+  "natives": {
+    "RequiredResult": {"mustUse": true},
+    "OrdinaryResult": {}
+  }
+}

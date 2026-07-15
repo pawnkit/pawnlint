@@ -1,0 +1,2 @@
+enum { FirstValue }
+stock FirstFunction() {}

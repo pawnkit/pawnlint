@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pawnkit/pawnlint/internal/api"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 	"github.com/pawnkit/pawnlint/pkg/project"
@@ -59,10 +60,10 @@ func SilentRegistrar() *lint.Registrar {
 }
 
 func RunRule(t *testing.T, path string, ruleID string, src []byte) []diagnostic.Diagnostic {
-	return runRule(t, path, ruleID, src, "", nil, false)
+	return runRule(t, path, ruleID, src, "", nil, false, nil)
 }
 
-func runRule(t *testing.T, path string, ruleID string, src []byte, target string, options map[string]any, definesComplete bool) []diagnostic.Diagnostic {
+func runRule(t *testing.T, path string, ruleID string, src []byte, target string, options map[string]any, definesComplete bool, metadata *api.Metadata) []diagnostic.Diagnostic {
 	t.Helper()
 	reg := rules.Default()
 	m, ok := reg.Lookup(ruleID)
@@ -76,6 +77,7 @@ func runRule(t *testing.T, path string, ruleID string, src []byte, target string
 	}
 	engine := lint.NewEngine(reg)
 	engine.Target = target
+	engine.API = metadata
 	if m.AnalysisLevel == lint.ProjectAnalysis {
 		model, err := project.Build([]project.Source{{Path: path, Content: src}}, project.Options{DefinesComplete: definesComplete})
 		if err != nil {
@@ -108,6 +110,7 @@ func RunSnapshot(t *testing.T, ruleID, fixtureDir string) {
 		t.Fatalf("read target: %v", err)
 	}
 	options := readOptions(t, filepath.Join(dir, "options.json"), ruleID)
+	metadata := readAPI(t, filepath.Join(dir, "api.json"))
 	_, completeErr := os.Stat(filepath.Join(dir, "defines-complete.txt"))
 	definesComplete := completeErr == nil
 	if completeErr != nil && !os.IsNotExist(completeErr) {
@@ -127,7 +130,7 @@ func RunSnapshot(t *testing.T, ruleID, fixtureDir string) {
 		if metadata, ok := rules.Default().Lookup(ruleID); ok && metadata.AnalysisLevel == lint.ProjectAnalysis {
 			inputPath = full
 		}
-		diags := runRule(t, inputPath, ruleID, src, target, options, definesComplete)
+		diags := runRule(t, inputPath, ruleID, src, target, options, definesComplete, metadata)
 		entries := make([]SnapshotEntry, 0, len(diags))
 		for _, d := range diags {
 			entry := SnapshotEntry{
@@ -195,6 +198,20 @@ func RunSnapshot(t *testing.T, ruleID, fixtureDir string) {
 		t.Fatalf("parse expected.json: %v", err)
 	}
 	compareSnapshot(t, want, got)
+}
+
+func readAPI(t *testing.T, path string) *api.Metadata {
+	t.Helper()
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		t.Fatalf("read API metadata: %v", err)
+	}
+	metadata, err := api.Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return metadata
 }
 
 func readOptions(t *testing.T, path, ruleID string) map[string]any {

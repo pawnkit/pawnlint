@@ -1,0 +1,15 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "ignored-return-value",
+      "severity": "warning",
+      "message": "return value from \"RequiredResult\" must be used",
+      "startLine": 2,
+      "startCol": 5,
+      "endLine": 2,
+      "endCol": 21
+    }
+  ],
+  "valid.pwn": []
+}

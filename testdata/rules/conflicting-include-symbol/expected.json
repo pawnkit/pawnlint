@@ -1,0 +1,24 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "conflicting-include-symbol",
+      "severity": "error",
+      "message": "global variable \"SharedValue\" conflicts with enum entry from \"conflict-one.inc\"",
+      "startLine": 1,
+      "startCol": 5,
+      "endLine": 1,
+      "endCol": 16
+    },
+    {
+      "ruleId": "conflicting-include-symbol",
+      "severity": "error",
+      "message": "global variable \"SharedName\" conflicts with function from \"conflict-one.inc\"",
+      "startLine": 2,
+      "startCol": 5,
+      "endLine": 2,
+      "endCol": 15
+    }
+  ],
+  "valid.pwn": []
+}

@@ -1,0 +1,2 @@
+new SharedValue;
+new SharedName;

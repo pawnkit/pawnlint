@@ -26,6 +26,7 @@ type Native struct {
 	Buffers         []Buffer    `json:"buffers,omitempty"`
 	OpenMPOnly      bool        `json:"openMPOnly,omitempty"`
 	Release         string      `json:"release,omitempty"`
+	MustUse         bool        `json:"mustUse,omitempty"`
 }
 
 type Constant struct {

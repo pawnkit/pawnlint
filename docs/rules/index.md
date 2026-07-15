@@ -10,6 +10,7 @@ Rules are stable unless their page marks them as preview.
 | [`assignment-in-condition`](assignment-in-condition.md) | suspicious | warning | on | no | An assignment used as an if/while condition is often a typo for == |
 | [`buffer-size`](buffer-size.md) | correctness | error | off | no | Reports native size arguments larger than a declared buffer |
 | [`callback-signature`](callback-signature.md) | correctness | error | off | no | Reports public callbacks that do not match the target API |
+| [`conflicting-include-symbol`](conflicting-include-symbol.md) | correctness | error | on | no | Reports namespace collisions contributed by included files |
 | [`constant-condition`](constant-condition.md) | suspicious | warning | off | no | Reports if and ternary conditions with a constant result |
 | [`dead-write`](dead-write.md) | suspicious | warning | off | no | Reports local assignments whose stored value is never read |
 | [`deprecated-function`](deprecated-function.md) | openmp | warning | off | no | Reports deprecated compatibility functions in open.mp |
@@ -29,6 +30,7 @@ Rules are stable unless their page marks them as preview.
 | [`format-argument-count`](format-argument-count.md) | correctness | error | off | no | Reports literal format strings whose placeholders and arguments differ |
 | [`forward-signature-mismatch`](forward-signature-mismatch.md) | correctness | error | on | no | Reports definitions that do not match their forward declaration |
 | [`identical-branches`](identical-branches.md) | suspicious | warning | off | no | Reports if and ternary branches with identical code |
+| [`ignored-return-value`](ignored-return-value.md) | correctness | warning | off | no | Reports discarded results from APIs marked must-use |
 | [`include-cycle`](include-cycle.md) | correctness | error | on | no | Reports cycles in the resolved include graph |
 | [`include-layering`](include-layering.md) | restriction | error | off | no | Reports dependencies outside a source layer's allowlist |
 | [`invalid-sentinel-comparison`](invalid-sentinel-comparison.md) | correctness | error | off | no | Reports a native's result compared against the wrong INVALID_* constant |

@@ -68,7 +68,7 @@ func TestLoadAndMergeUserMetadata(t *testing.T) {
 	source := `{
   "callbacks": {"OnPluginEvent": {"returnTag": "bool", "parameters": [{"name": "value"}]}},
   "natives": {
-    "Plugin_Open": {"returnTag": "PluginHandle", "release": "Plugin_Close"},
+    "Plugin_Open": {"returnTag": "PluginHandle", "release": "Plugin_Close", "mustUse": true},
     "Plugin_Close": {"parameters": [{"name": "handle", "tag": "PluginHandle"}]}
   },
   "constants": {"PLUGIN_LIMIT": {}}
@@ -84,7 +84,7 @@ func TestLoadAndMergeUserMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if metadata.Natives["Plugin_Open"].Release != "Plugin_Close" || metadata.Callbacks["OnPluginEvent"].Name != "OnPluginEvent" || metadata.Constants["PLUGIN_LIMIT"].Name != "PLUGIN_LIMIT" {
+	if metadata.Natives["Plugin_Open"].Release != "Plugin_Close" || !metadata.Natives["Plugin_Open"].MustUse || metadata.Callbacks["OnPluginEvent"].Name != "OnPluginEvent" || metadata.Constants["PLUGIN_LIMIT"].Name != "PLUGIN_LIMIT" {
 		t.Fatalf("metadata = %#v", metadata)
 	}
 }
