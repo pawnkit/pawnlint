@@ -9,12 +9,12 @@ it does not cache parser or semantic models.
 - Per-file semantics with project-wide fact resolution
 - Per-function control-flow analysis
 - Basic include-graph analysis
-- Preview interprocedural taint analysis for configured direct flows
+- Preview interprocedural taint analysis for configured sources and sinks
 
 ## Not implemented yet
 
 - Operator-overload and advanced tag compatibility analysis
-- General interprocedural data-flow analysis
+- General interprocedural data-flow outside ownership and taint
 - Complete API constant and behavioral metadata
 
 ## Fixes
@@ -86,10 +86,10 @@ it does not cache parser or semantic models.
 
 ## Security analysis
 
-- Preview taint tracking follows configured callback inputs, callable outputs,
-  direct assignments, known buffer writers, and project parameters.
-- Unknown calls, aliases, macros, ambiguous resolution, and unsupported
-  transformations stop tracking.
+- Preview taint tracking follows configured sources through local expressions,
+  buffer writers, project calls, returns, and output parameters.
+- Globals, project array mutations, unknown calls, macros, ambiguous resolution,
+  and unsupported transformations stop tracking.
 
 ## Project analysis
 

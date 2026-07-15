@@ -14,4 +14,4 @@ Reports configured input reaching a configured sensitive sink
 
 ## Details
 
-Configured callback inputs and callable output parameters are traced through direct local assignments, known buffer writers, and project function parameters. A diagnostic is reported when that data reaches a configured SQL, command, file, format, or custom sink. Unknown calls, unsupported transformations, ambiguous resolution, macros, and uncertain functions terminate the proof.
+Configured sources are traced through local expressions, known buffer writers, project parameters, return values, and scalar reference outputs. The rule reports flows into configured sinks and stops when resolution or transformation is uncertain.

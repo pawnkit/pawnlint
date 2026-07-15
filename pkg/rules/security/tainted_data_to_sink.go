@@ -3,6 +3,7 @@ package security
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	parser "github.com/pawnkit/pawn-parser"
@@ -41,11 +42,16 @@ type taintEvent struct {
 	kind parser.Kind
 }
 
+type taintFact struct {
+	labels taintLabels
+	known  bool
+}
+
 type taintCallable struct {
 	name       string
 	parameters []api.Parameter
 	buffers    []api.Buffer
-	callee     *taintFunction
+	callees    []*taintFunction
 	known      bool
 }
 
@@ -61,8 +67,11 @@ type taintAnalyzer struct {
 	ctx       *lint.Context
 	unit      *project.Unit
 	functions map[taintFunctionKey]*taintFunction
-	calls     map[taintCallKey]*taintFunction
+	calls     map[taintCallKey][]*taintFunction
 	inputs    map[taintFunctionKey]map[int]taintLabels
+	returns   map[taintFunctionKey]taintLabels
+	outputs   map[taintFunctionKey]map[int]taintLabels
+	callers   map[taintFunctionKey]map[taintFunctionKey]struct{}
 	queued    map[taintFunctionKey]bool
 	queue     []taintFunctionKey
 	findings  map[string]taintFinding
@@ -73,7 +82,7 @@ func (TaintedDataToSink) Metadata() lint.Metadata {
 		ID:              "tainted-data-to-sink",
 		Name:            "Tainted data to sink",
 		Summary:         "Reports configured input reaching a configured sensitive sink",
-		Explanation:     "Configured callback inputs and callable output parameters are traced through direct local assignments, known buffer writers, and project function parameters. A diagnostic is reported when that data reaches a configured SQL, command, file, format, or custom sink. Unknown calls, unsupported transformations, ambiguous resolution, macros, and uncertain functions terminate the proof.",
+		Explanation:     "Configured sources are traced through local expressions, known buffer writers, project parameters, return values, and scalar reference outputs. The rule reports flows into configured sinks and stops when resolution or transformation is uncertain.",
 		Category:        diagnostic.CategorySecurity,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.ProjectAnalysis,
@@ -109,8 +118,11 @@ func newTaintAnalyzer(ctx *lint.Context, unit *project.Unit) *taintAnalyzer {
 		ctx:       ctx,
 		unit:      unit,
 		functions: make(map[taintFunctionKey]*taintFunction),
-		calls:     make(map[taintCallKey]*taintFunction),
+		calls:     make(map[taintCallKey][]*taintFunction),
 		inputs:    make(map[taintFunctionKey]map[int]taintLabels),
+		returns:   make(map[taintFunctionKey]taintLabels),
+		outputs:   make(map[taintFunctionKey]map[int]taintLabels),
+		callers:   make(map[taintFunctionKey]map[taintFunctionKey]struct{}),
 		queued:    make(map[taintFunctionKey]bool),
 		findings:  make(map[string]taintFinding),
 	}
@@ -134,7 +146,16 @@ func newTaintAnalyzer(ctx *lint.Context, unit *project.Unit) *taintAnalyzer {
 		}
 		callee := analyzer.functions[taintFunctionKey{file: call.Callee.File, node: call.Callee.Node}]
 		if callee != nil {
-			analyzer.calls[taintCallKey{file: call.File, node: call.Node}] = callee
+			callKey := taintCallKey{file: call.File, node: call.Node}
+			analyzer.calls[callKey] = append(analyzer.calls[callKey], callee)
+			callerNode := call.File.Walk.EnclosingFunction(call.Node)
+			callerKey := taintFunctionKey{file: call.File, node: callerNode}
+			if analyzer.functions[callerKey] != nil {
+				if analyzer.callers[callee.key] == nil {
+					analyzer.callers[callee.key] = make(map[taintFunctionKey]struct{})
+				}
+				analyzer.callers[callee.key][callerKey] = struct{}{}
+			}
 		}
 	}
 	for _, function := range analyzer.functions {
@@ -175,10 +196,20 @@ func (analyzer *taintAnalyzer) collect() {
 
 func (analyzer *taintAnalyzer) analyze(function *taintFunction, collect bool) {
 	environment := make(map[*semantic.Symbol]taintLabels)
+	callResults := make(map[*parser.Node]taintFact)
 	for index, labels := range analyzer.inputs[function.key] {
 		if index < len(function.parameters) && function.parameters[index] != nil {
 			environment[function.parameters[index]] = copyTaintLabels(labels)
 		}
+	}
+	for index, parameter := range function.parameters {
+		if parameter == nil {
+			continue
+		}
+		if environment[parameter] == nil {
+			environment[parameter] = make(taintLabels)
+		}
+		environment[parameter][taintParameterLabel(index)] = struct{}{}
 	}
 	events := taintEvents(function.key.file, function.key.node)
 	for _, event := range events {
@@ -190,7 +221,14 @@ func (analyzer *taintAnalyzer) analyze(function *taintFunction, collect bool) {
 		case parser.KindUpdateExpression:
 			analyzer.applyUpdate(function, environment, event.node)
 		case parser.KindCallExpression:
-			analyzer.applyCall(function, environment, event.node, collect)
+			analyzer.applyCall(function, environment, callResults, event.node, collect)
+		case parser.KindReturnStatement:
+			analyzer.applyReturn(function, environment, callResults, event.node)
+		}
+	}
+	for index, parameter := range function.parameters {
+		if taintProjectParameterOutputKnown(function.key.file, parameter) {
+			analyzer.addOutput(function.key, index, environment[parameter])
 		}
 	}
 }
@@ -244,9 +282,9 @@ func (analyzer *taintAnalyzer) applyUpdate(function *taintFunction, environment 
 	}
 }
 
-func (analyzer *taintAnalyzer) applyCall(function *taintFunction, environment map[*semantic.Symbol]taintLabels, call *parser.Node, collect bool) {
+func (analyzer *taintAnalyzer) applyCall(function *taintFunction, environment map[*semantic.Symbol]taintLabels, callResults map[*parser.Node]taintFact, call *parser.Node, collect bool) {
 	file := function.key.file
-	if call.HasError || call.Tok.Origin != nil || file.Walk.Inactive(call) || file.Walk.Uncertain(call) || taintNestedCall(file, call) {
+	if call.HasError || call.Tok.Origin != nil || file.Walk.Inactive(call) || file.Walk.Uncertain(call) {
 		return
 	}
 	arguments := call.Field("arguments")
@@ -255,6 +293,7 @@ func (analyzer *taintAnalyzer) applyCall(function *taintFunction, environment ma
 	}
 	callable := analyzer.callable(file, call)
 	if !callable.known {
+		callResults[call] = taintFact{}
 		if !taintConditional(file, function.key.node, call) {
 			for _, argument := range arguments.Children {
 				for symbol := range taintExpressionSymbols(file, argument) {
@@ -267,22 +306,32 @@ func (analyzer *taintAnalyzer) applyCall(function *taintFunction, environment ma
 	facts := make([]taintLabels, len(arguments.Children))
 	known := make([]bool, len(arguments.Children))
 	for index, argument := range arguments.Children {
-		facts[index], known[index] = taintExpression(file, environment, argument)
+		facts[index], known[index] = taintExpressionWithCalls(file, environment, callResults, argument)
 	}
 	for index, parameter := range callable.parameters {
 		if index >= len(arguments.Children) {
 			break
 		}
-		if collect && parameter.TaintSink != "" && known[index] && len(facts[index]) != 0 {
-			analyzer.addFinding(file, arguments.Children[index], callable.name, parameter.TaintSink, facts[index])
+		labels := concreteTaintLabels(facts[index])
+		if collect && parameter.TaintSink != "" && known[index] && len(labels) != 0 {
+			analyzer.addFinding(file, arguments.Children[index], callable.name, parameter.TaintSink, labels)
 		}
 	}
-	if callable.callee != nil {
+	for _, callee := range callable.callees {
 		for index, labels := range facts {
-			if known[index] && len(labels) != 0 && index < len(callable.callee.parameters) {
-				analyzer.addInput(callable.callee.key, index, labels)
+			concrete := concreteTaintLabels(labels)
+			if known[index] && len(concrete) != 0 && index < len(callee.parameters) {
+				analyzer.addInput(callee.key, index, concrete)
 			}
 		}
+	}
+	result := make(taintLabels)
+	for _, callee := range callable.callees {
+		mergeTaintLabels(result, instantiateTaintLabels(analyzer.returns[callee.key], facts, known))
+	}
+	callResults[call] = taintFact{labels: result, known: true}
+	if symbol, direct := taintCallDestination(file, call); symbol != nil {
+		taintSet(environment, symbol, result, taintConditional(file, function.key.node, call) || !direct)
 	}
 	for _, buffer := range callable.buffers {
 		destinationIndex := buffer.Parameter - 1
@@ -321,14 +370,23 @@ func (analyzer *taintAnalyzer) applyCall(function *taintFunction, environment ma
 		}
 	}
 	conditional := taintConditional(file, function.key.node, call)
-	if callable.callee != nil {
-		for index, parameter := range callable.callee.parameters {
-			if index >= len(arguments.Children) || !taintProjectParameterMayWrite(callable.callee.key.file, parameter) || conditional {
+	if len(callable.callees) != 0 && !conditional {
+		for index := range arguments.Children {
+			labels := make(taintLabels)
+			mayWrite := false
+			for _, callee := range callable.callees {
+				if index >= len(callee.parameters) || !taintProjectParameterMayWrite(callee.key.file, callee.parameters[index]) {
+					continue
+				}
+				mayWrite = true
+				mergeTaintLabels(labels, instantiateTaintLabels(analyzer.outputs[callee.key][index], facts, known))
+			}
+			if !mayWrite {
 				continue
 			}
 			symbol, direct := taintWrittenSymbol(file, arguments.Children[index])
 			if symbol != nil && direct {
-				delete(environment, symbol)
+				taintSet(environment, symbol, labels, false)
 			}
 		}
 	}
@@ -346,14 +404,25 @@ func (analyzer *taintAnalyzer) applyCall(function *taintFunction, environment ma
 	}
 }
 
+func (analyzer *taintAnalyzer) applyReturn(function *taintFunction, environment map[*semantic.Symbol]taintLabels, callResults map[*parser.Node]taintFact, node *parser.Node) {
+	value := node.Field("value")
+	if value == nil {
+		return
+	}
+	labels, known := taintExpressionWithCalls(function.key.file, environment, callResults, value)
+	if known {
+		analyzer.addReturn(function.key, labels)
+	}
+}
+
 func (analyzer *taintAnalyzer) callable(file *project.File, call *parser.Node) taintCallable {
 	calleeNode := call.Field("function")
 	if calleeNode == nil || calleeNode.Kind != parser.KindIdentifier {
 		return taintCallable{}
 	}
 	name := file.Walk.Text(calleeNode)
-	if callee := analyzer.calls[taintCallKey{file: file, node: call}]; callee != nil {
-		callable := taintCallable{name: name, callee: callee, known: true}
+	if callees := analyzer.calls[taintCallKey{file: file, node: call}]; len(callees) != 0 {
+		callable := taintCallable{name: name, callees: callees, known: true}
 		if contract, exists := analyzer.ctx.Functions()[name]; exists {
 			callable.parameters = contract.Parameters
 		}
@@ -386,6 +455,57 @@ func (analyzer *taintAnalyzer) addInput(key taintFunctionKey, index int, labels 
 	changed := mergeTaintLabels(analyzer.inputs[key][index], labels)
 	if changed {
 		analyzer.enqueue(key)
+	}
+}
+
+func (analyzer *taintAnalyzer) addReturn(key taintFunctionKey, labels taintLabels) {
+	labels = analyzer.summaryTaintLabels(key, labels)
+	if len(labels) == 0 {
+		return
+	}
+	if analyzer.returns[key] == nil {
+		analyzer.returns[key] = make(taintLabels)
+	}
+	if mergeTaintLabels(analyzer.returns[key], labels) {
+		analyzer.enqueueCallers(key)
+	}
+}
+
+func (analyzer *taintAnalyzer) addOutput(key taintFunctionKey, index int, labels taintLabels) {
+	labels = analyzer.summaryTaintLabels(key, labels)
+	if len(labels) == 0 {
+		return
+	}
+	if analyzer.outputs[key] == nil {
+		analyzer.outputs[key] = make(map[int]taintLabels)
+	}
+	if analyzer.outputs[key][index] == nil {
+		analyzer.outputs[key][index] = make(taintLabels)
+	}
+	if mergeTaintLabels(analyzer.outputs[key][index], labels) {
+		analyzer.enqueueCallers(key)
+	}
+}
+
+func (analyzer *taintAnalyzer) summaryTaintLabels(key taintFunctionKey, labels taintLabels) taintLabels {
+	result := make(taintLabels)
+	inputs := make(taintLabels)
+	for _, current := range analyzer.inputs[key] {
+		mergeTaintLabels(inputs, current)
+	}
+	for label := range labels {
+		if taintParameterIndex(label) >= 0 {
+			result[label] = struct{}{}
+		} else if _, propagated := inputs[label]; !propagated {
+			result[label] = struct{}{}
+		}
+	}
+	return result
+}
+
+func (analyzer *taintAnalyzer) enqueueCallers(key taintFunctionKey) {
+	for caller := range analyzer.callers[key] {
+		analyzer.enqueue(caller)
 	}
 }
 
@@ -475,7 +595,7 @@ func taintParameterSymbols(file *project.File, function *parser.Node) []*semanti
 
 func taintEvents(file *project.File, function *parser.Node) []taintEvent {
 	var events []taintEvent
-	for _, kind := range []parser.Kind{parser.KindVariableDeclarator, parser.KindAssignmentExpression, parser.KindUpdateExpression, parser.KindCallExpression} {
+	for _, kind := range []parser.Kind{parser.KindVariableDeclarator, parser.KindAssignmentExpression, parser.KindUpdateExpression, parser.KindCallExpression, parser.KindReturnStatement} {
 		for _, node := range file.Walk.OfKind(kind) {
 			if file.Walk.EnclosingFunction(node) == function && !file.Walk.Inactive(node) && !file.Walk.Uncertain(node) {
 				events = append(events, taintEvent{node: node, kind: kind})
@@ -483,12 +603,44 @@ func taintEvents(file *project.File, function *parser.Node) []taintEvent {
 		}
 	}
 	sort.SliceStable(events, func(i, j int) bool {
+		if taintInside(events[j].node, events[i].node) && events[i].node != events[j].node {
+			return events[i].kind == parser.KindVariableDeclarator || events[i].kind == parser.KindAssignmentExpression || events[i].kind == parser.KindUpdateExpression
+		}
+		if taintInside(events[i].node, events[j].node) && events[i].node != events[j].node {
+			return events[j].kind != parser.KindVariableDeclarator && events[j].kind != parser.KindAssignmentExpression && events[j].kind != parser.KindUpdateExpression
+		}
 		if events[i].node.Start != events[j].node.Start {
 			return events[i].node.Start < events[j].node.Start
 		}
 		return events[i].node.End < events[j].node.End
 	})
 	return events
+}
+
+func taintCallDestination(file *project.File, call *parser.Node) (*semantic.Symbol, bool) {
+	current := call
+	for parent := file.Walk.Parent(current); parent != nil; parent = file.Walk.Parent(current) {
+		switch parent.Kind {
+		case parser.KindParenthesizedExpression, parser.KindTaggedExpression:
+			if parent.Field("expression") != current {
+				return nil, false
+			}
+			current = parent
+		case parser.KindVariableDeclarator:
+			if parent.Field("initializer") != current {
+				return nil, false
+			}
+			return taintDeclaredSymbol(file, parent), true
+		case parser.KindAssignmentExpression:
+			if parent.Tok.Kind != token.Assign || parent.Field("right") != current {
+				return nil, false
+			}
+			return taintWrittenSymbol(file, parent.Field("left"))
+		default:
+			return nil, false
+		}
+	}
+	return nil, false
 }
 
 func taintDeclaredSymbol(file *project.File, node *parser.Node) *semantic.Symbol {
@@ -551,6 +703,46 @@ func taintExpression(file *project.File, environment map[*semantic.Symbol]taintL
 	return labels, known
 }
 
+func taintExpressionWithCalls(file *project.File, environment map[*semantic.Symbol]taintLabels, calls map[*parser.Node]taintFact, node *parser.Node) (taintLabels, bool) {
+	labels := make(taintLabels)
+	known := true
+	var visit func(*parser.Node)
+	visit = func(current *parser.Node) {
+		if current == nil || !known {
+			return
+		}
+		if current.Kind == parser.KindCallExpression {
+			fact, exists := calls[current]
+			if !exists || !fact.known {
+				known = false
+				return
+			}
+			mergeTaintLabels(labels, fact.labels)
+			return
+		}
+		if current.HasError || current.Tok.Origin != nil || file.Walk.Inactive(current) || file.Walk.Uncertain(current) {
+			known = false
+			return
+		}
+		if current.Kind == parser.KindIdentifier {
+			symbol := file.Semantic.Resolve(current)
+			if symbol == nil {
+				return
+			}
+			if symbol.Ambiguous || symbol.Kind == semantic.SymbolGlobal {
+				known = false
+				return
+			}
+			mergeTaintLabels(labels, environment[symbol])
+		}
+		for _, child := range current.Children {
+			visit(child)
+		}
+	}
+	visit(node)
+	return labels, known
+}
+
 func taintExpressionSymbols(file *project.File, node *parser.Node) map[*semantic.Symbol]struct{} {
 	result := make(map[*semantic.Symbol]struct{})
 	var visit func(*parser.Node)
@@ -582,18 +774,6 @@ func taintConditional(file *project.File, function, node *parser.Node) bool {
 			if current.Tok.Kind == token.AndAnd || current.Tok.Kind == token.OrOr {
 				return true
 			}
-		}
-	}
-	return false
-}
-
-func taintNestedCall(file *project.File, call *parser.Node) bool {
-	for current := file.Walk.Parent(call); current != nil; current = file.Walk.Parent(current) {
-		if current.Kind == parser.KindCallExpression {
-			return true
-		}
-		if walk.IsStatement(current) {
-			return false
 		}
 	}
 	return false
@@ -638,6 +818,18 @@ func taintProjectParameterMayWrite(file *project.File, symbol *semantic.Symbol) 
 	return false
 }
 
+func taintProjectParameterOutputKnown(file *project.File, symbol *semantic.Symbol) bool {
+	if symbol == nil || symbol.Decl == nil || file == nil || file.Parsed == nil || !walk.ReferencesByAmpersand(file.Parsed.Tokens, symbol.Decl) {
+		return false
+	}
+	for _, child := range symbol.Decl.Children {
+		if child.Kind == parser.KindDimension {
+			return false
+		}
+	}
+	return true
+}
+
 func taintSet(environment map[*semantic.Symbol]taintLabels, symbol *semantic.Symbol, labels taintLabels, union bool) {
 	if union {
 		if environment[symbol] == nil {
@@ -667,6 +859,47 @@ func mergeTaintLabels(destination, source taintLabels) bool {
 func copyTaintLabels(source taintLabels) taintLabels {
 	result := make(taintLabels, len(source))
 	mergeTaintLabels(result, source)
+	return result
+}
+
+func taintParameterLabel(index int) string {
+	return "\x00parameter:" + strconv.Itoa(index)
+}
+
+func taintParameterIndex(label string) int {
+	const prefix = "\x00parameter:"
+	if !strings.HasPrefix(label, prefix) {
+		return -1
+	}
+	index, err := strconv.Atoi(strings.TrimPrefix(label, prefix))
+	if err != nil {
+		return -1
+	}
+	return index
+}
+
+func concreteTaintLabels(labels taintLabels) taintLabels {
+	result := make(taintLabels)
+	for label := range labels {
+		if taintParameterIndex(label) < 0 {
+			result[label] = struct{}{}
+		}
+	}
+	return result
+}
+
+func instantiateTaintLabels(summary taintLabels, arguments []taintLabels, known []bool) taintLabels {
+	result := make(taintLabels)
+	for label := range summary {
+		index := taintParameterIndex(label)
+		if index < 0 {
+			result[label] = struct{}{}
+			continue
+		}
+		if index < len(arguments) && index < len(known) && known[index] {
+			mergeTaintLabels(result, arguments[index])
+		}
+	}
 	return result
 }
 
