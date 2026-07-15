@@ -38,8 +38,20 @@ type File struct {
 	APIMetadata  []string       `toml:"api-metadata" json:"api-metadata" yaml:"api-metadata"`
 	Lint         LintSection    `toml:"lint" json:"lint" yaml:"lint"`
 	Rules        map[string]any `toml:"rules" json:"rules" yaml:"rules"`
+	Builds       []Build        `toml:"builds" json:"builds" yaml:"builds"`
 	Variants     []Variant      `toml:"variants" json:"variants" yaml:"variants"`
 	Overrides    []Override     `toml:"overrides" json:"overrides" yaml:"overrides"`
+}
+
+type Build struct {
+	Name             string   `toml:"name" json:"name" yaml:"name"`
+	Entry            string   `toml:"entry" json:"entry" yaml:"entry"`
+	WorkingDirectory string   `toml:"working-directory" json:"working-directory" yaml:"working-directory"`
+	Files            []string `toml:"files" json:"files" yaml:"files"`
+	Exclude          []string `toml:"exclude" json:"exclude" yaml:"exclude"`
+	IncludePaths     []string `toml:"include-paths" json:"include-paths" yaml:"include-paths"`
+	Defines          []string `toml:"defines" json:"defines" yaml:"defines"`
+	Target           string   `toml:"target" json:"target" yaml:"target"`
 }
 
 type Variant struct {

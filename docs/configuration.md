@@ -36,6 +36,34 @@ discarded-expression = "off"
 - Relative `api-metadata` entries resolve the same way; later files override
   earlier entries for the same key.
 
+## Builds
+
+`builds` lets a build system provide compiler contexts, then invoke `pawnlint`
+without source arguments. pawnlint does not interact with package managers.
+
+```toml
+[[builds]]
+name = "main"
+entry = "gamemodes/main.pwn"
+working-directory = "."
+files = ["gamemodes/**", "includes/**"]
+exclude = ["includes/generated/**"]
+include-paths = ["dependencies/pawn-stdlib", "dependencies/project-api"]
+defines = ["OPENMP", "FEATURE_X"]
+target = "openmp"
+```
+
+- `name` and `entry` are required; names must be unique.
+- Paths are relative to `working-directory`, which defaults to the config directory.
+- Top-level include paths and defines are inherited by each build.
+- `defines` is the complete initial set; absent names are undefined.
+- `files` selects reachable includes to lint; unselected includes still provide context.
+- The entry is always linted; `exclude` only applies to additional files.
+- Build `target` overrides the config target; `--target` overrides all builds.
+- Shared diagnostics are deduplicated across builds.
+- `builds` and `variants` cannot be combined.
+- TOML, JSON, and YAML use the same field names.
+
 ## Formats
 
 TOML, JSON, and YAML are equivalent — same keys, same nesting, only the
@@ -107,6 +135,7 @@ defines = ["SAMP"]
   only reported if *every* variant agreed the directive went unused — it may
   guard code active under just one variant.
 - Each variant name must be non-empty and unique.
+- `variants` cannot be combined with `builds`.
 - With no `variants` configured, behavior is unchanged: a single pass using
   the top-level `defines`.
 

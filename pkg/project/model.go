@@ -16,9 +16,10 @@ type Source struct {
 }
 
 type Options struct {
-	WorkingDir   string
-	IncludePaths []string
-	Defines      []string
+	WorkingDir      string
+	IncludePaths    []string
+	Defines         []string
+	DefinesComplete bool
 }
 
 type File struct {
@@ -30,6 +31,12 @@ type File struct {
 	Includes  []*Include
 	Provided  bool
 	canonical string
+	instance  string
+	defines   []string
+	final     []string
+	resolving bool
+	resolved  bool
+	complete  bool
 }
 
 type Include struct {
@@ -80,10 +87,17 @@ type Model struct {
 	Declarations map[string][]Declaration
 	CallGraph    *CallGraph
 	byCanonical  map[string]*File
+	byContext    map[string]*File
+	physical     map[string]*physicalFile
 	references   map[string][]Reference
 	resolved     map[*File]map[*parser.Node]Declaration
 	ambiguous    map[*File]map[*parser.Node]bool
 	options      Options
+}
+
+type physicalFile struct {
+	source []byte
+	parsed *parser.File
 }
 
 func Build(sources []Source, options Options) (*Model, error) {
@@ -106,13 +120,15 @@ func Build(sources []Source, options Options) (*Model, error) {
 	model := &Model{
 		Declarations: make(map[string][]Declaration),
 		byCanonical:  make(map[string]*File),
+		byContext:    make(map[string]*File),
+		physical:     make(map[string]*physicalFile),
 		references:   make(map[string][]Reference),
 		resolved:     make(map[*File]map[*parser.Node]Declaration),
 		ambiguous:    make(map[*File]map[*parser.Node]bool),
 		options:      options,
 	}
 	for _, source := range sources {
-		file, err := model.addFile(source.Path, source.Content, true)
+		file, err := model.addFile(source.Path, source.Content, true, options.Defines)
 		if err != nil {
 			return nil, err
 		}
@@ -120,12 +136,17 @@ func Build(sources []Source, options Options) (*Model, error) {
 			file.Path = source.Path
 		}
 	}
-	for index := 0; index < len(model.Files); index++ {
-		if err := model.resolveFileIncludes(model.Files[index]); err != nil {
+	for _, file := range append([]*File(nil), model.Files...) {
+		if err := model.resolveFileIncludes(file); err != nil {
 			return nil, err
 		}
 	}
-	sort.SliceStable(model.Files, func(i, j int) bool { return model.Files[i].canonical < model.Files[j].canonical })
+	sort.SliceStable(model.Files, func(i, j int) bool {
+		if model.Files[i].canonical != model.Files[j].canonical {
+			return model.Files[i].canonical < model.Files[j].canonical
+		}
+		return model.Files[i].instance < model.Files[j].instance
+	})
 	model.buildDeclarations()
 	model.buildUnits()
 	model.buildReferences()

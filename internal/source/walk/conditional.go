@@ -1,6 +1,7 @@
 package walk
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 
@@ -91,6 +92,9 @@ func (m *Model) directiveValue(node *parser.Node, offset int) (int64, bool) {
 		if known {
 			return 1, true
 		}
+		if m.complete {
+			return 0, true
+		}
 		return 0, false
 	case parser.KindLiteral:
 		if node.Tok.Kind == token.KwNull {
@@ -136,23 +140,93 @@ func (m *Model) knownDefinesAt(offset int) map[string]struct{} {
 			known[name] = struct{}{}
 		}
 	}
-	for _, node := range m.directives {
-		if node.Start >= offset {
+	directiveIndex := 0
+	snapshotIndex := 0
+	for {
+		for directiveIndex < len(m.directives) && m.directives[directiveIndex].Start >= offset {
+			directiveIndex++
+		}
+		for snapshotIndex < len(m.snapshots) && m.snapshots[snapshotIndex].Offset >= offset {
+			snapshotIndex++
+		}
+		if directiveIndex >= len(m.directives) && snapshotIndex >= len(m.snapshots) {
+			break
+		}
+		if snapshotIndex < len(m.snapshots) && (directiveIndex >= len(m.directives) || m.snapshots[snapshotIndex].Offset <= m.directives[directiveIndex].Start) {
+			clear(known)
+			for _, name := range m.snapshots[snapshotIndex].Defines {
+				if name != "" {
+					known[name] = struct{}{}
+				}
+			}
+			snapshotIndex++
 			continue
 		}
-		if node.Kind != parser.KindDirectiveDefine && node.Kind != parser.KindDirectiveUndef || m.IsInsideConditionalBranch(node) {
+		node := m.directives[directiveIndex]
+		directiveIndex++
+		if !m.directiveActive(node) {
+			continue
+		}
+		name := m.directiveName(node)
+		if name == "" {
 			continue
 		}
 		if node.Kind == parser.KindDirectiveUndef {
-			clear(known)
-			continue
-		}
-		name := node.Field("name")
-		if name != nil {
-			known[m.Text(name)] = struct{}{}
+			delete(known, name)
+		} else {
+			known[name] = struct{}{}
 		}
 	}
 	return known
+}
+
+func (m *Model) KnownDefinesAt(offset int) []string {
+	known := m.knownDefinesAt(offset)
+	names := make([]string, 0, len(known))
+	for name := range known {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+func (m *Model) directiveActive(node *parser.Node) bool {
+	for _, ancestor := range m.Ancestors(node) {
+		switch ancestor.Kind {
+		case parser.KindConditionalBranch:
+			if m.branches[ancestor] != branchActive {
+				return false
+			}
+		case parser.KindSharedConditional, parser.KindConditionalFunction, parser.KindConditionalSplice:
+			return false
+		}
+	}
+	return true
+}
+
+func (m *Model) directiveName(node *parser.Node) string {
+	if node.Kind == parser.KindDirectiveDefine {
+		return m.Text(node.Field("name"))
+	}
+	if node.Kind != parser.KindDirectiveUndef || m.File == nil {
+		return ""
+	}
+	seenDirective := false
+	for _, tok := range m.File.Tokens {
+		if tok.Start.Offset < node.Start || tok.End.Offset > node.End {
+			continue
+		}
+		if tok.Kind != token.Identifier {
+			continue
+		}
+		text := tok.Text(m.File.Source)
+		if !seenDirective {
+			seenDirective = text == "undef"
+			continue
+		}
+		return text
+	}
+	return ""
 }
 
 func (m *Model) IsInsideConditionalBranch(n *parser.Node) bool {

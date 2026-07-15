@@ -529,6 +529,125 @@ func TestCLIVariantsRequireNonEmptyUniqueNames(t *testing.T) {
 	}
 }
 
+func TestCLIUsesConfiguredBuildContextWithoutPaths(t *testing.T) {
+	dir := t.TempDir()
+	serverDir := filepath.Join(dir, "server")
+	includeDir := filepath.Join(serverDir, "includes")
+	dependencyDir := filepath.Join(dir, "dependencies", "library")
+	if err := os.MkdirAll(includeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(dependencyDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	entry := filepath.Join(serverDir, "main.pwn")
+	entrySource := "#include <shared>\n#include \"includes/local.inc\"\nShared() {}\nmain() {\n#if defined FEATURE\nnew value = 1 / 0;\n#endif\nSetPlayerAdmin(0, true);\n}\n"
+	if err := os.WriteFile(entry, []byte(entrySource), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	local := filepath.Join(includeDir, "local.inc")
+	if err := os.WriteFile(local, []byte("Local() { new local = 1 / 0; }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	dependency := filepath.Join(dependencyDir, "shared.inc")
+	if err := os.WriteFile(dependency, []byte("Shared() { new dependency = 1 / 0; }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(dir, "pawnlint.toml")
+	configSource := `profile = "strict"
+
+[[builds]]
+name = "main"
+entry = "main.pwn"
+working-directory = "server"
+files = ["includes/**"]
+include-paths = ["../dependencies/library"]
+defines = ["FEATURE"]
+target = "samp"
+`
+	if err := os.WriteFile(configPath, []byte(configSource), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, stderr, code := runCLI(t, []string{"--config", configPath, "--format", "compact"}, "")
+	if code != 1 || stderr != "" {
+		t.Fatalf("code=%d stderr=%q output=%q", code, stderr, out)
+	}
+	if !strings.Contains(out, "duplicate-function-definition") {
+		t.Fatalf("build include path was not used: %q", out)
+	}
+	if !strings.Contains(out, "target-native-availability") {
+		t.Fatalf("build target was not used: %q", out)
+	}
+	if count := strings.Count(out, "division-by-zero"); count != 2 {
+		t.Fatalf("expected entry and selected local include to be linted, but not dependency include; count=%d output=%q", count, out)
+	}
+}
+
+func TestCLIConfiguredBuildsDeduplicateSharedDiagnostics(t *testing.T) {
+	dir := t.TempDir()
+	shared := filepath.Join(dir, "shared.inc")
+	if err := os.WriteFile(shared, []byte("Shared() { new value = 1 / 0; }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"first", "second"} {
+		entry := filepath.Join(dir, name+".pwn")
+		if err := os.WriteFile(entry, []byte("#include \"shared.inc\"\nmain() {}\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	configPath := filepath.Join(dir, "pawnlint.toml")
+	configSource := `profile = "strict"
+
+[[builds]]
+name = "first"
+entry = "first.pwn"
+files = ["shared.inc"]
+
+[[builds]]
+name = "second"
+entry = "second.pwn"
+files = ["shared.inc"]
+`
+	if err := os.WriteFile(configPath, []byte(configSource), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, stderr, code := runCLI(t, []string{"--config", configPath, "--format", "compact"}, "")
+	if code != 1 || stderr != "" {
+		t.Fatalf("code=%d stderr=%q output=%q", code, stderr, out)
+	}
+	if count := strings.Count(out, "division-by-zero"); count != 1 {
+		t.Fatalf("shared diagnostic count=%d output=%q", count, out)
+	}
+}
+
+func TestCLIConfiguredBuildLintsIncludedFileInIncomingMacroContext(t *testing.T) {
+	dir := t.TempDir()
+	entry := filepath.Join(dir, "main.pwn")
+	include := filepath.Join(dir, "feature.inc")
+	if err := os.WriteFile(entry, []byte("#define FEATURE\n#include \"feature.inc\"\nmain() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	includeSource := "#if defined FEATURE\nFeature() { new value = 1 / 0; }\n#endif\n"
+	if err := os.WriteFile(include, []byte(includeSource), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(dir, "pawnlint.toml")
+	configSource := `profile = "strict"
+
+[[builds]]
+name = "main"
+entry = "main.pwn"
+files = ["feature.inc"]
+`
+	if err := os.WriteFile(configPath, []byte(configSource), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, stderr, code := runCLI(t, []string{"--config", configPath, "--format", "compact"}, "")
+	if code != 1 || stderr != "" || !strings.Contains(out, "feature.inc") || !strings.Contains(out, "division-by-zero") {
+		t.Fatalf("code=%d stderr=%q output=%q", code, stderr, out)
+	}
+}
+
 func TestCLIMaxDiagnosticsLimitsOutputWithoutChangingThreshold(t *testing.T) {
 	dir := t.TempDir()
 	cfg := filepath.Join(dir, "pawnlint.toml")

@@ -25,7 +25,7 @@ const (
 
 type cli struct {
 	Paths      []string         `arg:"" optional:"" name:"path" help:"files or directories to lint" predictor:"path"`
-	Config     string           `help:"path to a pawnlint.toml config file" predictor:"path"`
+	Config     string           `help:"path to a pawnlint config file" predictor:"path"`
 	Profile    string           `help:"rule profile (recommended|strict|all)"`
 	Target     string           `help:"target dialect (openmp|samp)"`
 	Enable     []string         `help:"enable a rule by id (repeatable)"`
@@ -90,7 +90,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 	if opts.Stdin {
 		return runStdin(opts, stdin, stdout, stderr, reg, resolved)
 	}
-	if len(opts.Paths) == 0 {
+	if len(opts.Paths) == 0 && len(resolved.Source.Builds) == 0 {
 		_, _ = fmt.Fprintln(stderr, "pawnlint: no input; pass file/directory paths or use --stdin")
 		return exitUsage
 	}

@@ -39,10 +39,25 @@ func levelAllowed(l AnalysisLevel, max AnalysisLevel) bool {
 }
 
 func (e *Engine) LintFile(path string, src []byte, maxLevel AnalysisLevel, ruleSet map[string]diagnostic.Severity, known map[string]struct{}, perRule map[string]map[string]any) []diagnostic.Diagnostic {
+	return e.lintFile(path, src, nil, maxLevel, ruleSet, known, perRule)
+}
+
+func (e *Engine) LintProjectFile(projectFile *project.File, maxLevel AnalysisLevel, ruleSet map[string]diagnostic.Severity, known map[string]struct{}, perRule map[string]map[string]any) []diagnostic.Diagnostic {
+	if projectFile == nil {
+		return nil
+	}
+	return e.lintFile(projectFile.Path, projectFile.Source, projectFile, maxLevel, ruleSet, known, perRule)
+}
+
+func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, maxLevel AnalysisLevel, ruleSet map[string]diagnostic.Severity, known map[string]struct{}, perRule map[string]map[string]any) []diagnostic.Diagnostic {
 	var pf *parser.File
 	var m *walk.Model
 	var semantics *semantic.Model
-	if e.Project != nil {
+	if contextFile != nil && bytes.Equal(contextFile.Source, src) {
+		pf = contextFile.Parsed
+		m = contextFile.Walk
+		semantics = contextFile.Semantic
+	} else if e.Project != nil {
 		if projectFile := e.Project.File(path); projectFile != nil && bytes.Equal(projectFile.Source, src) {
 			pf = projectFile.Parsed
 			m = projectFile.Walk

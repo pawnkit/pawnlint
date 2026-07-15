@@ -114,7 +114,7 @@ func (m *Model) resolveInUnit(unit *Unit, from *File, name string, target semant
 
 func (m *Model) addReference(declaration Declaration, reference Reference, seen map[string]struct{}) {
 	key := declarationKey(declaration)
-	referenceKey := key + "\x00" + reference.File.canonical + "\x00" + strconv.Itoa(reference.Node.Start)
+	referenceKey := key + "\x00" + reference.File.instance + "\x00" + strconv.Itoa(reference.Node.Start)
 	if _, exists := seen[referenceKey]; exists {
 		return
 	}
@@ -139,13 +139,13 @@ func (m *Model) addReference(declaration Declaration, reference Reference, seen 
 
 func sortDeclarations(declarations []Declaration) {
 	sort.SliceStable(declarations, func(i, j int) bool {
-		if declarations[i].File.canonical != declarations[j].File.canonical {
-			return declarations[i].File.canonical < declarations[j].File.canonical
+		if declarations[i].File.instance != declarations[j].File.instance {
+			return declarations[i].File.instance < declarations[j].File.instance
 		}
 		return declarations[i].Node.Start < declarations[j].Node.Start
 	})
 }
 
 func declarationKey(declaration Declaration) string {
-	return declaration.File.canonical + "\x00" + strconv.Itoa(declaration.Node.Start)
+	return declaration.File.instance + "\x00" + strconv.Itoa(declaration.Node.Start)
 }

@@ -26,9 +26,10 @@
 
 - Macros are not expanded.
 - Literal integer conditions and `defined(NAME)` checks are evaluated.
-- Known names: configured symbols, standard compiler predefines, and earlier
-  unconditional `#define` directives.
-- Every other name is uncertain; rules skip inactive and uncertain branches.
+- Known names include configured symbols, compiler predefines, active defines,
+  and definitions exported by earlier includes.
+- Builds treat absent names as undefined; paths and variants treat them as uncertain.
+- Rules skip inactive and uncertain branches.
 
 ## Semantic analysis
 
@@ -72,10 +73,12 @@
 
 - Resolves direct includes from the source directory and configured include
   paths.
+- Tracks define contexts and include order while sharing parsed CSTs.
 - Resolves unambiguous function and value references; reports duplicate or
   unused project symbols.
 - Cross-file constant evaluation is not available.
 - Macro-generated includes are not expanded; uncertain includes are skipped.
+- Contexts track macro names, not values; identical contexts share one instance.
 
 ## Control flow
 

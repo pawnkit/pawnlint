@@ -329,6 +329,131 @@ func TestBuildResolvesCrossFileReferences(t *testing.T) {
 	}
 }
 
+func TestIncludeReceivesDefinesEstablishedByParent(t *testing.T) {
+	dir := t.TempDir()
+	includePath := filepath.Join(dir, "feature.inc")
+	includeSource := []byte("#if defined FEATURE\nFeatureEnabled() {}\n#endif\n")
+	if err := os.WriteFile(includePath, includeSource, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	rootPath := filepath.Join(dir, "main.pwn")
+	rootSource := []byte("#define FEATURE\n#include \"feature.inc\"\nmain() {}\n")
+	model, err := Build([]Source{{Path: rootPath, Content: rootSource}}, Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hasDeclaration(model, "FeatureEnabled", semantic.SymbolFunction) {
+		t.Fatal("include did not receive the parent's define environment")
+	}
+}
+
+func TestIncludeExportsDefinesToLaterParentCode(t *testing.T) {
+	dir := t.TempDir()
+	includePath := filepath.Join(dir, "export.inc")
+	if err := os.WriteFile(includePath, []byte("#define EXPORTED\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	rootPath := filepath.Join(dir, "main.pwn")
+	rootSource := []byte("#include \"export.inc\"\n#if defined EXPORTED\nAfterInclude() {}\n#endif\n")
+	model, err := Build([]Source{{Path: rootPath, Content: rootSource}}, Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hasDeclaration(model, "AfterInclude", semantic.SymbolFunction) {
+		t.Fatal("include define did not affect later parent code")
+	}
+}
+
+func TestRepeatedIncludeUsesUpdatedGuardContext(t *testing.T) {
+	dir := t.TempDir()
+	includePath := filepath.Join(dir, "guarded.inc")
+	includeSource := []byte("#if !defined GUARDED_INCLUDED\n#define GUARDED_INCLUDED\nGuarded() {}\n#endif\n")
+	if err := os.WriteFile(includePath, includeSource, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	rootPath := filepath.Join(dir, "main.pwn")
+	rootSource := []byte("#include \"guarded.inc\"\n#include \"guarded.inc\"\nmain() {}\n")
+	model, err := Build([]Source{{Path: rootPath, Content: rootSource}}, Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if declarations := model.Declarations["Guarded"]; len(declarations) != 1 {
+		t.Fatalf("Guarded declarations = %d, want 1", len(declarations))
+	}
+	if len(model.Files) != 3 || len(model.Units) != 1 || len(model.Units[0].Files) != 3 {
+		t.Fatalf("files = %d, units = %#v", len(model.Files), model.Units)
+	}
+}
+
+func TestRootsUseIndependentIncludeContexts(t *testing.T) {
+	dir := t.TempDir()
+	includePath := filepath.Join(dir, "context.inc")
+	includeSource := []byte("#if defined ONE\nFromOne() {}\n#endif\n#if defined TWO\nFromTwo() {}\n#endif\n")
+	if err := os.WriteFile(includePath, includeSource, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	onePath := filepath.Join(dir, "one.pwn")
+	twoPath := filepath.Join(dir, "two.pwn")
+	oneSource := []byte("#define ONE\n#include \"context.inc\"\n")
+	twoSource := []byte("#define TWO\n#include \"context.inc\"\n")
+	model, err := Build([]Source{{Path: onePath, Content: oneSource}, {Path: twoPath, Content: twoSource}}, Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hasDeclaration(model, "FromOne", semantic.SymbolFunction) || !hasDeclaration(model, "FromTwo", semantic.SymbolFunction) {
+		t.Fatalf("contextual declarations = %#v", model.Declarations)
+	}
+	if len(model.Files) != 4 || len(model.Units) != 2 {
+		t.Fatalf("files = %d, units = %d", len(model.Files), len(model.Units))
+	}
+	for _, unit := range model.Units {
+		want := "FromOne"
+		unwanted := "FromTwo"
+		if unit.Root.Path == twoPath {
+			want, unwanted = unwanted, want
+		}
+		if !unitHasDeclaration(unit, want) || unitHasDeclaration(unit, unwanted) {
+			t.Fatalf("unit %q has incorrect context", unit.Root.Path)
+		}
+	}
+}
+
+func TestContextualDeclarationsKeepIndependentReferences(t *testing.T) {
+	dir := t.TempDir()
+	includePath := filepath.Join(dir, "shared.inc")
+	if err := os.WriteFile(includePath, []byte("Shared() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	onePath := filepath.Join(dir, "one.pwn")
+	twoPath := filepath.Join(dir, "two.pwn")
+	oneSource := []byte("#define ONE\n#include \"shared.inc\"\nmain() { Shared(); }\n")
+	twoSource := []byte("#define TWO\n#include \"shared.inc\"\nmain() { Shared(); }\n")
+	model, err := Build([]Source{{Path: onePath, Content: oneSource}, {Path: twoPath, Content: twoSource}}, Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	declarations := model.Declarations["Shared"]
+	if len(declarations) != 2 {
+		t.Fatalf("Shared declarations = %d", len(declarations))
+	}
+	for _, declaration := range declarations {
+		if references := model.References(declaration); len(references) != 1 || references[0].Kind != semantic.ReferenceCall {
+			t.Fatalf("references = %#v", references)
+		}
+	}
+}
+
+func unitHasDeclaration(unit *Unit, name string) bool {
+	for _, file := range unit.Files {
+		for _, symbol := range file.Semantic.Symbols {
+			if symbol.Name == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func hasDeclaration(model *Model, name string, kind semantic.SymbolKind) bool {
 	for _, declaration := range model.Declarations[name] {
 		if declaration.Kind == kind {

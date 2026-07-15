@@ -25,6 +25,9 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 	if r.SourcePath != "" {
 		projectDir = filepath.Dir(r.SourcePath)
 	}
+	if len(opts.Paths) == 0 {
+		return runConfiguredBuilds(opts, stdout, stderr, reg, r, projectDir)
+	}
 	files, err := discovery.Discover(discovery.Options{
 		Roots:      opts.Paths,
 		Include:    r.Source.Include,
@@ -115,6 +118,189 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 		}
 	}
 	return emit(opts, stdout, stderr, all, sources, r)
+}
+
+func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *config.Resolved, projectDir string) int {
+	sources := output.SourceSet{}
+	perBuild := make([][]diagnostic.Diagnostic, 0, len(r.Source.Builds))
+	for _, build := range r.Source.Builds {
+		workingDir := resolveBuildPath(projectDir, build.WorkingDirectory)
+		entry := resolveBuildPath(workingDir, build.Entry)
+		content, err := os.ReadFile(entry)
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "pawnlint: build %q entry: %v\n", build.Name, err)
+			return exitUsage
+		}
+		includePaths := resolveConfiguredPaths(projectDir, r.Source.IncludePaths)
+		includePaths = appendUniquePaths(includePaths, resolveConfiguredPaths(workingDir, build.IncludePaths)...)
+		defines := appendUniqueStrings(r.Source.Defines, build.Defines...)
+		target := r.Target
+		if build.Target != "" {
+			target = config.Target(build.Target)
+		}
+		metadata, err := r.APIForTarget(target)
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "pawnlint: build %q: %v\n", build.Name, err)
+			return exitUsage
+		}
+		model, err := projectmodel.Build([]projectmodel.Source{{Path: entry, Content: content}}, projectmodel.Options{
+			WorkingDir:      workingDir,
+			IncludePaths:    includePaths,
+			Defines:         defines,
+			DefinesComplete: true,
+		})
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "pawnlint: build %q project: %v\n", build.Name, err)
+			return exitInternal
+		}
+		engine := lint.NewEngine(reg)
+		engine.Target = string(target)
+		engine.API = metadata
+		engine.Defines = defines
+		engine.Project = model
+		files := configuredBuildFiles(model, entry, workingDir, build.Files, build.Exclude)
+		perFile := make([][]diagnostic.Diagnostic, len(files))
+		var eg errgroup.Group
+		eg.SetLimit(max(runtime.GOMAXPROCS(0), 1))
+		for i, file := range files {
+			eg.Go(func() error {
+				rel := discovery.RelPath(projectDir, file.Path)
+				perFile[i] = engine.LintProjectFile(file, lint.ProjectAnalysis, r.EnabledForPath(rel), r.AllKnownRuleIDs, r.RuleConfigForPath(rel))
+				return nil
+			})
+		}
+		_ = eg.Wait()
+		var diagnostics []diagnostic.Diagnostic
+		for _, fileDiagnostics := range perFile {
+			diagnostics = append(diagnostics, fileDiagnostics...)
+		}
+		perBuild = append(perBuild, diagnostics)
+		for _, file := range model.Files {
+			sources[file.Path] = file.Source
+		}
+	}
+	all := mergeBuildDiagnostics(perBuild)
+	if opts.Diff || opts.Fix || opts.FixSafe {
+		plan, err := fix.Build(map[string][]byte(sources), all)
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "pawnlint: build fixes: %v\n", err)
+			return exitInternal
+		}
+		if opts.Diff && len(plan.Changes) != 0 {
+			_, _ = fmt.Fprint(stdout, fix.Diff(plan))
+			return exitFindings
+		}
+		if (opts.Fix || opts.FixSafe) && len(plan.Changes) != 0 {
+			if err := fix.Write(plan); err != nil {
+				_, _ = fmt.Fprintf(stderr, "pawnlint: write fixes: %v\n", err)
+				return exitInternal
+			}
+			next := *opts
+			next.Fix = false
+			next.FixSafe = false
+			return runFiles(&next, stdout, stderr, reg, r)
+		}
+	}
+	return emit(opts, stdout, stderr, all, sources, r)
+}
+
+func configuredBuildFiles(model *projectmodel.Model, entry, workingDir string, patterns, excludes []string) []*projectmodel.File {
+	files := make([]*projectmodel.File, 0, len(model.Files))
+	for _, file := range model.Files {
+		isEntry := samePath(file.Path, entry)
+		selected := isEntry
+		rel := discovery.RelPath(workingDir, file.Path)
+		if !selected && matchesBuildPatterns(patterns, rel) {
+			selected = true
+		}
+		if !selected || !isEntry && matchesBuildPatterns(excludes, rel) {
+			continue
+		}
+		files = append(files, file)
+	}
+	return files
+}
+
+func matchesBuildPatterns(patterns []string, path string) bool {
+	for _, pattern := range patterns {
+		if discovery.MatchGlob(pattern, path) {
+			return true
+		}
+	}
+	return false
+}
+
+func resolveBuildPath(base, path string) string {
+	if path == "" {
+		return filepath.Clean(base)
+	}
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(base, path)
+	}
+	return filepath.Clean(path)
+}
+
+func resolveConfiguredPaths(base string, paths []string) []string {
+	resolved := make([]string, 0, len(paths))
+	for _, path := range paths {
+		resolved = append(resolved, resolveBuildPath(base, path))
+	}
+	return resolved
+}
+
+func appendUniquePaths(paths []string, additions ...string) []string {
+	for _, addition := range additions {
+		found := false
+		for _, path := range paths {
+			if samePath(path, addition) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			paths = append(paths, addition)
+		}
+	}
+	return paths
+}
+
+func appendUniqueStrings(values []string, additions ...string) []string {
+	merged := append([]string(nil), values...)
+	for _, addition := range additions {
+		found := false
+		for _, value := range merged {
+			if value == addition {
+				found = true
+				break
+			}
+		}
+		if !found {
+			merged = append(merged, addition)
+		}
+	}
+	return merged
+}
+
+func samePath(left, right string) bool {
+	leftPath, leftErr := filepath.Abs(left)
+	rightPath, rightErr := filepath.Abs(right)
+	return leftErr == nil && rightErr == nil && filepath.Clean(leftPath) == filepath.Clean(rightPath)
+}
+
+func mergeBuildDiagnostics(perBuild [][]diagnostic.Diagnostic) []diagnostic.Diagnostic {
+	var merged []diagnostic.Diagnostic
+	seen := make(map[variantDiagKey]struct{})
+	for _, diagnostics := range perBuild {
+		for _, item := range diagnostics {
+			key := variantDiagKeyFor(item)
+			if _, exists := seen[key]; exists {
+				continue
+			}
+			seen[key] = struct{}{}
+			merged = append(merged, item)
+		}
+	}
+	return merged
 }
 
 type variantDiagKey struct {

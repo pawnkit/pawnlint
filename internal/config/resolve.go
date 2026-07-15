@@ -59,6 +59,26 @@ func Resolve(f File, sourcePath string, reg *lint.Registrar) (*Resolved, error) 
 		}
 		seenVariant[name] = struct{}{}
 	}
+	if len(f.Builds) > 0 && len(f.Variants) > 0 {
+		return nil, fmt.Errorf("config: builds and variants cannot be configured together")
+	}
+	seenBuild := make(map[string]struct{}, len(f.Builds))
+	for _, build := range f.Builds {
+		name := strings.TrimSpace(build.Name)
+		if name == "" {
+			return nil, fmt.Errorf("config: builds entries must have a non-empty name")
+		}
+		if _, duplicate := seenBuild[name]; duplicate {
+			return nil, fmt.Errorf("config: duplicate build name %q", name)
+		}
+		seenBuild[name] = struct{}{}
+		if strings.TrimSpace(build.Entry) == "" {
+			return nil, fmt.Errorf("config: build %q must have a non-empty entry", name)
+		}
+		if !allowedTarget(build.Target) {
+			return nil, fmt.Errorf("config: build %q has unknown target %q (allowed: openmp, samp)", name, build.Target)
+		}
+	}
 
 	enabled := reg.EnabledForProfile(lint.Profile(profile))
 
@@ -98,6 +118,10 @@ func Resolve(f File, sourcePath string, reg *lint.Registrar) (*Resolved, error) 
 	}
 	r.Enabled = enabled
 	return r, nil
+}
+
+func (r *Resolved) APIForTarget(target Target) (*api.Metadata, error) {
+	return loadAPIMetadata(r.Source.APIMetadata, r.SourcePath, string(target))
 }
 
 func parseRuleTable(rulesTOML map[string]any, known map[string]struct{}) (enabled map[string]diagnostic.Severity, disabled map[string]struct{}, ruleConfig map[string]map[string]any, errs []string) {

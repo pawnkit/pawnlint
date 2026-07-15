@@ -38,6 +38,9 @@ func (r *Resolved) ApplyCLIOverrides(profile, target string, enable, disable []s
 		}
 		r.Target = Target(target)
 		r.Source.Target = target
+		for i := range r.Source.Builds {
+			r.Source.Builds[i].Target = target
+		}
 		r.API = metadata
 	}
 	for _, id := range enable {

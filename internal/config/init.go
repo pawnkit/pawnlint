@@ -34,6 +34,14 @@ exclude = [
 # Predefined preprocessor symbols.
 defines = []
 
+# Generated build contexts. See docs/configuration.md#builds.
+#   [[builds]]
+#   name = "main"
+#   entry = "gamemodes/main.pwn"
+#   files = ["gamemodes/**", "includes/**"]
+#   include-paths = ["dependencies/library"]
+#   defines = ["FEATURE"]
+
 # Additional define sets to analyze and merge results from. Code guarded by
 # #if defined NAME is only analyzed when NAME is known, so without a variant
 # for each target the untested target's branch is silently skipped. See

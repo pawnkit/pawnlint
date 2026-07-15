@@ -109,6 +109,49 @@ func TestConditionalDefinedState(t *testing.T) {
 	}
 }
 
+func TestCompleteDefineContextTreatsAbsentNamesAsUndefined(t *testing.T) {
+	src := "#if defined MISSING\nnew inactive;\n#else\nnew active;\n#endif\n"
+	f := mustParse(t, src)
+	m := walk.NewWithDefineContext("x.pwn", f, nil, nil, true)
+	declarations := m.OfKind(parser.KindVariableDeclarator)
+	if len(declarations) != 2 {
+		t.Fatalf("declarations = %d", len(declarations))
+	}
+	if !m.Inactive(declarations[0]) || m.Uncertain(declarations[1]) || m.Inactive(declarations[1]) {
+		t.Fatalf("complete context states are incorrect")
+	}
+}
+
+func TestKnownDefinesTracksActiveConditionalDefinesAndSpecificUndef(t *testing.T) {
+	src := "#define KEEP\n#define REMOVE\n#if defined ENABLED\n#define CONDITIONAL\n#endif\n#undef REMOVE\n"
+	f := mustParse(t, src)
+	m := walk.NewWithDefineContext("x.pwn", f, []string{"ENABLED"}, nil, true)
+	defines := m.KnownDefinesAt(len(src) + 1)
+	if !hasString(defines, "KEEP") || !hasString(defines, "CONDITIONAL") || hasString(defines, "REMOVE") {
+		t.Fatalf("defines = %v", defines)
+	}
+}
+
+func TestDefineSnapshotAffectsLaterConditional(t *testing.T) {
+	src := "#include \"shared.inc\"\n#if defined EXPORTED\nnew active;\n#endif\n"
+	f := mustParse(t, src)
+	include := f.Root.Children[0]
+	m := walk.NewWithDefineContext("x.pwn", f, nil, []walk.DefineSnapshot{{Offset: include.End, Defines: []string{"EXPORTED"}}}, true)
+	declarations := m.OfKind(parser.KindVariableDeclarator)
+	if len(declarations) != 1 || m.Uncertain(declarations[0]) || m.Inactive(declarations[0]) {
+		t.Fatalf("snapshot did not activate later declaration")
+	}
+}
+
+func hasString(values []string, wanted string) bool {
+	for _, value := range values {
+		if value == wanted {
+			return true
+		}
+	}
+	return false
+}
+
 func TestCompilerPredefinedState(t *testing.T) {
 	src := "#if defined __PawnBuild\nnew active;\n#endif\n"
 	f := mustParse(t, src)

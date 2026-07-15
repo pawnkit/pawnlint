@@ -22,14 +22,17 @@ type CallGraph struct {
 
 func (m *Model) buildCallGraph() *CallGraph {
 	graph := &CallGraph{outgoing: make(map[string][]Call)}
-	byNode := make(map[*parser.Node]Declaration)
+	byNode := make(map[*File]map[*parser.Node]Declaration)
 	for _, declarations := range m.Declarations {
 		for _, declaration := range declarations {
 			if declaration.Kind != semantic.SymbolFunction || declaration.Node.Kind != parser.KindFunctionDefinition || declaration.Symbol == nil || declaration.Symbol.Ambiguous {
 				continue
 			}
 			graph.Functions = append(graph.Functions, declaration)
-			byNode[declaration.Node] = declaration
+			if byNode[declaration.File] == nil {
+				byNode[declaration.File] = make(map[*parser.Node]Declaration)
+			}
+			byNode[declaration.File][declaration.Node] = declaration
 		}
 	}
 	sortDeclarations(graph.Functions)
@@ -42,7 +45,7 @@ func (m *Model) buildCallGraph() *CallGraph {
 			if calleeNode == nil || calleeNode.Kind != parser.KindIdentifier {
 				continue
 			}
-			caller := byNode[file.Walk.EnclosingFunction(call)]
+			caller := byNode[file][file.Walk.EnclosingFunction(call)]
 			if caller.Node == nil {
 				continue
 			}

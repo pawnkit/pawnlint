@@ -45,3 +45,28 @@ func TestCallGraphFindsDirectRecursion(t *testing.T) {
 		t.Fatalf("recursive components = %#v", components)
 	}
 }
+
+func TestCallGraphKeepsSharedCSTContextsIndependent(t *testing.T) {
+	dir := t.TempDir()
+	includePath := filepath.Join(dir, "shared.inc")
+	includeSource := []byte("Helper() {}\nShared() { Helper(); }\n")
+	if err := os.WriteFile(includePath, includeSource, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	onePath := filepath.Join(dir, "one.pwn")
+	twoPath := filepath.Join(dir, "two.pwn")
+	oneSource := []byte("#define ONE\n#include \"shared.inc\"\n")
+	twoSource := []byte("#define TWO\n#include \"shared.inc\"\n")
+	model, err := project.Build([]project.Source{{Path: onePath, Content: oneSource}, {Path: twoPath, Content: twoSource}}, project.Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(model.CallGraph.Calls) != 2 {
+		t.Fatalf("calls = %#v", model.CallGraph.Calls)
+	}
+	for _, call := range model.CallGraph.Calls {
+		if call.File != call.Caller.File || call.File != call.Callee.File {
+			t.Fatalf("call crossed semantic contexts: %#v", call)
+		}
+	}
+}

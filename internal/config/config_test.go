@@ -345,6 +345,86 @@ func TestResolveDefaultsTargetAndRejectsNegativeLimit(t *testing.T) {
 	}
 }
 
+func TestLoadAndResolveBuilds(t *testing.T) {
+	reg := regWith(t)
+	content := `profile = "strict"
+defines = ["GLOBAL"]
+
+[[builds]]
+name = "main"
+entry = "gamemodes/main.pwn"
+working-directory = "server"
+files = ["includes/**"]
+exclude = ["includes/generated/**"]
+include-paths = ["dependencies/library"]
+defines = ["FEATURE"]
+target = "samp"
+`
+	f, err := config.Load(writeTemp(t, content))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := config.Resolve(f, "", reg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Source.Builds) != 1 {
+		t.Fatalf("build count = %d", len(r.Source.Builds))
+	}
+	build := r.Source.Builds[0]
+	if build.Name != "main" || build.Entry != "gamemodes/main.pwn" || build.WorkingDirectory != "server" || build.Target != "samp" {
+		t.Fatalf("build = %#v", build)
+	}
+	if len(build.Files) != 1 || len(build.Exclude) != 1 || len(build.IncludePaths) != 1 || len(build.Defines) != 1 {
+		t.Fatalf("build collections = %#v", build)
+	}
+}
+
+func TestResolveRejectsInvalidBuilds(t *testing.T) {
+	reg := regWith(t)
+	tests := []struct {
+		name string
+		file config.File
+		want string
+	}{
+		{name: "missing name", file: config.File{Builds: []config.Build{{Entry: "main.pwn"}}}, want: "non-empty name"},
+		{name: "missing entry", file: config.File{Builds: []config.Build{{Name: "main"}}}, want: "non-empty entry"},
+		{name: "duplicate", file: config.File{Builds: []config.Build{{Name: "main", Entry: "a.pwn"}, {Name: "main", Entry: "b.pwn"}}}, want: "duplicate build"},
+		{name: "target", file: config.File{Builds: []config.Build{{Name: "main", Entry: "main.pwn", Target: "other"}}}, want: "unknown target"},
+		{name: "variants", file: config.File{Builds: []config.Build{{Name: "main", Entry: "main.pwn"}}, Variants: []config.Variant{{Name: "feature"}}}, want: "cannot be configured together"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.file.Profile = "recommended"
+			test.file.Rules = map[string]any{}
+			_, err := config.Resolve(test.file, "", reg)
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("error = %v, want containing %q", err, test.want)
+			}
+		})
+	}
+}
+
+func TestCLITargetOverridesBuildTargets(t *testing.T) {
+	reg := regWith(t)
+	f := config.File{
+		Profile: "recommended",
+		Target:  "openmp",
+		Rules:   map[string]any{},
+		Builds:  []config.Build{{Name: "main", Entry: "main.pwn", Target: "openmp"}},
+	}
+	r, err := config.Resolve(f, "", reg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := r.ApplyCLIOverrides("", "samp", nil, nil, reg); err != nil {
+		t.Fatal(err)
+	}
+	if r.Target != config.TargetSAMP || r.Source.Builds[0].Target != "samp" {
+		t.Fatalf("target = %q, build target = %q", r.Target, r.Source.Builds[0].Target)
+	}
+}
+
 func TestDiscover(t *testing.T) {
 	dir := t.TempDir()
 	p := filepath.Join(dir, "pawnlint.toml")
