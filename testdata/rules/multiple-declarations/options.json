@@ -1,0 +1,4 @@
+{
+  "scopes": ["global", "local"],
+  "allow-for-loop": false
+}

@@ -39,6 +39,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(maintainability.FunctionLength{})
 	reg.MustRegister(maintainability.TooManyParameters{})
 	reg.MustRegister(maintainability.TooManyGlobals{})
+	reg.MustRegister(maintainability.MultipleDeclarations{})
 	reg.MustRegister(correctness.DivisionByZero{})
 	reg.MustRegister(correctness.InvalidShiftCount{})
 	reg.MustRegister(correctness.InvalidArraySize{})

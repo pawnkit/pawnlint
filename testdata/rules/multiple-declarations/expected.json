@@ -1,0 +1,34 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "multiple-declarations",
+      "severity": "warning",
+      "message": "declare one variable per statement; this declaration contains 3 variables",
+      "startLine": 1,
+      "startCol": 12,
+      "endLine": 1,
+      "endCol": 18
+    },
+    {
+      "ruleId": "multiple-declarations",
+      "severity": "warning",
+      "message": "declare one variable per statement; this declaration contains 2 variables",
+      "startLine": 5,
+      "startCol": 21,
+      "endLine": 5,
+      "endCol": 32
+    },
+    {
+      "ruleId": "multiple-declarations",
+      "severity": "warning",
+      "message": "declare one variable per statement; this declaration contains 2 variables",
+      "startLine": 6,
+      "startCol": 23,
+      "endLine": 6,
+      "endCol": 29
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
