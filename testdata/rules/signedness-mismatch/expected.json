@@ -1,0 +1,34 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "signedness-mismatch",
+      "severity": "warning",
+      "message": "comparison mixes an unsigned packed character with a negative value",
+      "startLine": 4,
+      "startCol": 9,
+      "endLine": 4,
+      "endCol": 24
+    },
+    {
+      "ruleId": "signedness-mismatch",
+      "severity": "warning",
+      "message": "comparison mixes an unsigned packed character with a negative value",
+      "startLine": 5,
+      "startCol": 9,
+      "endLine": 5,
+      "endCol": 23
+    },
+    {
+      "ruleId": "signedness-mismatch",
+      "severity": "warning",
+      "message": "comparison mixes an unsigned packed character with a negative value",
+      "startLine": 6,
+      "startCol": 9,
+      "endLine": 6,
+      "endCol": 25
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

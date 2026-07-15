@@ -52,6 +52,7 @@ var curate = map[Profile]map[string]struct{}{
 		"redundant-else":         {},
 		"incomplete-enum-switch": {},
 		"narrowing-conversion":   {},
+		"signedness-mismatch":    {},
 	},
 }
 

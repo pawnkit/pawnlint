@@ -87,6 +87,7 @@ Rules are stable unless their page marks them as preview.
 | [`self-assignment`](self-assignment.md) | correctness | warning | on | yes | Reports assignments that store a symbol back into itself |
 | [`settimerex-format-argument-count`](settimerex-format-argument-count.md) | correctness | error | off | no | Reports SetTimerEx() calls whose specifier string and argument count differ |
 | [`shadowed-variable`](shadowed-variable.md) | maintainability | warning | off | no | Reports local declarations that hide an outer variable |
+| [`signedness-mismatch`](signedness-mismatch.md) | correctness | warning | off | no | Reports packed-character comparisons with negative values |
 | [`sscanf-format-argument-count`](sscanf-format-argument-count.md) | correctness | error | off | no | Reports sscanf() calls whose format string and argument count differ |
 | [`suppression-reason`](suppression-reason.md) | restriction | warning | off | no | Reports suppression directives without an adequate reason |
 | [`suspicious-comma-expression`](suspicious-comma-expression.md) | suspicious | warning | on | no | The comma operator chains sub-expressions; it is rarely intended in statements or returns |
