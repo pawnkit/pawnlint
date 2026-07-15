@@ -54,6 +54,7 @@ Rules are stable unless their page marks them as preview.
 | [`negative-or-zero-array-size`](negative-or-zero-array-size.md) | correctness | error | on | no | Reports array dimensions that evaluate to zero or less |
 | [`non-callable-symbol`](non-callable-symbol.md) | correctness | error | on | no | Reports calls whose callee resolves to a variable, not a function |
 | [`non-public-callback`](non-public-callback.md) | correctness | warning | off | no | Reports functions named exactly like a callback but missing the public qualifier |
+| [`npath-complexity`](npath-complexity.md) | maintainability | warning | off | no | Reports functions with too many acyclic execution paths |
 | [`out-of-bounds-constant-index`](out-of-bounds-constant-index.md) | correctness | error | on | no | Reports constant indexes outside a known array dimension |
 | [`overwritten-resource-handle`](overwritten-resource-handle.md) | correctness | warning | off | no | Reports resource handles overwritten before any use or release |
 | [`possibly-uninitialized`](possibly-uninitialized.md) | correctness | warning | off | no | Reports local variables read before an explicit assignment on every path |

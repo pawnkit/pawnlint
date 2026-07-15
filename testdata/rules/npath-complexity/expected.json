@@ -1,0 +1,25 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "npath-complexity",
+      "severity": "warning",
+      "message": "function \"ManyPaths\" has NPath complexity 24, exceeding the maximum of 10",
+      "startLine": 1,
+      "startCol": 1,
+      "endLine": 1,
+      "endCol": 10
+    },
+    {
+      "ruleId": "npath-complexity",
+      "severity": "warning",
+      "message": "function \"ExpressionPaths\" has NPath complexity 20, exceeding the maximum of 10",
+      "startLine": 26,
+      "startCol": 1,
+      "endLine": 26,
+      "endCol": 16
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
