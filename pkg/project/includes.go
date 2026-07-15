@@ -77,11 +77,12 @@ func (m *Model) resolveFileIncludes(file *File) error {
 			continue
 		}
 		defines := file.Walk.KnownDefinesAt(node.Start)
-		resolved, err := m.resolveInclude(file, path, defines)
+		resolved, candidates, err := m.resolveInclude(file, path, defines)
 		if err != nil {
 			return err
 		}
 		include.Resolved = resolved
+		include.Candidates = candidates
 		if resolved == nil {
 			continue
 		}
@@ -102,7 +103,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	return nil
 }
 
-func (m *Model) resolveInclude(from *File, path string, defines []string) (*File, error) {
+func (m *Model) resolveInclude(from *File, path string, defines []string) (*File, []string, error) {
 	path = filepath.FromSlash(strings.ReplaceAll(path, "\\", "/"))
 	var bases []string
 	if filepath.IsAbs(path) {
@@ -113,6 +114,7 @@ func (m *Model) resolveInclude(from *File, path string, defines []string) (*File
 		bases = append(bases, m.options.WorkingDir)
 	}
 	seen := make(map[string]struct{})
+	var candidates []string
 	for _, base := range bases {
 		candidate := path
 		if base != "" {
@@ -127,27 +129,42 @@ func (m *Model) resolveInclude(from *File, path string, defines []string) (*File
 				continue
 			}
 			seen[canonical] = struct{}{}
-			if existing := m.byContext[contextKey(canonical, defines)]; existing != nil {
-				return existing, nil
+			if m.physical[canonical] != nil {
+				candidates = append(candidates, canonical)
+				continue
 			}
 			info, err := os.Stat(canonical)
 			if err != nil {
 				if os.IsNotExist(err) {
 					continue
 				}
-				return nil, err
+				return nil, nil, err
 			}
 			if !info.Mode().IsRegular() {
 				continue
 			}
-			source, err := os.ReadFile(canonical)
-			if err != nil {
-				return nil, err
-			}
-			return m.addFile(canonical, source, false, defines)
+			candidates = append(candidates, canonical)
 		}
 	}
-	return nil, nil
+	if len(candidates) == 0 {
+		return nil, nil, nil
+	}
+	chosen := candidates[0]
+	if existing := m.byContext[contextKey(chosen, defines)]; existing != nil {
+		return existing, candidates, nil
+	}
+	var source []byte
+	if physical := m.physical[chosen]; physical != nil {
+		source = physical.source
+	} else {
+		var err error
+		source, err = os.ReadFile(chosen)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	resolved, err := m.addFile(chosen, source, false, defines)
+	return resolved, candidates, err
 }
 
 func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot) {

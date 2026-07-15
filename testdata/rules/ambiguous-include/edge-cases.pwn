@@ -1,0 +1,5 @@
+#tryinclude "optional.inc"
+
+main()
+{
+}

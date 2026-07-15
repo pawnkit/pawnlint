@@ -6,6 +6,7 @@ Rules are stable unless their page marks them as preview.
 
 | ID | Category | Severity | Default | Fixable | Summary |
 | --- | --- | --- | --- | --- | --- |
+| [`ambiguous-include`](ambiguous-include.md) | portability | warning | on | no | Reports includes shadowed by another matching file |
 | [`assignment-in-condition`](assignment-in-condition.md) | suspicious | warning | on | no | An assignment used as an if/while condition is often a typo for == |
 | [`buffer-size`](buffer-size.md) | correctness | error | off | no | Reports native size arguments larger than a declared buffer |
 | [`callback-signature`](callback-signature.md) | correctness | error | off | no | Reports public callbacks that do not match the target API |
@@ -32,6 +33,7 @@ Rules are stable unless their page marks them as preview.
 | [`large-local-array`](large-local-array.md) | performance | warning | off | no | Reports large automatic arrays allocated on the Pawn stack |
 | [`legacy-include`](legacy-include.md) | openmp | warning | off | no | Reports official SA-MP wrapper includes when targeting open.mp |
 | [`mismatched-resource-handle`](mismatched-resource-handle.md) | correctness | error | off | no | Reports handles passed to the wrong resource releaser |
+| [`missing-include`](missing-include.md) | correctness | error | on | no | Reports required includes that cannot be resolved |
 | [`missing-return-value`](missing-return-value.md) | correctness | warning | on | no | Reports value-returning functions with paths that return no value |
 | [`misspelled-callback`](misspelled-callback.md) | suspicious | warning | off | no | Reports public functions one edit away from a target callback |
 | [`native-argument-count`](native-argument-count.md) | correctness | error | off | no | Reports calls with an impossible number of arguments for a known native |

@@ -1,0 +1,5 @@
+#include "missing.inc"
+
+main()
+{
+}

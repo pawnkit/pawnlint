@@ -1,0 +1,15 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "ambiguous-include",
+      "severity": "warning",
+      "message": "include \"shared\" selects \"shared\" but also matches \"shared.inc\"",
+      "startLine": 1,
+      "startCol": 10,
+      "endLine": 1,
+      "endCol": 18
+    }
+  ],
+  "valid.pwn": []
+}
