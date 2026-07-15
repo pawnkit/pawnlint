@@ -92,6 +92,7 @@
 - Confusable names cover the Pawn ASCII groups `0/O/o` and `1/I/l`.
 - Enum prefixes require four definite entries and 75 percent agreement.
 - Identifier lengths apply only through configured ordered limits.
+- Boolean naming applies only to declarations with one definite `bool` tag.
 - Callbacks and natives require explicit opt-in. Uncertain declarations and
   non-standard identifiers are skipped.
 

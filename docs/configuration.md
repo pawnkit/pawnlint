@@ -273,6 +273,18 @@ limits = [
 Length limits use the same selectors and opt-ins. One-character `for` indices
 are allowed by default; set `allow-loop-indices = false` to check them.
 
+```toml
+[rules.boolean-name]
+severity = "warning"
+policies = [
+  { kinds = ["function"], prefixes = ["Is", "Has", "Can"] },
+  { kinds = ["global", "local", "parameter"], prefixes = ["is", "has", "can", "b_"] }
+]
+```
+
+Boolean-name policies apply only to definite `bool` tags and use the same
+selectors, exclusions, and callback/native opt-ins.
+
 ## Precedence
 
 Highest priority first:

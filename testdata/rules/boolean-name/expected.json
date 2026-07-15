@@ -1,0 +1,62 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "boolean-name",
+      "severity": "warning",
+      "message": "boolean function name \"Go\" must start with \"Is\", \"Has\", or \"Can\"",
+      "startLine": 6,
+      "startCol": 6,
+      "endLine": 6,
+      "endCol": 8
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "boolean-name",
+      "severity": "warning",
+      "message": "boolean global name \"enabled\" must start with \"is\", \"has\", \"can\", or \"b_\"",
+      "startLine": 1,
+      "startCol": 10,
+      "endLine": 1,
+      "endCol": 17
+    },
+    {
+      "ruleId": "boolean-name",
+      "severity": "warning",
+      "message": "boolean function name \"Ready\" must start with \"Is\", \"Has\", or \"Can\"",
+      "startLine": 3,
+      "startCol": 6,
+      "endLine": 3,
+      "endCol": 11
+    },
+    {
+      "ruleId": "boolean-name",
+      "severity": "warning",
+      "message": "boolean parameter name \"active\" must start with \"is\", \"has\", \"can\", or \"b_\"",
+      "startLine": 8,
+      "startCol": 25,
+      "endLine": 8,
+      "endCol": 31
+    },
+    {
+      "ruleId": "boolean-name",
+      "severity": "warning",
+      "message": "boolean local name \"visible\" must start with \"is\", \"has\", \"can\", or \"b_\"",
+      "startLine": 10,
+      "startCol": 11,
+      "endLine": 10,
+      "endCol": 18
+    },
+    {
+      "ruleId": "boolean-name",
+      "severity": "warning",
+      "message": "boolean local name \"island\" must start with \"is\", \"has\", \"can\", or \"b_\"",
+      "startLine": 11,
+      "startCol": 11,
+      "endLine": 11,
+      "endCol": 17
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

@@ -1,0 +1,6 @@
+{
+  "policies": [
+    {"kinds": ["function"], "prefixes": ["Is", "Has", "Can"], "exclude": ["^main$"]},
+    {"kinds": ["global", "local", "parameter"], "prefixes": ["is", "has", "can", "b_"]}
+  ]
+}

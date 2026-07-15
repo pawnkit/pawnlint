@@ -1,0 +1,3 @@
+main()
+{
+	new bool:ready =
