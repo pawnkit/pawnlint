@@ -9,6 +9,7 @@ Rules are stable unless their page marks them as preview.
 | [`ambiguous-include`](ambiguous-include.md) | portability | warning | on | no | Reports includes shadowed by another matching file |
 | [`argument-value-range`](argument-value-range.md) | correctness | error | on | no | Reports constant arguments outside API parameter bounds |
 | [`assignment-in-condition`](assignment-in-condition.md) | suspicious | warning | on | no | An assignment used as an if/while condition is often a typo for == |
+| [`boolean-complexity`](boolean-complexity.md) | maintainability | warning | off | no | Reports boolean expressions with too many logical operators |
 | [`boolean-name`](boolean-name.md) | style | warning | off | no | Reports boolean declarations without an allowed prefix |
 | [`buffer-size`](buffer-size.md) | correctness | error | off | no | Reports native size arguments larger than a declared buffer |
 | [`callback-signature`](callback-signature.md) | correctness | error | off | no | Reports public callbacks that do not match the target API |

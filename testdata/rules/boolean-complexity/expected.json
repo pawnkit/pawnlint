@@ -1,0 +1,43 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "boolean-complexity",
+      "severity": "warning",
+      "message": "boolean expression contains 3 logical operators, exceeding the maximum of 2",
+      "startLine": 3,
+      "startCol": 9,
+      "endLine": 3,
+      "endCol": 43
+    },
+    {
+      "ruleId": "boolean-complexity",
+      "severity": "warning",
+      "message": "boolean expression contains 3 logical operators, exceeding the maximum of 2",
+      "startLine": 12,
+      "startCol": 9,
+      "endLine": 12,
+      "endCol": 48
+    },
+    {
+      "ruleId": "boolean-complexity",
+      "severity": "warning",
+      "message": "boolean expression contains 3 logical operators, exceeding the maximum of 2",
+      "startLine": 22,
+      "startCol": 11,
+      "endLine": 22,
+      "endCol": 45
+    },
+    {
+      "ruleId": "boolean-complexity",
+      "severity": "warning",
+      "message": "boolean expression contains 3 logical operators, exceeding the maximum of 2",
+      "startLine": 23,
+      "startCol": 11,
+      "endLine": 23,
+      "endCol": 46
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

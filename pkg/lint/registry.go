@@ -43,6 +43,7 @@ var curate = map[Profile]map[string]struct{}{
 		"sscanf-format-argument-count": {}, "settimerex-format-argument-count": {},
 		"confusable-identifier":    {},
 		"inconsistent-enum-prefix": {}, "cyclomatic-complexity": {},
+		"boolean-complexity": {},
 	},
 }
 
