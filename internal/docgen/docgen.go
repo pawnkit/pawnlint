@@ -129,9 +129,16 @@ func writeExamples(b *strings.Builder, id string) {
 const maxExampleLines = 30
 
 func readExample(id, name string) (string, bool) {
-	path := filepath.Join(testdataRulesDir(), id, name+".pwn")
-	content, err := os.ReadFile(path)
-	if err != nil {
+	var content []byte
+	for _, filename := range []string{"example-" + name + ".pwn", name + ".pwn"} {
+		path := filepath.Join(testdataRulesDir(), id, filename)
+		current, err := os.ReadFile(path)
+		if err == nil {
+			content = current
+			break
+		}
+	}
+	if content == nil {
 		return "", false
 	}
 	text := strings.Trim(string(content), "\n")

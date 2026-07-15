@@ -27,42 +27,31 @@ argument-tag-mismatch = "warning"
 ### Bad
 
 ```pawn
-Use(Float:value, bool:flag, raw)
+TeleportPlayer(playerid, Float:x, Float:y, Float:z)
 {
-    return raw;
+    SetPlayerPos(playerid, x, y, z);
 }
 
-Check(Float:f, bool:b, raw)
+HandleTeleport(playerid, targetid)
 {
-    Use(raw, raw, f);
-    Use(b, f, raw);
-    Measure(raw, raw);
-    Measure(f, b);
+    new Float:x, Float:y, Float:z;
+    GetPlayerPos(targetid, x, y, z);
+    TeleportPlayer(playerid, targetid, y, z);
 }
 ```
 
 ### Good
 
 ```pawn
-Use(Float:value, bool:flag, raw)
+TeleportPlayer(playerid, Float:x, Float:y, Float:z)
 {
-    return raw;
+    SetPlayerPos(playerid, x, y, z);
 }
 
-Accept({Float,_}:value)
+HandleTeleport(playerid, targetid)
 {
-    return _:value;
-}
-
-Check(Float:f, bool:b, WEAPON:weapon, raw)
-{
-    new Float:structured[1][1];
-    Use(f, b, raw);
-    Accept(f);
-    Accept(raw);
-    Measure(f, weapon);
-    Use(0, 0, 0);
-    Measure(0, 0);
-    Use(structured[0][0], b, raw);
+    new Float:x, Float:y, Float:z;
+    GetPlayerPos(targetid, x, y, z);
+    TeleportPlayer(playerid, x, y, z);
 }
 ```
