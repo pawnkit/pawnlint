@@ -13,9 +13,6 @@ The Pawn compiler is still the source of truth for compilation.
 - Text, JSON, JSONL, SARIF, and GitHub Actions output
 - Stdin support for tool and CI integration
 
-Cross-file analysis and fix coverage are still limited — see
-[Limitations](docs/limitations.md).
-
 ## Install
 
 ```sh
@@ -66,5 +63,3 @@ Errors fail by default. Warnings fail too when `warnings-as-errors = true`.
 - [Suppressions](docs/suppression.md)
 - [External rules](docs/external-rules.md)
 - [Analyzer API](docs/analyzer-api.md)
-- [Limitations](docs/limitations.md)
-- [Real-world validation](docs/real-world-validation.md)
