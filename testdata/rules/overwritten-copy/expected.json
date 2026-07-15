@@ -1,0 +1,35 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "overwritten-copy",
+      "severity": "warning",
+      "message": "copy into \"full\" is completely overwritten before the buffer is accessed",
+      "startLine": 5,
+      "startCol": 5,
+      "endLine": 5,
+      "endCol": 35,
+      "suggestions": [
+        {
+          "description": "remove the overwritten copy"
+        }
+      ]
+    },
+    {
+      "ruleId": "overwritten-copy",
+      "severity": "warning",
+      "message": "copy into \"ranged\" is completely overwritten before the buffer is accessed",
+      "startLine": 8,
+      "startCol": 5,
+      "endLine": 8,
+      "endCol": 35,
+      "suggestions": [
+        {
+          "description": "remove the overwritten copy"
+        }
+      ]
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
