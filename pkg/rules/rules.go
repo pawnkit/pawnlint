@@ -36,6 +36,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(maintainability.NPathComplexity{})
 	reg.MustRegister(maintainability.BooleanComplexity{})
 	reg.MustRegister(maintainability.MaximumNesting{})
+	reg.MustRegister(maintainability.FunctionLength{})
 	reg.MustRegister(correctness.DivisionByZero{})
 	reg.MustRegister(correctness.InvalidShiftCount{})
 	reg.MustRegister(correctness.InvalidArraySize{})

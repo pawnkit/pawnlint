@@ -1,0 +1,25 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "function-length",
+      "severity": "warning",
+      "message": "function \"LongFunction\" spans 11 lines, exceeding the maximum of 8",
+      "startLine": 1,
+      "startCol": 1,
+      "endLine": 1,
+      "endCol": 13
+    },
+    {
+      "ruleId": "function-length",
+      "severity": "warning",
+      "message": "function \"LongSignature\" spans 9 lines, exceeding the maximum of 8",
+      "startLine": 13,
+      "startCol": 1,
+      "endLine": 13,
+      "endCol": 14
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

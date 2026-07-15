@@ -36,6 +36,7 @@ Rules are stable unless their page marks them as preview.
 | [`format-argument-count`](format-argument-count.md) | correctness | error | off | no | Reports literal format strings whose placeholders and arguments differ |
 | [`format-argument-tag`](format-argument-tag.md) | correctness | error | on | no | Reports definite tag mismatches in formatted native calls |
 | [`forward-signature-mismatch`](forward-signature-mismatch.md) | correctness | error | on | no | Reports definitions that do not match their forward declaration |
+| [`function-length`](function-length.md) | maintainability | warning | off | no | Reports functions spanning too many source lines |
 | [`identical-branches`](identical-branches.md) | suspicious | warning | off | no | Reports if and ternary branches with identical code |
 | [`identifier-length`](identifier-length.md) | style | warning | off | no | Reports declarations outside configured name-length limits |
 | [`ignored-return-value`](ignored-return-value.md) | correctness | warning | off | no | Reports discarded results from APIs marked must-use |
