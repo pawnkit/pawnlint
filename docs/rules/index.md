@@ -47,6 +47,7 @@ Rules are stable unless their page marks them as preview.
 | [`inconsistent-enum-prefix`](inconsistent-enum-prefix.md) | style | warning | off | no | Reports enum entries that omit a dominant member prefix |
 | [`invalid-sentinel-comparison`](invalid-sentinel-comparison.md) | correctness | error | off | no | Reports a native's result compared against the wrong INVALID_* constant |
 | [`invalid-shift-count`](invalid-shift-count.md) | correctness | error | on | no | Reports constant shift counts outside the 32-bit cell width |
+| [`invariant-loop-condition`](invariant-loop-condition.md) | correctness | warning | on | no | Reports loop conditions unchanged by their loop |
 | [`large-local-array`](large-local-array.md) | performance | warning | off | no | Reports large automatic arrays allocated on the Pawn stack |
 | [`legacy-include`](legacy-include.md) | openmp | warning | off | no | Reports official SA-MP wrapper includes when targeting open.mp |
 | [`magic-value`](magic-value.md) | maintainability | warning | off | no | Reports unexplained numeric and string literals |

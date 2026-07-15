@@ -1,0 +1,43 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "invariant-loop-condition",
+      "severity": "warning",
+      "message": "loop condition depends on \"remaining\", which the loop never changes",
+      "startLine": 4,
+      "startCol": 11,
+      "endLine": 4,
+      "endCol": 26
+    },
+    {
+      "ruleId": "invariant-loop-condition",
+      "severity": "warning",
+      "message": "loop condition depends on \"limit\", which the loop never changes",
+      "startLine": 10,
+      "startCol": 25,
+      "endLine": 10,
+      "endCol": 35
+    },
+    {
+      "ruleId": "invariant-loop-condition",
+      "severity": "warning",
+      "message": "loop condition depends on \"ready\", which the loop never changes",
+      "startLine": 20,
+      "startCol": 11,
+      "endLine": 20,
+      "endCol": 19
+    },
+    {
+      "ruleId": "invariant-loop-condition",
+      "severity": "warning",
+      "message": "loop condition depends only on \"lower\", \"upper\", which the loop never changes",
+      "startLine": 24,
+      "startCol": 11,
+      "endLine": 24,
+      "endCol": 26
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
