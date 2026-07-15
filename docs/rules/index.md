@@ -71,6 +71,7 @@ Rules are stable unless their page marks them as preview.
 | [`redundant-boolean-comparison`](redundant-boolean-comparison.md) | suspicious | warning | off | no | Reports boolean expressions compared with true or false |
 | [`redundant-forward`](redundant-forward.md) | maintainability | warning | off | no | Reports forward declarations that are not needed before a definition |
 | [`redundant-initialization`](redundant-initialization.md) | suspicious | warning | off | no | Reports local initial values overwritten before any read |
+| [`redundant-parentheses`](redundant-parentheses.md) | style | warning | off | yes | Reports expression parentheses that do not affect parsing |
 | [`redundant-tag`](redundant-tag.md) | maintainability | warning | off | yes | Reports tag overrides that repeat an expression's known tag |
 | [`repeated-strlen-in-loop`](repeated-strlen-in-loop.md) | performance | warning | off | no | Reports loop conditions that repeatedly scan an unchanged local string |
 | [`required-call-order`](required-call-order.md) | correctness | error | off | no | Reports API calls missing a required earlier call |

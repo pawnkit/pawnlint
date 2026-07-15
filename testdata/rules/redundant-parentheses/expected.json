@@ -1,0 +1,210 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "redundant-parentheses",
+      "severity": "warning",
+      "message": "parentheses do not affect this expression",
+      "startLine": 3,
+      "startCol": 17,
+      "endLine": 3,
+      "endCol": 31,
+      "fix": {
+        "description": "remove the redundant parentheses",
+        "edits": [
+          {
+            "startOffset": 25,
+            "endOffset": 26,
+            "newText": ""
+          },
+          {
+            "startOffset": 38,
+            "endOffset": 39,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "redundant-parentheses",
+      "severity": "warning",
+      "message": "parentheses do not affect this expression",
+      "startLine": 4,
+      "startCol": 9,
+      "endLine": 4,
+      "endCol": 22,
+      "fix": {
+        "description": "remove the redundant parentheses",
+        "edits": [
+          {
+            "startOffset": 49,
+            "endOffset": 50,
+            "newText": ""
+          },
+          {
+            "startOffset": 61,
+            "endOffset": 62,
+            "newText": ""
+          }
+        ]
+      }
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "redundant-parentheses",
+      "severity": "warning",
+      "message": "parentheses do not affect this expression",
+      "startLine": 9,
+      "startCol": 18,
+      "endLine": 9,
+      "endCol": 21,
+      "fix": {
+        "description": "remove the redundant parentheses",
+        "edits": [
+          {
+            "startOffset": 112,
+            "endOffset": 113,
+            "newText": ""
+          },
+          {
+            "startOffset": 114,
+            "endOffset": 115,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "redundant-parentheses",
+      "severity": "warning",
+      "message": "parentheses do not affect this expression",
+      "startLine": 10,
+      "startCol": 22,
+      "endLine": 10,
+      "endCol": 29,
+      "fix": {
+        "description": "remove the redundant parentheses",
+        "edits": [
+          {
+            "startOffset": 138,
+            "endOffset": 139,
+            "newText": ""
+          },
+          {
+            "startOffset": 144,
+            "endOffset": 145,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "redundant-parentheses",
+      "severity": "warning",
+      "message": "parentheses do not affect this expression",
+      "startLine": 11,
+      "startCol": 23,
+      "endLine": 11,
+      "endCol": 30,
+      "fix": {
+        "description": "remove the redundant parentheses",
+        "edits": [
+          {
+            "startOffset": 173,
+            "endOffset": 174,
+            "newText": ""
+          },
+          {
+            "startOffset": 179,
+            "endOffset": 180,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "redundant-parentheses",
+      "severity": "warning",
+      "message": "parentheses do not affect this expression",
+      "startLine": 12,
+      "startCol": 15,
+      "endLine": 12,
+      "endCol": 18,
+      "fix": {
+        "description": "remove the redundant parentheses",
+        "edits": [
+          {
+            "startOffset": 196,
+            "endOffset": 197,
+            "newText": ""
+          },
+          {
+            "startOffset": 198,
+            "endOffset": 199,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "redundant-parentheses",
+      "severity": "warning",
+      "message": "parentheses do not affect this expression",
+      "startLine": 13,
+      "startCol": 9,
+      "endLine": 13,
+      "endCol": 12,
+      "fix": {
+        "description": "remove the redundant parentheses",
+        "edits": [
+          {
+            "startOffset": 213,
+            "endOffset": 214,
+            "newText": ""
+          },
+          {
+            "startOffset": 215,
+            "endOffset": 216,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "redundant-parentheses",
+      "severity": "warning",
+      "message": "parentheses do not affect this expression",
+      "startLine": 15,
+      "startCol": 16,
+      "endLine": 15,
+      "endCol": 26,
+      "fix": {
+        "description": "remove the redundant parentheses",
+        "edits": [
+          {
+            "startOffset": 239,
+            "endOffset": 240,
+            "newText": ""
+          },
+          {
+            "startOffset": 240,
+            "endOffset": 241,
+            "newText": ""
+          },
+          {
+            "startOffset": 247,
+            "endOffset": 248,
+            "newText": ""
+          },
+          {
+            "startOffset": 248,
+            "endOffset": 249,
+            "newText": ""
+          }
+        ]
+      }
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
