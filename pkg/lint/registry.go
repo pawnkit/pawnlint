@@ -44,6 +44,7 @@ var curate = map[Profile]map[string]struct{}{
 		"confusable-identifier":    {},
 		"inconsistent-enum-prefix": {}, "cyclomatic-complexity": {},
 		"boolean-complexity": {},
+		"maximum-nesting":    {},
 	},
 }
 

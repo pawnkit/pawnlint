@@ -1,0 +1,25 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "maximum-nesting",
+      "severity": "warning",
+      "message": "function \"DeepLoop\" reaches nesting depth 3, exceeding the maximum of 2",
+      "startLine": 7,
+      "startCol": 13,
+      "endLine": 7,
+      "endCol": 16
+    },
+    {
+      "ruleId": "maximum-nesting",
+      "severity": "warning",
+      "message": "function \"DeepSwitch\" reaches nesting depth 3, exceeding the maximum of 2",
+      "startLine": 24,
+      "startCol": 17,
+      "endLine": 24,
+      "endCol": 19
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
