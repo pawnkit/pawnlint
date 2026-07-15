@@ -1,0 +1,24 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "required-call-order",
+      "severity": "error",
+      "message": "\"Authenticate\" requires an earlier call to \"Connect\" in this function",
+      "startLine": 5,
+      "startCol": 5,
+      "endLine": 5,
+      "endCol": 19
+    },
+    {
+      "ruleId": "required-call-order",
+      "severity": "error",
+      "message": "\"Authenticate\" requires an earlier call to \"Connect\" in this function",
+      "startLine": 16,
+      "startCol": 5,
+      "endLine": 16,
+      "endCol": 19
+    }
+  ],
+  "valid.pwn": []
+}

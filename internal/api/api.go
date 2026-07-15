@@ -29,6 +29,7 @@ type Native struct {
 	OpenMPOnly      bool        `json:"openMPOnly,omitempty"`
 	Release         string      `json:"release,omitempty"`
 	MustUse         bool        `json:"mustUse,omitempty"`
+	RequiresBefore  []string    `json:"requiresBefore,omitempty"`
 }
 
 type Constant struct {

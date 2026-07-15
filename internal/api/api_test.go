@@ -68,7 +68,8 @@ func TestLoadAndMergeUserMetadata(t *testing.T) {
 	source := `{
   "callbacks": {"OnPluginEvent": {"returnTag": "bool", "parameters": [{"name": "value"}]}},
   "natives": {
-    "Plugin_Open": {"returnTag": "PluginHandle", "release": "Plugin_Close", "mustUse": true},
+    "Plugin_Init": {},
+    "Plugin_Open": {"returnTag": "PluginHandle", "release": "Plugin_Close", "mustUse": true, "requiresBefore": ["Plugin_Init"]},
     "Plugin_Close": {"parameters": [{"name": "handle", "tag": "PluginHandle", "minimum": 1, "maximum": 8}]}
   },
   "constants": {"PLUGIN_LIMIT": {}}
@@ -85,7 +86,7 @@ func TestLoadAndMergeUserMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 	closeParameter := metadata.Natives["Plugin_Close"].Parameters[0]
-	if metadata.Natives["Plugin_Open"].Release != "Plugin_Close" || !metadata.Natives["Plugin_Open"].MustUse || closeParameter.Minimum == nil || *closeParameter.Minimum != 1 || closeParameter.Maximum == nil || *closeParameter.Maximum != 8 || metadata.Callbacks["OnPluginEvent"].Name != "OnPluginEvent" || metadata.Constants["PLUGIN_LIMIT"].Name != "PLUGIN_LIMIT" {
+	if metadata.Natives["Plugin_Open"].Release != "Plugin_Close" || !metadata.Natives["Plugin_Open"].MustUse || len(metadata.Natives["Plugin_Open"].RequiresBefore) != 1 || closeParameter.Minimum == nil || *closeParameter.Minimum != 1 || closeParameter.Maximum == nil || *closeParameter.Maximum != 8 || metadata.Callbacks["OnPluginEvent"].Name != "OnPluginEvent" || metadata.Constants["PLUGIN_LIMIT"].Name != "PLUGIN_LIMIT" {
 		t.Fatalf("metadata = %#v", metadata)
 	}
 }
@@ -105,6 +106,33 @@ func TestLoadUserMetadataRejectsInvalidValueBounds(t *testing.T) {
 		}
 		if _, err := Load(path); err == nil {
 			t.Fatalf("invalid value bounds accepted: %s", source)
+		}
+	}
+}
+
+func TestLoadUserMetadataRejectsInvalidCallPrerequisites(t *testing.T) {
+	for _, source := range []string{
+		`{"natives":{"Plugin":{"requiresBefore":[""]}}}`,
+		`{"natives":{"Plugin":{"requiresBefore":["Plugin"]}}}`,
+		`{"natives":{"Plugin":{"requiresBefore":["Init","Init"]}}}`,
+	} {
+		path := filepath.Join(t.TempDir(), "api.json")
+		if err := os.WriteFile(path, []byte(source), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Load(path); err == nil {
+			t.Fatalf("invalid call prerequisite accepted: %s", source)
+		}
+	}
+}
+
+func TestMergeRejectsInvalidCallPrerequisiteGraph(t *testing.T) {
+	for _, metadata := range []*Metadata{
+		{Natives: map[string]Native{"Use": {RequiresBefore: []string{"Missing"}}}},
+		{Natives: map[string]Native{"First": {RequiresBefore: []string{"Second"}}, "Second": {RequiresBefore: []string{"First"}}}},
+	} {
+		if _, err := Merge("openmp", metadata); err == nil {
+			t.Fatalf("invalid call prerequisite graph accepted: %#v", metadata)
 		}
 	}
 }

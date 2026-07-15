@@ -1,0 +1,7 @@
+{
+  "natives": {
+    "Connect": {},
+    "Authenticate": {"requiresBefore": ["Connect"]},
+    "Query": {"requiresBefore": ["Authenticate"]}
+  }
+}

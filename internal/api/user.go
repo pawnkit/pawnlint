@@ -69,12 +69,8 @@ func Merge(target string, custom ...*Metadata) (*Metadata, error) {
 			result.Constants[name] = constant
 		}
 	}
-	for name, native := range result.Natives {
-		if native.Release != "" {
-			if _, ok := result.Natives[native.Release]; !ok {
-				return nil, fmt.Errorf("API native %q names unknown releaser %q", name, native.Release)
-			}
-		}
+	if err := validateNativeRelations(result.Natives); err != nil {
+		return nil, err
 	}
 	return result, nil
 }
@@ -118,6 +114,20 @@ func (m *Metadata) validate(path string) error {
 				problems = append(problems, fmt.Sprintf("native %s has invalid buffer relation %d:%d", name, buffer.Parameter, buffer.SizeParameter))
 			}
 		}
+		seenRequirements := make(map[string]struct{}, len(native.RequiresBefore))
+		for _, requirement := range native.RequiresBefore {
+			if strings.TrimSpace(requirement) == "" {
+				problems = append(problems, fmt.Sprintf("native %s has an empty call prerequisite", name))
+				continue
+			}
+			if requirement == name {
+				problems = append(problems, fmt.Sprintf("native %s requires itself", name))
+			}
+			if _, exists := seenRequirements[requirement]; exists {
+				problems = append(problems, fmt.Sprintf("native %s repeats call prerequisite %s", name, requirement))
+			}
+			seenRequirements[requirement] = struct{}{}
+		}
 	}
 	for name, constant := range m.Constants {
 		if strings.TrimSpace(name) == "" {
@@ -132,6 +142,79 @@ func (m *Metadata) validate(path string) error {
 	}
 	sort.Strings(problems)
 	return fmt.Errorf("API metadata %s: %s", path, strings.Join(problems, "; "))
+}
+
+func validateNativeRelations(natives map[string]Native) error {
+	names := make([]string, 0, len(natives))
+	for name := range natives {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	var problems []string
+	for _, name := range names {
+		native := natives[name]
+		if native.Release != "" {
+			if _, ok := natives[native.Release]; !ok {
+				problems = append(problems, fmt.Sprintf("native %q names unknown releaser %q", name, native.Release))
+			}
+		}
+		for _, requirement := range native.RequiresBefore {
+			if _, ok := natives[requirement]; !ok {
+				problems = append(problems, fmt.Sprintf("native %q names unknown call prerequisite %q", name, requirement))
+			}
+			if requirement == name {
+				problems = append(problems, fmt.Sprintf("native %q requires itself", name))
+			}
+		}
+	}
+	if cycle := nativeRequirementCycle(natives, names); len(cycle) != 0 {
+		problems = append(problems, "native call prerequisites contain cycle "+strings.Join(cycle, " -> "))
+	}
+	if len(problems) == 0 {
+		return nil
+	}
+	sort.Strings(problems)
+	return fmt.Errorf("API %s", strings.Join(problems, "; "))
+}
+
+func nativeRequirementCycle(natives map[string]Native, names []string) []string {
+	state := make(map[string]uint8, len(natives))
+	var stack []string
+	var visit func(string) []string
+	visit = func(name string) []string {
+		state[name] = 1
+		stack = append(stack, name)
+		requirements := append([]string(nil), natives[name].RequiresBefore...)
+		sort.Strings(requirements)
+		for _, requirement := range requirements {
+			if _, exists := natives[requirement]; !exists {
+				continue
+			}
+			if state[requirement] == 1 {
+				for index, item := range stack {
+					if item == requirement {
+						return append(append([]string(nil), stack[index:]...), requirement)
+					}
+				}
+			}
+			if state[requirement] == 0 {
+				if cycle := visit(requirement); len(cycle) != 0 {
+					return cycle
+				}
+			}
+		}
+		stack = stack[:len(stack)-1]
+		state[name] = 2
+		return nil
+	}
+	for _, name := range names {
+		if state[name] == 0 {
+			if cycle := visit(name); len(cycle) != 0 {
+				return cycle
+			}
+		}
+	}
+	return nil
 }
 
 func validateParameters(owner string, parameters []Parameter, problems *[]string) {

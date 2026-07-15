@@ -172,9 +172,11 @@ Use JSON to describe plugin or project APIs:
     }
   },
   "natives": {
+    "Plugin_Init": {},
     "Plugin_Open": {
       "returnTag": "PluginHandle",
-      "release": "Plugin_Close"
+      "release": "Plugin_Close",
+      "requiresBefore": ["Plugin_Init"]
     },
     "Plugin_Close": {
       "parameters": [{"name": "handle", "tag": "PluginHandle"}]
@@ -189,7 +191,7 @@ Use JSON to describe plugin or project APIs:
 }
 ```
 
-Native entries also support `deprecated`, `mustUse`, `formatParameter`, and `buffers`,
+Native entries also support `deprecated`, `mustUse`, `requiresBefore`, `formatParameter`, and `buffers`,
 plus parameter fields `tag`, `arrayRank`, `const`, `reference`, `output`,
 `variadic`, `default`, `minimum`, and `maximum`. Invalid fields and references are configuration
 errors.
