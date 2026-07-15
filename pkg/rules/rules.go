@@ -41,6 +41,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(maintainability.TooManyGlobals{})
 	reg.MustRegister(maintainability.MultipleDeclarations{})
 	reg.MustRegister(maintainability.DeclarationOrder{})
+	reg.MustRegister(maintainability.PreferConst{})
 	reg.MustRegister(correctness.DivisionByZero{})
 	reg.MustRegister(correctness.InvalidShiftCount{})
 	reg.MustRegister(correctness.InvalidArraySize{})

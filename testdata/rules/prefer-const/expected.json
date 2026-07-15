@@ -1,0 +1,71 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "prefer-const",
+      "severity": "warning",
+      "message": "local variable \"throughConstReference\" is never modified and can be declared const",
+      "startLine": 8,
+      "startCol": 9,
+      "endLine": 8,
+      "endCol": 30
+    },
+    {
+      "ruleId": "prefer-const",
+      "severity": "warning",
+      "message": "local variable \"first\" is never modified and can be declared const",
+      "startLine": 11,
+      "startCol": 9,
+      "endLine": 11,
+      "endCol": 14
+    },
+    {
+      "ruleId": "prefer-const",
+      "severity": "warning",
+      "message": "local variable \"second\" is never modified and can be declared const",
+      "startLine": 11,
+      "startCol": 20,
+      "endLine": 11,
+      "endCol": 26
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "prefer-const",
+      "severity": "warning",
+      "message": "local variable \"literal\" is never modified and can be declared const",
+      "startLine": 8,
+      "startCol": 9,
+      "endLine": 8,
+      "endCol": 16
+    },
+    {
+      "ruleId": "prefer-const",
+      "severity": "warning",
+      "message": "local variable \"expression\" is never modified and can be declared const",
+      "startLine": 9,
+      "startCol": 9,
+      "endLine": 9,
+      "endCol": 19
+    },
+    {
+      "ruleId": "prefer-const",
+      "severity": "warning",
+      "message": "local variable \"runtime\" is never modified and can be declared const",
+      "startLine": 10,
+      "startCol": 9,
+      "endLine": 10,
+      "endCol": 16
+    },
+    {
+      "ruleId": "prefer-const",
+      "severity": "warning",
+      "message": "local variable \"byValue\" is never modified and can be declared const",
+      "startLine": 11,
+      "startCol": 9,
+      "endLine": 11,
+      "endCol": 16
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
