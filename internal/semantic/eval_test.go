@@ -69,6 +69,18 @@ func TestEvalImplicitEnumValues(t *testing.T) {
 	}
 }
 
+func TestEvalEnumValuesAcrossConditional(t *testing.T) {
+	src := []byte("#define FEATURE\nenum E {\nA,\n#if defined FEATURE\nB,\n#endif\nC\n}\nmain() { new value = C; }\n")
+	file := parser.Parse(src)
+	tree := walk.New("x.pwn", file)
+	model := semantic.Build(file, tree)
+	declarators := tree.OfKind(parser.KindVariableDeclarator)
+	value, ok := model.Eval(declarators[0].Field("initializer"))
+	if !ok || value != 2 {
+		t.Fatalf("enum value across active conditional = %d, %v; want 2, true", value, ok)
+	}
+}
+
 func TestEvalWithValues(t *testing.T) {
 	src := []byte("main() { new input; new result = input + 2; }\n")
 	file := parser.Parse(src)

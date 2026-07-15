@@ -52,6 +52,7 @@ type Metadata struct {
 	Fixable         bool
 	Tags            []string
 	Options         []Option
+	ConfigExample   string
 }
 
 type File struct {

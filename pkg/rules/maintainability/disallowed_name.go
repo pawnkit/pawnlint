@@ -28,16 +28,22 @@ func (DisallowedName) Metadata() lint.Metadata {
 			Type: lint.OptionObjectList, Default: []map[string]any{}, Validate: validateDisallowedPolicies,
 			Fields: disallowedNameFields(),
 		}},
+		ConfigExample: `[rules.disallowed-name]
+severity = "warning"
+policies = [
+  { kinds = ["local", "parameter"], names = ["foo", "bar"] },
+  { patterns = ["^temp_"], exclude = ["^temporaryAllowed$"] }
+]`,
 	}
 }
 
 func disallowedNameFields() []lint.Option {
 	fields := namingSelectorFields()
 	return append(fields,
-		lint.Option{Name: "names", Type: lint.OptionStringList, Validate: validateExactNames},
-		lint.Option{Name: "patterns", Type: lint.OptionStringList, Validate: validateDisallowedPatterns},
-		lint.Option{Name: "exclude", Type: lint.OptionStringList, Validate: validateNamingPatterns},
-		lint.Option{Name: "reason", Type: lint.OptionString},
+		lint.Option{Name: "names", Summary: "Exact names this policy denies", Type: lint.OptionStringList, Validate: validateExactNames},
+		lint.Option{Name: "patterns", Summary: "Regular expressions this policy denies", Type: lint.OptionStringList, Validate: validateDisallowedPatterns},
+		lint.Option{Name: "exclude", Summary: "Regular expressions that exempt a matching name", Type: lint.OptionStringList, Validate: validateNamingPatterns},
+		lint.Option{Name: "reason", Summary: "Message appended to the diagnostic explaining the policy", Type: lint.OptionString},
 	)
 }
 

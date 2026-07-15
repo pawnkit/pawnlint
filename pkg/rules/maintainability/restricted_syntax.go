@@ -37,6 +37,14 @@ func (RestrictedSyntax) Metadata() lint.Metadata {
 			{Name: "recursion", Summary: "Restrict direct and mutual recursion", Type: lint.OptionBoolean, Default: false},
 			{Name: "goto", Summary: "Restrict goto statements", Type: lint.OptionBoolean, Default: false},
 		},
+		ConfigExample: `[rules.restricted-syntax]
+severity = "warning"
+functions = ["LegacyFunction"]
+natives = ["printf"]
+includes = ["legacy/**"]
+globals = true
+recursion = true
+goto = true`,
 	}
 }
 

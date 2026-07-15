@@ -269,6 +269,10 @@ func (e *expander) expandInvocation(parsed *parser.File, index int, input piece,
 		e.complete = false
 		return sourcePieces(parsed, index, consumed, fileID), consumed
 	}
+	if e.count > maximumExpandedTokens {
+		e.complete = false
+		return sourcePieces(parsed, index, consumed, fileID), consumed
+	}
 	nextDisabled := make(map[string]bool, len(disabled)+1)
 	for name := range disabled {
 		nextDisabled[name] = true
@@ -276,11 +280,6 @@ func (e *expander) expandInvocation(parsed *parser.File, index int, input piece,
 	nextDisabled[definition.name] = true
 	result := e.expandPieces(replaced, depth+1, nextDisabled)
 	e.changed = true
-	e.count += len(result)
-	if e.count > maximumExpandedTokens {
-		e.complete = false
-		return sourcePieces(parsed, index, consumed, fileID), consumed
-	}
 	return result, consumed
 }
 
@@ -364,16 +363,22 @@ func substitute(definition definition, arguments [][]piece, invocation *token.Or
 func (e *expander) expandPieces(input []piece, depth int, disabled map[string]bool) []piece {
 	var result []piece
 	for index := 0; index < len(input); {
+		if e.count > maximumExpandedTokens {
+			e.complete = false
+			return append(result, input[index:]...)
+		}
 		current := input[index]
 		definition, known := e.definitions[current.text]
 		if current.kind != token.Identifier || !known {
 			result = append(result, current)
+			e.count++
 			index++
 			continue
 		}
 		if disabled[definition.name] {
 			e.complete = false
 			result = append(result, current)
+			e.count++
 			index++
 			continue
 		}
@@ -386,6 +391,7 @@ func (e *expander) expandPieces(input []piece, depth int, disabled map[string]bo
 		if definition.function {
 			if index+1 >= len(input) || input[index+1].kind != token.LParen {
 				result = append(result, current)
+				e.count++
 				index++
 				continue
 			}
@@ -394,6 +400,7 @@ func (e *expander) expandPieces(input []piece, depth int, disabled map[string]bo
 			if !ok || len(arguments) != len(definition.parameters) {
 				e.complete = false
 				result = append(result, input[index:index+consumed]...)
+				e.count += consumed
 				index += consumed
 				continue
 			}
@@ -403,6 +410,7 @@ func (e *expander) expandPieces(input []piece, depth int, disabled map[string]bo
 		if !ok {
 			e.complete = false
 			result = append(result, input[index:index+consumed]...)
+			e.count += consumed
 			index += consumed
 			continue
 		}

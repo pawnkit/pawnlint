@@ -100,6 +100,7 @@ type Resolved struct {
 	AllKnownRuleIDs map[string]struct{}
 	Overrides       []ResolvedOverride
 	RuleMigrations  []RuleMigration
+	CLIForced       map[string]diagnostic.Severity
 }
 
 type RuleMigration struct {
@@ -139,6 +140,13 @@ func (r *Resolved) EnabledForPath(path string) map[string]diagnostic.Severity {
 		}
 		for id := range ov.Disabled {
 			delete(merged, id)
+		}
+	}
+	for id, sev := range r.CLIForced {
+		if sev == diagnostic.SeverityOff {
+			delete(merged, id)
+		} else {
+			merged[id] = sev
 		}
 	}
 	return merged

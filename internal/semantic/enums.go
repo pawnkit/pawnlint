@@ -13,10 +13,7 @@ func (m *Model) evaluateEnums() {
 		}
 		current := int64(0)
 		known := true
-		for _, entry := range body.Children {
-			if entry.Kind != parser.KindEnumEntry {
-				continue
-			}
+		for _, entry := range enumEntries(body) {
 			symbol := m.declSymbols[entry]
 			if symbol == nil || symbol.Ambiguous {
 				known = false
@@ -39,6 +36,25 @@ func (m *Model) evaluateEnums() {
 			m.constantValues[root] = current
 		}
 	}
+}
+
+func enumEntries(body *parser.Node) []*parser.Node {
+	var entries []*parser.Node
+	var collect func(*parser.Node)
+	collect = func(node *parser.Node) {
+		switch node.Kind {
+		case parser.KindConditionalRegion, parser.KindConditionalBranch:
+			for _, child := range node.Children {
+				collect(child)
+			}
+		case parser.KindEnumEntry:
+			entries = append(entries, node)
+		}
+	}
+	for _, child := range body.Children {
+		collect(child)
+	}
+	return entries
 }
 
 func (m *Model) enumEntryWidth(entry *parser.Node) (int64, bool) {

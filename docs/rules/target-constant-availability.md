@@ -14,3 +14,33 @@ Reports open.mp-only constants when targeting SA-MP
 ## Details
 
 The selected target determines which official constants are available. The rule reports unresolved value references declared only by open.mp modules and skips names declared by the project.
+
+## Configuration
+
+```toml
+[rules]
+target-constant-availability = "error"
+```
+
+## Examples
+
+### Bad
+
+```pawn
+main()
+{
+	new mode = CAM_MODE_FIXED;
+	new type = CARMODTYPE_NONE;
+	return mode + type;
+}
+```
+
+### Good
+
+```pawn
+main()
+{
+	new mode = CAMERA_CUT;
+	return mode;
+}
+```

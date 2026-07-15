@@ -11,6 +11,7 @@ import (
 	"github.com/pawnkit/pawnlint/internal/config"
 	"github.com/pawnkit/pawnlint/internal/external"
 	"github.com/pawnkit/pawnlint/internal/fix"
+	discovery "github.com/pawnkit/pawnlint/internal/project"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 )
 
@@ -31,11 +32,12 @@ func runStdin(opts *cli, stdin io.Reader, stdout, stderr io.Writer, reg *lint.Re
 	if timings != nil {
 		engine.ObserveTiming = timings.observeLint
 	}
-	diags := engine.LintFile(name, src, lint.ControlFlowAnalysis, r.Enabled, r.AllKnownRuleIDs, r.RuleConfig)
 	projectDir, _ := os.Getwd()
 	if r.SourcePath != "" {
 		projectDir = filepath.Dir(r.SourcePath)
 	}
+	rel := discovery.RelPath(projectDir, name)
+	diags := engine.LintFile(name, src, lint.ControlFlowAnalysis, r.EnabledForPath(rel), r.AllKnownRuleIDs, r.RuleConfigForPath(rel))
 	externalDiagnostics, err := external.Run(context.Background(), r.Source.ExternalRules, external.SourceInput(projectDir, string(r.Target), r.Source.Defines, name, src))
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "pawnlint: %v\n", err)

@@ -281,107 +281,15 @@ matching `--target` simply means those specific rules stay quiet.
 
 ## Rule settings
 
-Set a rule to `error`, `warning`, `info`, `hint`, or `off`.
-Rule tables accept only the options documented on that rule's page. Option
-types, choices, and ranges are validated before linting.
+Set a rule to `error`, `warning`, `info`, `hint`, or `off` under `[rules]`.
+Each rule's own page (see the [rule index](rules/index.md)) documents its
+options, their types and defaults, a full `[rules.<id>]` example, and a
+good/bad code sample — that page is the canonical reference, not this one.
+Rule tables accept only the options documented there, and option types,
+choices, and ranges are validated before linting.
 
 Configuration errors include unknown fields, rule IDs, profiles, targets, and
 severity names.
-
-### Naming conventions
-
-```toml
-[rules.naming-convention]
-severity = "warning"
-conventions = [
-  { kinds = ["function"], case = "PascalCase", exclude = ["^main$"] },
-  { kinds = ["global"], storage = ["const"], case = "UPPER_SNAKE_CASE" },
-  { kinds = ["local", "parameter"], case = "camelCase" }
-]
-```
-
-Conventions are checked in order. Selectors support `kinds`, `scopes`,
-`storage`, and `tags`. Policies support `case`, `prefix`, `suffix`, `pattern`,
-and `exclude`. Callbacks and natives require `include-callbacks` or
-`include-natives`.
-
-```toml
-[rules.disallowed-name]
-severity = "warning"
-policies = [
-  { kinds = ["local", "parameter"], names = ["foo", "bar"] },
-  { patterns = ["^temp_"], exclude = ["^temporaryAllowed$"] }
-]
-```
-
-Disallowed-name policies use the same selectors and opt-ins. Each policy needs
-`names` or `patterns` and may provide a `reason`.
-
-```toml
-[rules.identifier-length]
-severity = "warning"
-limits = [
-  { kinds = ["function", "global"], minimum = 3, maximum = 40 },
-  { kinds = ["local", "parameter"], minimum = 2, maximum = 30, exclude = ["^[xyz]$"] }
-]
-```
-
-Length limits use the same selectors and opt-ins. One-character `for` indices
-are allowed by default; set `allow-loop-indices = false` to check them.
-
-```toml
-[rules.boolean-name]
-severity = "warning"
-policies = [
-  { kinds = ["function"], prefixes = ["Is", "Has", "Can"] },
-  { kinds = ["global", "local", "parameter"], prefixes = ["is", "has", "can", "b_"] }
-]
-```
-
-Boolean-name policies apply only to definite `bool` tags and use the same
-selectors, exclusions, and callback/native opt-ins.
-
-```toml
-[rules.restricted-syntax]
-severity = "warning"
-functions = ["LegacyFunction"]
-natives = ["printf"]
-includes = ["legacy/**"]
-globals = true
-recursion = true
-goto = true
-```
-
-Restricted calls require definite targets. Include restrictions match requested
-paths, and inactive or uncertain syntax is skipped.
-
-```toml
-[rules.todo-policy]
-severity = "warning"
-tags = ["TODO", "FIXME"]
-allowed-owners = ["alice", "team-core"]
-require-owner = true
-require-date = true
-require-issue = true
-issue-pattern = "[A-Z]+-[0-9]+"
-maximum-age-days = 90
-```
-
-Task metadata uses `TODO(owner, YYYY-MM-DD, ISSUE-123): description` at the
-start of a comment line.
-
-```toml
-[rules.public-documentation]
-severity = "warning"
-storage = ["public", "stock"]
-include = ["^API_"]
-minimum-description-length = 10
-require-parameters = true
-require-return = true
-```
-
-Documentation uses an adjacent `/** */` block or consecutive `///` lines with
-`@param name description` and `@return description` entries.
 
 ## External rules
 

@@ -29,6 +29,12 @@ func (BooleanName) Metadata() lint.Metadata {
 			Type: lint.OptionObjectList, Default: []map[string]any{}, Validate: validateBooleanNamePolicies,
 			Fields: booleanNameFields(),
 		}},
+		ConfigExample: `[rules.boolean-name]
+severity = "warning"
+policies = [
+  { kinds = ["function"], prefixes = ["Is", "Has", "Can"] },
+  { kinds = ["global", "local", "parameter"], prefixes = ["is", "has", "can", "b_"] }
+]`,
 	}
 }
 
@@ -36,8 +42,8 @@ func booleanNameFields() []lint.Option {
 	fields := namingSelectorFields()
 	fields[0].Choices = []string{"function", "global", "local", "parameter"}
 	return append(fields,
-		lint.Option{Name: "prefixes", Type: lint.OptionStringList, Validate: validateBooleanPrefixes},
-		lint.Option{Name: "exclude", Type: lint.OptionStringList, Validate: validateNamingPatterns},
+		lint.Option{Name: "prefixes", Summary: "Allowed prefixes; the name must start with one at a naming boundary", Type: lint.OptionStringList, Validate: validateBooleanPrefixes},
+		lint.Option{Name: "exclude", Summary: "Regular expressions that exempt a matching name", Type: lint.OptionStringList, Validate: validateNamingPatterns},
 	)
 }
 

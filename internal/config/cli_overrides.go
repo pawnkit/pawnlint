@@ -50,6 +50,9 @@ func (r *Resolved) ApplyCLIOverrides(profile, target string, enable, disable []s
 		}
 		r.API = metadata
 	}
+	if r.CLIForced == nil {
+		r.CLIForced = make(map[string]diagnostic.Severity, len(enable)+len(disable))
+	}
 	for _, configuredID := range enable {
 		id, deprecated, ok := reg.ResolveID(configuredID)
 		if !ok {
@@ -60,6 +63,7 @@ func (r *Resolved) ApplyCLIOverrides(profile, target string, enable, disable []s
 		}
 		m, _ := reg.Lookup(id)
 		r.Enabled[id] = m.DefaultSeverity
+		r.CLIForced[id] = m.DefaultSeverity
 	}
 	for _, configuredID := range disable {
 		id, deprecated, ok := reg.ResolveID(configuredID)
@@ -70,6 +74,7 @@ func (r *Resolved) ApplyCLIOverrides(profile, target string, enable, disable []s
 			r.RuleMigrations = appendRuleMigrations(r.RuleMigrations, RuleMigration{Deprecated: configuredID, Replacement: id})
 		}
 		delete(r.Enabled, id)
+		r.CLIForced[id] = diagnostic.SeverityOff
 	}
 	return nil
 }

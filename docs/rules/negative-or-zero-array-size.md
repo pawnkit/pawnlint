@@ -14,3 +14,41 @@ Reports array dimensions that evaluate to zero or less
 ## Details
 
 A declared array dimension must be greater than zero. The rule reports only dimensions that can be evaluated with certainty.
+
+## Configuration
+
+```toml
+[rules]
+negative-or-zero-array-size = "error"
+```
+
+## Examples
+
+### Bad
+
+```pawn
+new zero[0];
+new negative[-1];
+
+main()
+{
+    new calculated[2 - 2];
+}
+```
+
+### Good
+
+```pawn
+new global_array[1];
+
+main()
+{
+    new dynamic[SOME_SIZE];
+    new calculated[2 + 2];
+}
+
+timer JumpBoost[0](playerid)
+{
+    return playerid;
+}
+```

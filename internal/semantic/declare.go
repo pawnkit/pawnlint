@@ -67,6 +67,29 @@ func (m *Model) symbolStates(decl *parser.Node, kind SymbolKind) ([]string, bool
 	return states, false
 }
 
+func (m *Model) enclosingEnum(entry *parser.Node) *parser.Node {
+	node := entry
+	for {
+		parent := m.Walk.Parent(node)
+		if parent == nil {
+			return nil
+		}
+		switch parent.Kind {
+		case parser.KindConditionalRegion, parser.KindConditionalBranch:
+			node = parent
+			continue
+		case parser.KindBlock:
+			enum := m.Walk.Parent(parent)
+			if enum != nil && enum.Kind == parser.KindEnumDeclaration {
+				return enum
+			}
+			return nil
+		default:
+			return nil
+		}
+	}
+}
+
 func stateVariantsCoexist(left, right *Symbol) bool {
 	if left.Kind != SymbolFunction || right.Kind != SymbolFunction {
 		return false
@@ -97,9 +120,8 @@ func stateVariantsCoexist(left, right *Symbol) bool {
 
 func (m *Model) symbolTags(decl *parser.Node, kind SymbolKind, name string) []string {
 	if kind == SymbolEnumEntry {
-		body := m.Walk.Parent(decl)
-		enum := m.Walk.Parent(body)
-		if enum != nil && enum.Kind == parser.KindEnumDeclaration {
+		enum := m.enclosingEnum(decl)
+		if enum != nil {
 			if tags := m.tagNames(enum.Field("tag")); len(tags) != 0 {
 				return tags
 			}

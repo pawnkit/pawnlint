@@ -32,28 +32,35 @@ func (NamingConvention) Metadata() lint.Metadata {
 			Type: lint.OptionObjectList, Default: []map[string]any{}, Validate: validateNamingConventions,
 			Fields: namingConventionFields(),
 		}},
+		ConfigExample: `[rules.naming-convention]
+severity = "warning"
+conventions = [
+  { kinds = ["function"], case = "PascalCase", exclude = ["^main$"] },
+  { kinds = ["global"], storage = ["const"], case = "UPPER_SNAKE_CASE" },
+  { kinds = ["local", "parameter"], case = "camelCase" }
+]`,
 	}
 }
 
 func namingConventionFields() []lint.Option {
 	fields := namingSelectorFields()
 	return append(fields,
-		lint.Option{Name: "case", Type: lint.OptionString, Choices: []string{"camelCase", "PascalCase", "snake_case", "UPPER_SNAKE_CASE", "lowercase", "UPPERCASE"}},
-		lint.Option{Name: "prefix", Type: lint.OptionString},
-		lint.Option{Name: "suffix", Type: lint.OptionString},
-		lint.Option{Name: "pattern", Type: lint.OptionString, Validate: validateNamingPattern},
-		lint.Option{Name: "exclude", Type: lint.OptionStringList, Validate: validateNamingPatterns},
+		lint.Option{Name: "case", Summary: "Required identifier case", Type: lint.OptionString, Choices: []string{"camelCase", "PascalCase", "snake_case", "UPPER_SNAKE_CASE", "lowercase", "UPPERCASE"}},
+		lint.Option{Name: "prefix", Summary: "Required literal prefix", Type: lint.OptionString},
+		lint.Option{Name: "suffix", Summary: "Required literal suffix", Type: lint.OptionString},
+		lint.Option{Name: "pattern", Summary: "Required regular expression", Type: lint.OptionString, Validate: validateNamingPattern},
+		lint.Option{Name: "exclude", Summary: "Regular expressions that exempt a matching name", Type: lint.OptionStringList, Validate: validateNamingPatterns},
 	)
 }
 
 func namingSelectorFields() []lint.Option {
 	return []lint.Option{
-		{Name: "kinds", Type: lint.OptionStringList, Choices: []string{"function", "global", "local", "parameter", "enum", "enum-entry", "label"}},
-		{Name: "scopes", Type: lint.OptionStringList, Choices: []string{"global", "local"}},
-		{Name: "storage", Type: lint.OptionStringList, Choices: []string{"automatic", "const", "static", "public", "stock", "native", "forward", "default"}},
-		{Name: "tags", Type: lint.OptionStringList},
-		{Name: "include-callbacks", Type: lint.OptionBoolean, Default: false},
-		{Name: "include-natives", Type: lint.OptionBoolean, Default: false},
+		{Name: "kinds", Summary: "Symbol kinds this entry applies to; matches any kind when empty", Type: lint.OptionStringList, Choices: []string{"function", "global", "local", "parameter", "enum", "enum-entry", "label"}},
+		{Name: "scopes", Summary: "Symbol scopes this entry applies to; matches any scope when empty", Type: lint.OptionStringList, Choices: []string{"global", "local"}},
+		{Name: "storage", Summary: "Storage classes this entry applies to; matches any class when empty", Type: lint.OptionStringList, Choices: []string{"automatic", "const", "static", "public", "stock", "native", "forward", "default"}},
+		{Name: "tags", Summary: "Definite tags this entry applies to; matches any tag when empty", Type: lint.OptionStringList},
+		{Name: "include-callbacks", Summary: "Also apply to public callback functions", Type: lint.OptionBoolean, Default: false},
+		{Name: "include-natives", Summary: "Also apply to native function declarations", Type: lint.OptionBoolean, Default: false},
 	}
 }
 

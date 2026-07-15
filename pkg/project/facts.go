@@ -3,6 +3,7 @@ package project
 import (
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
+	"github.com/pawnkit/pawnlint/internal/source/walk"
 )
 
 func (m *Model) Eval(file *File, node *parser.Node) (int64, bool) {
@@ -42,15 +43,56 @@ func (m *Model) declarationValue(declaration Declaration, visiting map[declarati
 	return 0, false
 }
 
+func enclosingEnumBody(w *walk.Model, entry *parser.Node) (body, declaration *parser.Node) {
+	node := entry
+	for {
+		parent := w.Parent(node)
+		if parent == nil {
+			return nil, nil
+		}
+		switch parent.Kind {
+		case parser.KindConditionalRegion, parser.KindConditionalBranch:
+			node = parent
+			continue
+		case parser.KindBlock:
+			enum := w.Parent(parent)
+			if enum != nil && enum.Kind == parser.KindEnumDeclaration {
+				return parent, enum
+			}
+			return nil, nil
+		default:
+			return nil, nil
+		}
+	}
+}
+
+func enumEntryList(body *parser.Node) []*parser.Node {
+	var entries []*parser.Node
+	var collect func(*parser.Node)
+	collect = func(node *parser.Node) {
+		switch node.Kind {
+		case parser.KindConditionalRegion, parser.KindConditionalBranch:
+			for _, child := range node.Children {
+				collect(child)
+			}
+		case parser.KindEnumEntry:
+			entries = append(entries, node)
+		}
+	}
+	for _, child := range body.Children {
+		collect(child)
+	}
+	return entries
+}
+
 func (m *Model) enumEntryValue(target Declaration, visiting map[declarationID]bool) (int64, bool) {
-	body := target.File.Walk.Parent(target.Node)
-	declaration := target.File.Walk.Parent(body)
-	if body == nil || declaration == nil || declaration.Kind != parser.KindEnumDeclaration || declaration.Field("increment") != nil || target.File.Walk.Uncertain(declaration) {
+	body, declaration := enclosingEnumBody(target.File.Walk, target.Node)
+	if body == nil || declaration == nil || declaration.Field("increment") != nil || target.File.Walk.Uncertain(declaration) {
 		return 0, false
 	}
 	current := int64(0)
-	for _, entry := range body.Children {
-		if entry.Kind != parser.KindEnumEntry || target.File.Walk.Inactive(entry) {
+	for _, entry := range enumEntryList(body) {
+		if target.File.Walk.Inactive(entry) {
 			continue
 		}
 		if entry.HasError || target.File.Walk.Uncertain(entry) {

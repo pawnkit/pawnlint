@@ -16,3 +16,36 @@ Reports labels that are not targeted by a goto statement
 A label with no matching `goto` target has no effect. The rule reports only
 labels that resolve unambiguously within one function. The safe fix removes the
 label and keeps the following statement unchanged.
+
+## Configuration
+
+```toml
+[rules]
+unused-label = "warning"
+```
+
+## Examples
+
+### Bad
+
+```pawn
+main()
+{
+unused:
+    return 1;
+}
+```
+
+### Good
+
+```pawn
+main()
+{
+    goto done;
+
+    {
+done:
+        return 1;
+    }
+}
+```

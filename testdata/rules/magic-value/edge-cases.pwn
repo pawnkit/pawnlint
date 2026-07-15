@@ -15,3 +15,10 @@ CheckPacked(value)
         print(!"packed");
     return 0;
 }
+
+CheckLargeDecimal(value)
+{
+    if (value == 3000000000)
+        return 1;
+    return 0;
+}

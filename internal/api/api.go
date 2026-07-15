@@ -90,7 +90,7 @@ func markPureNatives(source map[string]Native) map[string]Native {
 }
 
 var pureNativeNames = []string{
-	"abs", "clamp", "float", "floatabs", "floatadd", "floatcmp", "floatcos",
+	"clamp", "float", "floatabs", "floatadd", "floatcmp", "floatcos",
 	"floatdiv", "floatfract", "floatlog", "floatmul", "floatpower", "floatround",
 	"floatsin", "floatsqroot", "floatsub", "floattan", "ispacked", "max", "min",
 	"strcmp", "strfind", "strfloat", "strlen", "strval", "swapchars", "tolower", "toupper",

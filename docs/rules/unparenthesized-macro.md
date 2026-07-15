@@ -23,3 +23,51 @@ parameter references or replacement lists that are direct operands of an
 operator; already-parenthesized, call-argument, and subscript positions are
 left alone. The fix always wraps the exact reported span in parentheses, which
 never changes what it evaluates to.
+
+## Configuration
+
+```toml
+[rules]
+unparenthesized-macro = "warning"
+```
+
+## Examples
+
+### Bad
+
+```pawn
+#define SQUARE(x) x * x
+#define DOUBLE(x) x + x
+#define NEGATE(x) -x
+#define TERNARY(x) x ? 1 : 0
+#define INCREMENT(x) x++
+#define MAX_HP 100 + 50
+#define RETURN_SUM(x, y) return x + y
+
+main()
+{
+	new value = SQUARE(1 + 2);
+}
+```
+
+### Good
+
+```pawn
+#define SQUARE(x) ((x) * (x))
+#define DOUBLE(x) ((x) + (x))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define CALL(x) foo(x)
+#define INDEX(x) arr[x]
+#define ARRAY_LEN(arr) (sizeof(arr))
+#define NEGATE(x) (-(x))
+#define MAX_HP (100 + 50)
+#define VERSION 5
+#define GREETING "hello"
+
+main()
+{
+	new value = SQUARE(1 + 2);
+	new total = DOUBLE(value);
+	new highest = MAX(value, total);
+}
+```

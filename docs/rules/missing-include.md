@@ -14,3 +14,30 @@ Reports required includes that cannot be resolved
 ## Details
 
 Required includes must resolve through the source directory and configured include paths. Optional #tryinclude directives and uncertain paths are skipped.
+
+## Configuration
+
+```toml
+[rules]
+missing-include = "error"
+```
+
+## Examples
+
+### Bad
+
+```pawn
+#include "missing.inc"
+
+main()
+{
+}
+```
+
+### Good
+
+```pawn
+main()
+{
+}
+```

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/pawnkit/pawnlint/pkg/lint"
@@ -31,7 +32,8 @@ func writeIndex(dir string, metas []lint.Metadata) error {
 	var b strings.Builder
 	b.WriteString("# Rule index\n\n")
 	b.WriteString("Generated from rule metadata. Do not edit by hand.\n\n")
-	b.WriteString("Rules are stable unless their page marks them as preview.\n\n")
+	b.WriteString("Each rule page documents its behavior, its configuration, and a good/bad\n")
+	b.WriteString("example together. Rules are stable unless their page marks them as preview.\n\n")
 	b.WriteString("| ID | Category | Severity | Default | Fixable | Summary |\n")
 	b.WriteString("| --- | --- | --- | --- | --- | --- |\n")
 	for _, m := range metas {
@@ -65,18 +67,101 @@ func writeRulePage(dir string, m lint.Metadata) error {
 	if len(m.Tags) > 0 {
 		b.WriteString(fmt.Sprintf("| Tags | %s |\n", strings.Join(m.Tags, ", ")))
 	}
+
 	b.WriteString("\n## Details\n\n")
 	b.WriteString(m.Explanation + "\n")
+
+	writeConfiguration(&b, m)
+	writeExamples(&b, m.ID)
+
+	return os.WriteFile(filepath.Join(dir, m.ID+".md"), []byte(b.String()), 0o644)
+}
+
+func writeConfiguration(b *strings.Builder, m lint.Metadata) {
+	b.WriteString("\n## Configuration\n\n")
+	b.WriteString(fmt.Sprintf("```toml\n[rules]\n%s = %q\n```\n", m.ID, m.DefaultSeverity.String()))
+
 	if len(m.Options) > 0 {
-		b.WriteString("\n## Options\n\n")
+		b.WriteString("\nSet options under `[rules." + m.ID + "]`.\n\n")
 		b.WriteString("| Name | Type | Default | Constraint | Description |\n")
 		b.WriteString("| --- | --- | --- | --- | --- |\n")
 		for _, option := range m.Options {
-			b.WriteString(fmt.Sprintf("| `%s` | %s | `%v` | %s | %s |\n",
-				option.Name, option.Type, option.Default, optionConstraint(option), escapeMD(option.Summary)))
+			b.WriteString(fmt.Sprintf("| `%s` | %s | %s | %s | %s |\n",
+				option.Name, option.Type, optionDefault(option), optionConstraint(option), escapeMD(option.Summary)))
+		}
+		for _, option := range m.Options {
+			if len(option.Fields) == 0 {
+				continue
+			}
+			b.WriteString(fmt.Sprintf("\n`%s` entry fields:\n\n", option.Name))
+			b.WriteString("| Name | Type | Default | Constraint | Description |\n")
+			b.WriteString("| --- | --- | --- | --- | --- |\n")
+			for _, field := range option.Fields {
+				b.WriteString(fmt.Sprintf("| `%s` | %s | %s | %s | %s |\n",
+					field.Name, field.Type, optionDefault(field), optionConstraint(field), escapeMD(field.Summary)))
+			}
 		}
 	}
-	return os.WriteFile(filepath.Join(dir, m.ID+".md"), []byte(b.String()), 0o644)
+
+	if m.ConfigExample != "" {
+		b.WriteString("\n### Example\n\n")
+		b.WriteString("```toml\n")
+		b.WriteString(strings.Trim(m.ConfigExample, "\n"))
+		b.WriteString("\n```\n")
+	}
+}
+
+func writeExamples(b *strings.Builder, id string) {
+	bad, hasBad := readExample(id, "invalid")
+	good, hasGood := readExample(id, "valid")
+	if !hasBad && !hasGood {
+		return
+	}
+	b.WriteString("\n## Examples\n\n")
+	if hasBad {
+		b.WriteString("### Bad\n\n```pawn\n" + bad + "\n```\n\n")
+	}
+	if hasGood {
+		b.WriteString("### Good\n\n```pawn\n" + good + "\n```\n")
+	}
+}
+
+const maxExampleLines = 30
+
+func readExample(id, name string) (string, bool) {
+	path := filepath.Join(testdataRulesDir(), id, name+".pwn")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", false
+	}
+	text := strings.Trim(string(content), "\n")
+	if text == "" {
+		return "", false
+	}
+	lines := strings.Split(text, "\n")
+	if len(lines) > maxExampleLines {
+		cut := maxExampleLines
+		for i := maxExampleLines - 1; i > 0; i-- {
+			if lines[i] == "}" {
+				cut = i + 1
+				break
+			}
+		}
+		lines = append(lines[:cut], "// …")
+	}
+	return strings.Join(lines, "\n"), true
+}
+
+func testdataRulesDir() string {
+	_, file, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(file), "..", "..", "testdata", "rules")
+}
+
+func optionDefault(option lint.Option) string {
+	if option.Default == nil {
+		return "—"
+	}
+	return fmt.Sprintf("`%v`", option.Default)
 }
 
 func optionConstraint(option lint.Option) string {

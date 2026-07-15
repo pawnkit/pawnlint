@@ -19,3 +19,69 @@ Functions wrapped by a hooking library (`hook`, `inline`, and similar
 single-word prefixes) are skipped for the same reason. Names beginning with
 `_` or listed in a `#pragma unused` directive in the same function are
 treated as intentionally unused.
+
+## Configuration
+
+```toml
+[rules]
+unused-parameter = "warning"
+```
+
+## Examples
+
+### Bad
+
+```pawn
+stock Add(left, right)
+{
+    return left;
+}
+
+stock Empty(argc)
+{
+}
+
+stock OtherPragmaScope(value)
+{
+}
+
+stock UnrelatedPragma(value)
+{
+    #pragma unused OtherPragmaScope
+}
+```
+
+### Good
+
+```pawn
+public OnPlayerConnect(playerid)
+{
+    return 1;
+}
+
+stock Add(left, right)
+{
+    return left + right;
+}
+
+stock Ignore(_value)
+{
+    return 1;
+}
+
+CMD:ExternalCommand(playerid, params[])
+{
+    return 1;
+}
+
+hook OnPlayerEnterVehicle(playerid, vehicleid, ispassenger)
+{
+    return playerid;
+}
+
+inline Response(pid, dialogid, response, listitem, string:inputtext[])
+{
+    return pid;
+}
+// …
+```

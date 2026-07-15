@@ -17,6 +17,15 @@
       "startCol": 15,
       "endLine": 15,
       "endCol": 24
+    },
+    {
+      "ruleId": "magic-value",
+      "severity": "warning",
+      "message": "numeric literal 3000000000 is a magic value",
+      "startLine": 21,
+      "startCol": 18,
+      "endLine": 21,
+      "endCol": 28
     }
   ],
   "invalid.pwn": [

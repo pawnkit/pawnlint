@@ -32,6 +32,26 @@ func TestCrossFileConstantEvaluation(t *testing.T) {
 	}
 }
 
+func TestCrossFileEnumValuesAcrossConditional(t *testing.T) {
+	dir := t.TempDir()
+	valuesPath := filepath.Join(dir, "values.inc")
+	rootPath := filepath.Join(dir, "main.pwn")
+	if err := os.WriteFile(valuesPath, []byte("#define FEATURE\nenum Value {\nFirst,\n#if defined FEATURE\nSecond,\n#endif\nThird\n};\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	source := []byte("#include \"values.inc\"\nmain() { new value = Third; }\n")
+	model, err := Build([]Source{{Path: rootPath, Content: source}}, Options{WorkingDir: dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := model.File(rootPath)
+	declarators := root.Walk.OfKind(parser.KindVariableDeclarator)
+	value, ok := model.Eval(root, declarators[0].Field("initializer"))
+	if !ok || value != 2 {
+		t.Fatalf("enum value across active conditional = %d, %v; want 2, true", value, ok)
+	}
+}
+
 func TestCrossFileConstantCycleIsUnknown(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "constants.inc"), []byte("const A = B;\nconst B = A;\n"), 0o644); err != nil {

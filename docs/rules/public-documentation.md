@@ -15,7 +15,14 @@ Reports selected functions without complete API documentation
 
 Selected functions require an adjacent Doxygen block or consecutive triple-slash comments. Documentation can require descriptions, parameter tags, and return tags. Name patterns and exclusions limit the documented surface.
 
-## Options
+## Configuration
+
+```toml
+[rules]
+public-documentation = "warning"
+```
+
+Set options under `[rules.public-documentation]`.
 
 | Name | Type | Default | Constraint | Description |
 | --- | --- | --- | --- | --- |
@@ -25,3 +32,85 @@ Selected functions require an adjacent Doxygen block or consecutive triple-slash
 | `minimum-description-length` | integer | `1` | minimum 1; maximum 1000 | Minimum description length |
 | `require-parameters` | boolean | `true` | — | Require matching parameter tags |
 | `require-return` | boolean | `false` | — | Require a return tag |
+
+### Example
+
+```toml
+[rules.public-documentation]
+severity = "warning"
+storage = ["public", "stock"]
+include = ["^API_"]
+minimum-description-length = 10
+require-parameters = true
+require-return = true
+```
+
+## Examples
+
+### Bad
+
+```pawn
+public OnMissing(playerid)
+{
+    return playerid;
+}
+
+/** Short. */
+stock API_Short()
+{
+    return 1;
+}
+
+/**
+ * Documents parameters.
+ * @return A value.
+ */
+stock API_MissingParameter(value)
+{
+    return value;
+}
+
+/**
+ * Documents parameters.
+ * @param value
+ * @return A value.
+ */
+stock API_EmptyParameter(value)
+{
+    return value;
+}
+// …
+```
+
+### Good
+
+```pawn
+/**
+ * Creates an account.
+ * @param playerid Player identifier.
+ * @param name Account name.
+ * @return Non-zero on success.
+ */
+stock API_CreateAccount(playerid, const name[])
+{
+    return playerid + name[0];
+}
+
+/// Handles a connection.
+/// @param playerid Player identifier.
+/// @return Non-zero on success.
+public OnPlayerConnect(playerid)
+{
+    return 1;
+}
+
+public OnInternal()
+{
+    return 1;
+}
+
+stock Helper()
+{
+    return 1;
+}
+```

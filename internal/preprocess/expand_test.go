@@ -1,8 +1,10 @@
 package preprocess
 
 import (
+	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
@@ -79,6 +81,29 @@ new value[] = STRINGIFY(test);
 	result := Expand(parsed, walk.New("test.pwn", parsed), 1)
 	if result.Complete {
 		t.Fatal("stringizing expansion reported complete")
+	}
+}
+
+func TestExpandBoundsChainedMacroBlowup(t *testing.T) {
+	var b strings.Builder
+	b.WriteString("#define M0 X\n")
+	for level := 1; level <= 7; level++ {
+		fmt.Fprintf(&b, "#define M%d %s\n", level, strings.TrimSuffix(strings.Repeat(fmt.Sprintf("M%d ", level-1), 10), " "))
+	}
+	b.WriteString("new value = M7;\n")
+	source := []byte(b.String())
+	parsed := parser.Parse(source)
+	tree := walk.New("test.pwn", parsed)
+
+	done := make(chan Result, 1)
+	go func() { done <- Expand(parsed, tree, 1) }()
+	select {
+	case result := <-done:
+		if result.Complete {
+			t.Fatal("expansion of a chain exceeding the token cap reported complete")
+		}
+	case <-time.After(20 * time.Second):
+		t.Fatal("expansion did not bound chained macro growth quickly")
 	}
 }
 

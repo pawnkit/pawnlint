@@ -394,10 +394,46 @@ func TestCLIStdin(t *testing.T) {
 	}
 }
 
+func TestCLIStdinRespectsPathOverrides(t *testing.T) {
+	dir := t.TempDir()
+	cfg := filepath.Join(dir, "pawnlint.toml")
+	content := "profile = \"recommended\"\n\n[[overrides]]\npaths = [\"in/**\"]\n[overrides.rules]\ndiscarded-expression = \"off\"\n"
+	if err := os.WriteFile(cfg, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, _, code := runCLI(t, []string{"--config", cfg, "--stdin", "--stdin-filename", "in/main.pwn"}, "main()\n{\n playerid + 1;\n}\n")
+	if code != 0 {
+		t.Errorf("stdin code=%d out=%q", code, out)
+	}
+	if strings.Contains(out, "discarded-expression") {
+		t.Errorf("path override should have suppressed discarded-expression: %q", out)
+	}
+}
+
 func TestCLIStdinFailOnError(t *testing.T) {
 	_, _, code := runCLI(t, []string{"--stdin", "--stdin-filename", "in/main.pwn"}, "main()\n{\n if (a);\n {\n }\n}\n")
 	if code != 1 {
 		t.Errorf("stdin error code=%d want 1", code)
+	}
+}
+
+func TestCLIDisableOutranksPathOverride(t *testing.T) {
+	dir := t.TempDir()
+	cfg := filepath.Join(dir, "pawnlint.toml")
+	content := "profile = \"recommended\"\n\n[[overrides]]\npaths = [\"**\"]\n[overrides.rules]\ndiscarded-expression = \"warning\"\n"
+	if err := os.WriteFile(cfg, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	p := filepath.Join(dir, "main.pwn")
+	if err := os.WriteFile(p, []byte("main()\n{\n playerid + 1;\n}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, _, code := runCLI(t, []string{"--config", cfg, "--disable", "discarded-expression", p}, "")
+	if code != 0 {
+		t.Errorf("code=%d out=%q", code, out)
+	}
+	if strings.Contains(out, "discarded-expression") {
+		t.Errorf("--disable should outrank a matching path override: %q", out)
 	}
 }
 

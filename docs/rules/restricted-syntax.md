@@ -15,7 +15,14 @@ Reports configured language and dependency restrictions
 
 Project policy can restrict calls to exact functions or natives, include path globs, global variables, direct and mutual recursion, and goto statements. Calls and recursion are reported only when resolution is definite. Inactive and uncertain syntax is skipped.
 
-## Options
+## Configuration
+
+```toml
+[rules]
+restricted-syntax = "warning"
+```
+
+Set options under `[rules.restricted-syntax]`.
 
 | Name | Type | Default | Constraint | Description |
 | --- | --- | --- | --- | --- |
@@ -25,3 +32,64 @@ Project policy can restrict calls to exact functions or natives, include path gl
 | `globals` | boolean | `false` | — | Restrict global variable declarations |
 | `recursion` | boolean | `false` | — | Restrict direct and mutual recursion |
 | `goto` | boolean | `false` | — | Restrict goto statements |
+
+### Example
+
+```toml
+[rules.restricted-syntax]
+severity = "warning"
+functions = ["LegacyFunction"]
+natives = ["printf"]
+includes = ["legacy/**"]
+globals = true
+recursion = true
+goto = true
+```
+
+## Examples
+
+### Bad
+
+```pawn
+#include "restricted.inc"
+
+native RestrictedNative();
+
+new forbiddenGlobal;
+
+stock LegacyFunction()
+{
+	return 1;
+}
+
+stock Recur()
+{
+	Recur();
+	return 1;
+}
+
+main()
+{
+	LegacyFunction();
+	RestrictedNative();
+	goto finished;
+finished:
+	return forbiddenGlobal;
+}
+```
+
+### Good
+
+```pawn
+#include "allowed.inc"
+
+stock AllowedFunction()
+{
+	return 1;
+}
+
+main()
+{
+	AllowedFunction();
+}
+```

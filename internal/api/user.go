@@ -180,10 +180,6 @@ func mutableParameters(parameters []Parameter) bool {
 	return false
 }
 
-func validateNativeRelations(natives map[string]Native) error {
-	return validateRelations(&Metadata{Natives: natives, Functions: make(map[string]Function)})
-}
-
 func validateRelations(metadata *Metadata) error {
 	natives := metadata.Natives
 	names := make([]string, 0, len(natives))

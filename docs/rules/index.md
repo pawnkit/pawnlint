@@ -2,7 +2,8 @@
 
 Generated from rule metadata. Do not edit by hand.
 
-Rules are stable unless their page marks them as preview.
+Each rule page documents its behavior, its configuration, and a good/bad
+example together. Rules are stable unless their page marks them as preview.
 
 | ID | Category | Severity | Default | Fixable | Summary |
 | --- | --- | --- | --- | --- | --- |

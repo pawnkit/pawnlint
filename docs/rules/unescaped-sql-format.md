@@ -31,3 +31,36 @@ The rule only flags `%s` arguments that are not a literal string written
 directly in the call, since a literal cannot carry untrusted input. It only
 recognizes calls literally named `mysql_format`. No fix is offered because
 some `%s` arguments are genuinely safe (e.g. a hardcoded column name).
+
+## Configuration
+
+```toml
+[rules]
+unescaped-sql-format = "warning"
+```
+
+## Examples
+
+### Bad
+
+```pawn
+main()
+{
+    new query[128];
+    new name[MAX_PLAYER_NAME];
+    mysql_format(1, query, sizeof(query), "SELECT * FROM users WHERE name = '%s'", name);
+}
+```
+
+### Good
+
+```pawn
+main()
+{
+    new query[128];
+    new name[MAX_PLAYER_NAME];
+    mysql_format(1, query, sizeof(query), "SELECT * FROM users WHERE name = '%e'", name);
+    mysql_format(1, query, sizeof(query), "SELECT * FROM `%s` WHERE id = %d", "users", 1);
+    mysql_format(1, query, sizeof(query), "SELECT * FROM users WHERE id = %d", 1);
+}
+```

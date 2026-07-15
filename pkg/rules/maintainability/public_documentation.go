@@ -38,6 +38,13 @@ func (PublicDocumentation) Metadata() lint.Metadata {
 			{Name: "require-parameters", Summary: "Require matching parameter tags", Type: lint.OptionBoolean, Default: true},
 			{Name: "require-return", Summary: "Require a return tag", Type: lint.OptionBoolean, Default: false},
 		},
+		ConfigExample: `[rules.public-documentation]
+severity = "warning"
+storage = ["public", "stock"]
+include = ["^API_"]
+minimum-description-length = 10
+require-parameters = true
+require-return = true`,
 	}
 }
 

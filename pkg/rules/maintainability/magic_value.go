@@ -184,10 +184,11 @@ func magicNumberKey(text string) (string, bool) {
 		sign = -1
 		unsigned = unsigned[1:]
 	}
-	if !strings.HasPrefix(unsigned, "0x") && !strings.HasPrefix(unsigned, "0X") && !strings.HasPrefix(unsigned, "0b") && !strings.HasPrefix(unsigned, "0B") {
-		return "", false
+	base := 10
+	if strings.HasPrefix(unsigned, "0x") || strings.HasPrefix(unsigned, "0X") || strings.HasPrefix(unsigned, "0b") || strings.HasPrefix(unsigned, "0B") {
+		base = 0
 	}
-	value, err := strconv.ParseUint(unsigned, 0, 32)
+	value, err := strconv.ParseUint(unsigned, base, 32)
 	if err != nil {
 		return "", false
 	}

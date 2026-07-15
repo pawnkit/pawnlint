@@ -31,3 +31,35 @@ The rule reports only direct standalone calls whose `repeating` argument is
 the constant `true`. A one-shot timer (`repeating` is `false`) needs no handle,
 and is not reported. No fix is offered because a name for the stored handle
 cannot be inferred.
+
+## Configuration
+
+```toml
+[rules]
+discarded-repeating-timer = "warning"
+```
+
+## Examples
+
+### Bad
+
+```pawn
+main()
+{
+    SetTimer("Tick", 1000, true);
+    SetTimerEx("Tick", 1000, true, "i", 1);
+}
+```
+
+### Good
+
+```pawn
+new tickTimer;
+
+main()
+{
+    tickTimer = SetTimer("Tick", 1000, true);
+    SetTimer("OneShot", 1000, false);
+    SetTimerEx("Delayed", 5000, false, "i", 1);
+}
+```

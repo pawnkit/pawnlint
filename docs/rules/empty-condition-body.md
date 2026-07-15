@@ -25,3 +25,56 @@ if (connected);
 
 The rule reports this only when a block follows the empty body. The safe fix
 removes the semicolon.
+
+## Configuration
+
+```toml
+[rules]
+empty-condition-body = "error"
+```
+
+## Examples
+
+### Bad
+
+```pawn
+main()
+{
+    if (IsPlayerConnected(playerid));
+    {
+        Kick(playerid);
+    }
+
+    while (running);
+    {
+        DoStuff();
+    }
+
+    for (;;);
+    {
+        break;
+    }
+}
+```
+
+### Good
+
+```pawn
+main()
+{
+    if (IsPlayerConnected(playerid))
+    {
+        Kick(playerid);
+    }
+
+    while (running)
+    {
+        DoStuff();
+    }
+
+    for (new i = 0; i < 10; i++)
+    {
+        Sum += i;
+    }
+}
+```

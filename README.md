@@ -8,11 +8,10 @@ The Pawn compiler is still the source of truth for compilation.
 ## Features
 
 - Syntax, semantic, control-flow, and include-graph analysis
-- 57 built-in rules across correctness, suspicious, performance,
-  maintainability, and open.mp categories
-- Safe automatic fixes, inline suppressions, and configurable profiles
+- 115 built-in rules across analysis, performance, API, and policy categories
+- Safe automatic fixes, inline suppressions, baselines, and incremental caching
 - Text, JSON, JSONL, SARIF, and GitHub Actions output
-- Stdin support for editor and CI integration
+- Stdin support for tool and CI integration
 
 Cross-file analysis and fix coverage are still limited — see
 [Limitations](docs/limitations.md).
@@ -45,6 +44,9 @@ The default profile is `recommended`. Use `--profile strict` for more checks.
 | `pawnlint --format text\|compact\|json\|jsonl\|sarif\|github paths...` | Choose output format. |
 | `pawnlint --diff paths...` | Preview available fixes. |
 | `pawnlint --fix-safe paths...` | Apply only machine-safe fixes. |
+| `pawnlint --generate-baseline paths...` | Replace the configured baseline. |
+| `pawnlint --prune-baseline paths...` | Remove resolved baseline entries. |
+| `pawnlint --timings paths...` | Print stage and per-rule durations. |
 
 ## Exit codes
 
@@ -59,9 +61,10 @@ Errors fail by default. Warnings fail too when `warnings-as-errors = true`.
 
 ## Documentation
 
-- [Rules](docs/rules/index.md)
-- [Configuration](docs/configuration.md)
+- [Rules and configuration](docs/rules/index.md) — every rule with its options and a good/bad example
+- [Configuration](docs/configuration.md) — project-wide settings, profiles, presets, builds, and variants
 - [Suppressions](docs/suppression.md)
-- [Architecture](docs/architecture.md)
+- [External rules](docs/external-rules.md)
+- [Analyzer API](docs/analyzer-api.md)
 - [Limitations](docs/limitations.md)
-- [Contributing](docs/contributing.md)
+- [Real-world validation](docs/real-world-validation.md)

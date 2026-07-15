@@ -40,6 +40,15 @@ func (TodoPolicy) Metadata() lint.Metadata {
 			{Name: "issue-pattern", Summary: "Issue reference regular expression", Type: lint.OptionString, Default: defaultTodoIssuePattern, Validate: validateTodoPattern},
 			{Name: "maximum-age-days", Summary: "Maximum task age; zero disables age checks", Type: lint.OptionInteger, Default: int64(0), Minimum: 0, Maximum: 36500, HasMinimum: true, HasMaximum: true},
 		},
+		ConfigExample: `[rules.todo-policy]
+severity = "warning"
+tags = ["TODO", "FIXME"]
+allowed-owners = ["alice", "team-core"]
+require-owner = true
+require-date = true
+require-issue = true
+issue-pattern = "[A-Z]+-[0-9]+"
+maximum-age-days = 90`,
 	}
 }
 

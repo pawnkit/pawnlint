@@ -14,3 +14,33 @@ Reports deprecated compatibility functions in open.mp
 ## Details
 
 Some legacy SA-MP APIs remain available as compatibility stocks but are documented as broken by the official open.mp includes. The rule reports direct calls and includes the official guidance.
+
+## Configuration
+
+```toml
+[rules]
+deprecated-function = "warning"
+```
+
+## Examples
+
+### Bad
+
+```pawn
+main()
+{
+	new players = GetPlayerPoolSize();
+	new vehicles = GetVehiclePoolSize();
+	new actors = GetActorPoolSize();
+	return players + vehicles + actors;
+}
+```
+
+### Good
+
+```pawn
+main()
+{
+	return GetMaxPlayers();
+}
+```

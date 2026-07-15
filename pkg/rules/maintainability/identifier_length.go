@@ -29,16 +29,22 @@ func (IdentifierLength) Metadata() lint.Metadata {
 			Type: lint.OptionObjectList, Default: []map[string]any{}, Validate: validateIdentifierLimits,
 			Fields: identifierLengthFields(),
 		}},
+		ConfigExample: `[rules.identifier-length]
+severity = "warning"
+limits = [
+  { kinds = ["function", "global"], minimum = 3, maximum = 40 },
+  { kinds = ["local", "parameter"], minimum = 2, maximum = 30, exclude = ["^[xyz]$"] }
+]`,
 	}
 }
 
 func identifierLengthFields() []lint.Option {
 	fields := namingSelectorFields()
 	return append(fields,
-		lint.Option{Name: "minimum", Type: lint.OptionInteger, Minimum: 1, Maximum: 1024, HasMinimum: true, HasMaximum: true},
-		lint.Option{Name: "maximum", Type: lint.OptionInteger, Minimum: 1, Maximum: 1024, HasMinimum: true, HasMaximum: true},
-		lint.Option{Name: "exclude", Type: lint.OptionStringList, Validate: validateNamingPatterns},
-		lint.Option{Name: "allow-loop-indices", Type: lint.OptionBoolean, Default: true},
+		lint.Option{Name: "minimum", Summary: "Minimum allowed identifier length", Type: lint.OptionInteger, Minimum: 1, Maximum: 1024, HasMinimum: true, HasMaximum: true},
+		lint.Option{Name: "maximum", Summary: "Maximum allowed identifier length", Type: lint.OptionInteger, Minimum: 1, Maximum: 1024, HasMinimum: true, HasMaximum: true},
+		lint.Option{Name: "exclude", Summary: "Regular expressions that exempt a matching name", Type: lint.OptionStringList, Validate: validateNamingPatterns},
+		lint.Option{Name: "allow-loop-indices", Summary: "Allow single-character for-loop indices", Type: lint.OptionBoolean, Default: true},
 	)
 }
 

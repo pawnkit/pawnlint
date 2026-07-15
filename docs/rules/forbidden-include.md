@@ -15,8 +15,34 @@ Reports includes denied by project policy
 
 Configured glob patterns can prohibit dependencies by their requested include path. Inactive and uncertain directives are skipped.
 
-## Options
+## Configuration
+
+```toml
+[rules]
+forbidden-include = "error"
+```
+
+Set options under `[rules.forbidden-include]`.
 
 | Name | Type | Default | Constraint | Description |
 | --- | --- | --- | --- | --- |
 | `patterns` | string-list | `[]` | — | Include path glob patterns to prohibit |
+
+## Examples
+
+### Bad
+
+```pawn
+#include <vendor/database>
+#include "legacy.inc"
+
+main() {}
+```
+
+### Good
+
+```pawn
+#include "safe.inc"
+
+main() {}
+```

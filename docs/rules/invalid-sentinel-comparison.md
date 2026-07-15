@@ -27,3 +27,51 @@ sentinel is `INVALID_VEHICLE_ID`, not `INVALID_PLAYER_ID`. The rule checks a
 curated set of well-known ID-returning natives against the sentinel constant
 they should be compared with, and only reports when the compared name is
 another known sentinel, not an unresolved or project-defined identifier.
+
+## Configuration
+
+```toml
+[rules]
+invalid-sentinel-comparison = "error"
+```
+
+## Examples
+
+### Bad
+
+```pawn
+main()
+{
+    new vehicleid = GetPlayerVehicleID(0);
+    if (vehicleid == INVALID_PLAYER_ID)
+    {
+    }
+    new actorid = CreateActor(0, 0.0, 0.0, 0.0, 0.0);
+    if (INVALID_OBJECT_ID != actorid)
+    {
+    }
+}
+```
+
+### Good
+
+```pawn
+main()
+{
+    new vehicleid = GetPlayerVehicleID(0);
+    if (vehicleid == INVALID_VEHICLE_ID)
+    {
+    }
+    new actorid = CreateActor(0, 0.0, 0.0, 0.0, 0.0);
+    if (actorid != INVALID_ACTOR_ID)
+    {
+    }
+    new objectid = CreateObject(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    if (objectid == INVALID_OBJECT_ID)
+    {
+    }
+    if (vehicleid == 0)
+    {
+    }
+}
+```

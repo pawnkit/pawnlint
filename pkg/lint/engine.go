@@ -58,14 +58,34 @@ func levelAllowed(l AnalysisLevel, max AnalysisLevel) bool {
 }
 
 func (e *Engine) LintFile(path string, src []byte, maxLevel AnalysisLevel, ruleSet map[string]diagnostic.Severity, known map[string]struct{}, perRule map[string]map[string]any) []diagnostic.Diagnostic {
-	return e.lintFile(path, src, nil, maxLevel, ruleSet, known, perRule)
+	return e.lintFileSafe(path, src, nil, maxLevel, ruleSet, known, perRule)
 }
 
 func (e *Engine) LintProjectFile(projectFile *project.File, maxLevel AnalysisLevel, ruleSet map[string]diagnostic.Severity, known map[string]struct{}, perRule map[string]map[string]any) []diagnostic.Diagnostic {
 	if projectFile == nil {
 		return nil
 	}
-	return e.lintFile(projectFile.Path, projectFile.Source, projectFile, maxLevel, ruleSet, known, perRule)
+	return e.lintFileSafe(projectFile.Path, projectFile.Source, projectFile, maxLevel, ruleSet, known, perRule)
+}
+
+// lintFileSafe isolates a panic anywhere in the analysis pipeline (parsing,
+// semantics, control flow, or rules) to this one file, matching the
+// per-rule recovery inside lintFile: one bad file must not crash a
+// concurrent multi-file lint run.
+func (e *Engine) lintFileSafe(path string, src []byte, contextFile *project.File, maxLevel AnalysisLevel, ruleSet map[string]diagnostic.Severity, known map[string]struct{}, perRule map[string]map[string]any) (diagnostics []diagnostic.Diagnostic) {
+	defer func() {
+		if failed := recover(); failed != nil {
+			diagnostics = []diagnostic.Diagnostic{{
+				RuleID:   InternalErrorID,
+				Severity: diagnostic.SeverityError,
+				Category: diagnostic.CategoryCorrectness,
+				Message:  fmt.Sprintf("analysis failed: %v", failed),
+				Filename: path,
+				Range:    source.NewLineTable(src).Range(0, min(1, len(src))),
+			}}
+		}
+	}()
+	return e.lintFile(path, src, contextFile, maxLevel, ruleSet, known, perRule)
 }
 
 func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, maxLevel AnalysisLevel, ruleSet map[string]diagnostic.Severity, known map[string]struct{}, perRule map[string]map[string]any) []diagnostic.Diagnostic {

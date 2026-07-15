@@ -50,9 +50,6 @@ func (AssignmentInCondition) Run(ctx *lint.Context) {
 		if inner.Tok.Kind != token.Assign {
 			return
 		}
-		if isDoubleParenOptOut(cond) {
-			return
-		}
 		d := diagnostic.Diagnostic{
 			RuleID:   "assignment-in-condition",
 			Message:  "assignment used as a condition; did you mean '=='?",
@@ -78,15 +75,4 @@ func unwrapParen(n *parser.Node) *parser.Node {
 		return n.Field("expression")
 	}
 	return n
-}
-
-func isDoubleParenOptOut(cond *parser.Node) bool {
-	if cond == nil || cond.Kind != parser.KindParenthesizedExpression {
-		return false
-	}
-	inner := cond.Field("expression")
-	if inner == nil || inner.Kind != parser.KindParenthesizedExpression {
-		return false
-	}
-	return true
 }
