@@ -29,6 +29,7 @@ type LintSection struct {
 }
 
 type File struct {
+	Presets      []string       `toml:"presets" json:"presets" yaml:"presets"`
 	Profile      string         `toml:"profile" json:"profile" yaml:"profile"`
 	Target       string         `toml:"target" json:"target" yaml:"target"`
 	Include      []string       `toml:"include" json:"include" yaml:"include"`
@@ -42,6 +43,12 @@ type File struct {
 	Builds       []Build        `toml:"builds" json:"builds" yaml:"builds"`
 	Variants     []Variant      `toml:"variants" json:"variants" yaml:"variants"`
 	Overrides    []Override     `toml:"overrides" json:"overrides" yaml:"overrides"`
+	presence     filePresence
+}
+
+type filePresence struct {
+	warningsAsErrors bool
+	maxDiagnostics   bool
 }
 
 type Build struct {

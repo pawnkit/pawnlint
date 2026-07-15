@@ -70,6 +70,109 @@ alpha = "error"
 	}
 }
 
+func TestPresetMergeAndLocalOverride(t *testing.T) {
+	dir := t.TempDir()
+	policyDir := filepath.Join(dir, "policy")
+	if err := os.Mkdir(policyDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	basePath := filepath.Join(policyDir, "base.toml")
+	base := `profile = "strict"
+[lint]
+warnings-as-errors = true
+max-diagnostics = 20
+[rules.alpha]
+severity = "warning"
+threshold = 5
+`
+	if err := os.WriteFile(basePath, []byte(base), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(dir, "pawnlint.toml")
+	local := `presets = ["policy/base.toml"]
+[lint]
+warnings-as-errors = false
+max-diagnostics = 0
+[rules.alpha]
+severity = "error"
+`
+	if err := os.WriteFile(configPath, []byte(local), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	file, err := config.Load(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := config.Resolve(file, configPath, regWith(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.Profile != "strict" || resolved.Source.Lint.WarningsAsErrors || resolved.Source.Lint.MaxDiagnostics != 0 {
+		t.Fatalf("resolved = %+v", resolved.Source)
+	}
+	if resolved.Enabled["alpha"] != diagnostic.SeverityError || resolved.RuleConfig["alpha"]["threshold"] != int64(5) {
+		t.Fatalf("alpha = %v, config = %#v", resolved.Enabled["alpha"], resolved.RuleConfig["alpha"])
+	}
+}
+
+func TestPresetOrder(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "first.toml"), []byte("[rules]\nalpha = \"warning\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "second.yaml"), []byte("rules:\n  alpha: info\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "pawnlint.json")
+	if err := os.WriteFile(path, []byte(`{"presets":["first.toml","second.yaml"]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	file, err := config.Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := config.Resolve(file, path, regWith(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.Enabled["alpha"] != diagnostic.SeverityInfo {
+		t.Fatalf("alpha = %v", resolved.Enabled["alpha"])
+	}
+}
+
+func TestPresetRejectsProjectContext(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "policy.toml"), []byte("target = \"samp\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "pawnlint.toml")
+	if err := os.WriteFile(path, []byte("presets = [\"policy.toml\"]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := config.Load(path); err == nil || !strings.Contains(err.Error(), "may only contain") {
+		t.Fatalf("error = %v", err)
+	}
+}
+
+func TestPresetCycle(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "one.toml"), []byte("presets = [\"two.toml\"]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "two.toml"), []byte("presets = [\"one.toml\"]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := config.Load(filepath.Join(dir, "one.toml")); err == nil || !strings.Contains(err.Error(), "preset cycle") {
+		t.Fatalf("error = %v", err)
+	}
+}
+
+func TestPresetRequiresFileLoading(t *testing.T) {
+	if _, err := config.DecodeBytes([]byte("presets = [\"policy.toml\"]\n")); err == nil || !strings.Contains(err.Error(), "require loading from a file") {
+		t.Fatalf("error = %v", err)
+	}
+}
+
 func TestUnknownRuleID(t *testing.T) {
 	reg := regWith(t)
 	content := `[rules]

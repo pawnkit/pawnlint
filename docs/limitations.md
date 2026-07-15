@@ -24,6 +24,11 @@
 - `--diff` previews changes without writing files.
 - Stdin input supports `--diff` but cannot be modified in place.
 
+## Analyzer API
+
+- The analyzer API provides diagnostics and actions, not editor or LSP integration.
+- Cancellation is checked between contexts and files, not during a parser or rule call.
+
 ## Preprocessor
 
 - Macros are not expanded.

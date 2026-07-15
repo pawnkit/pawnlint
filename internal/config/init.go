@@ -18,6 +18,9 @@ profile = "recommended"
 # Target dialect. Allowed: openmp (default), samp.
 target = "openmp"
 
+# Shared policy files. Later files override earlier files.
+presets = []
+
 # Glob patterns of sources to lint.
 include = [
  "gamemodes/**/*.pwn",

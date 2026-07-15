@@ -39,6 +39,14 @@ func formatFor(path string) (Format, error) {
 }
 
 func Load(path string) (File, error) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return File{}, fmt.Errorf("config: %w", err)
+	}
+	return loadPresets(filepath.Clean(path), nil)
+}
+
+func loadFile(path string) (File, error) {
 	format, err := formatFor(path)
 	if err != nil {
 		return File{}, err
@@ -62,15 +70,18 @@ func decode(b []byte, format Format) (File, error) {
 }
 
 func DecodeBytes(b []byte) (File, error) {
-	return decodeTOML(b)
+	f, err := decodeTOML(b)
+	return rejectUnresolvedPresets(f, err)
 }
 
 func DecodeJSON(b []byte) (File, error) {
-	return decodeJSON(b)
+	f, err := decodeJSON(b)
+	return rejectUnresolvedPresets(f, err)
 }
 
 func DecodeYAML(b []byte) (File, error) {
-	return decodeYAML(b)
+	f, err := decodeYAML(b)
+	return rejectUnresolvedPresets(f, err)
 }
 
 func decodeTOML(b []byte) (File, error) {
@@ -82,6 +93,8 @@ func decodeTOML(b []byte) (File, error) {
 	if undecoded := fixedUndecodedKeys(meta.Undecoded()); len(undecoded) > 0 {
 		return f, &UnknownFieldsError{Fields: keysAsStrings(undecoded)}
 	}
+	f.presence.warningsAsErrors = meta.IsDefined("lint", "warnings-as-errors")
+	f.presence.maxDiagnostics = meta.IsDefined("lint", "max-diagnostics")
 	return withDefaultRules(f), nil
 }
 
@@ -109,6 +122,16 @@ func decodeJSON(b []byte) (File, error) {
 		}
 		return File{}, fmt.Errorf("config: %w", err)
 	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(b, &raw); err == nil {
+		if lintRaw := raw["lint"]; len(lintRaw) != 0 {
+			var section map[string]json.RawMessage
+			if json.Unmarshal(lintRaw, &section) == nil {
+				_, f.presence.warningsAsErrors = section["warnings-as-errors"]
+				_, f.presence.maxDiagnostics = section["max-diagnostics"]
+			}
+		}
+	}
 	return withDefaultRules(f), nil
 }
 
@@ -122,7 +145,24 @@ func decodeYAML(b []byte) (File, error) {
 		}
 		return File{}, fmt.Errorf("config: %w", err)
 	}
+	var raw map[string]any
+	if yaml.Unmarshal(b, &raw) == nil {
+		if section, ok := raw["lint"].(map[string]any); ok {
+			_, f.presence.warningsAsErrors = section["warnings-as-errors"]
+			_, f.presence.maxDiagnostics = section["max-diagnostics"]
+		}
+	}
 	return withDefaultRules(f), nil
+}
+
+func rejectUnresolvedPresets(f File, err error) (File, error) {
+	if err != nil {
+		return File{}, err
+	}
+	if len(f.Presets) != 0 {
+		return File{}, fmt.Errorf("config: presets require loading from a file")
+	}
+	return f, nil
 }
 
 func withDefaultRules(f File) File {

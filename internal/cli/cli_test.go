@@ -66,6 +66,26 @@ func TestCLIBadColor(t *testing.T) {
 	}
 }
 
+func TestCLIUsesPreset(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "pawnlint.toml")
+	presetPath := filepath.Join(dir, "policy.toml")
+	sourcePath := filepath.Join(dir, "main.pwn")
+	if err := os.WriteFile(configPath, []byte("presets = [\"policy.toml\"]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(presetPath, []byte("[rules]\nempty-condition-body = \"off\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(sourcePath, []byte("main() { if (value); { return; } }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, stderr, code := runCLI(t, []string{"--config", configPath, sourcePath}, "")
+	if code != 0 || out != "" || stderr != "" {
+		t.Fatalf("code=%d output=%q stderr=%q", code, out, stderr)
+	}
+}
+
 func TestCLITimings(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "main.pwn")

@@ -10,6 +10,7 @@ extension), or `--init-config` to print a default TOML configuration.
 ```toml
 profile = "recommended"
 target = "openmp"
+presets = ["config/policy.toml"]
 
 include = ["gamemodes/**/*.pwn", "includes/**/*.inc"]
 exclude = ["vendor/**", "generated/**"]
@@ -37,6 +38,13 @@ discarded-expression = "off"
 - Relative `api-metadata` entries resolve the same way; later files override
   earlier entries for the same key.
 - A relative `baseline` path resolves from the configuration file.
+
+## Presets
+
+`presets` loads shared policy files relative to the declaring file. Presets may
+set `profile`, `lint`, `rules`, and `overrides`. Later presets override earlier
+ones, then the local config wins. Only listed files are loaded; source, build,
+target, and API context remain in the local config.
 
 ## Baselines
 
@@ -88,6 +96,7 @@ syntax differs. The example above in JSON:
 {
   "profile": "recommended",
   "target": "openmp",
+  "presets": ["config/policy.toml"],
   "include": ["gamemodes/**/*.pwn", "includes/**/*.inc"],
   "exclude": ["vendor/**", "generated/**"],
   "defines": [],
@@ -109,6 +118,7 @@ and in YAML:
 ```yaml
 profile: recommended
 target: openmp
+presets: ["config/policy.toml"]
 include: ["gamemodes/**/*.pwn", "includes/**/*.inc"]
 exclude: ["vendor/**", "generated/**"]
 defines: []
