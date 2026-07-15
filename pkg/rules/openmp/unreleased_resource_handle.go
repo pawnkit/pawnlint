@@ -18,7 +18,7 @@ func (UnreleasedResourceHandle) Metadata() lint.Metadata {
 		ID:              "unreleased-resource-handle",
 		Name:            "Unreleased resource handle",
 		Summary:         "Reports local resource handles that can reach function exit without release",
-		Explanation:     "A local initialized from a known file or SQLite resource creator must be released on every path before the function exits. Tracking stops conservatively when ownership escapes to user code or another value.",
+		Explanation:     "A local initialized from a known resource creator must be released on every path. The rule follows definite scalar aliases and simple project wrappers, then stops when ownership becomes ambiguous.",
 		Category:        diagnostic.CategoryCorrectness,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.ControlFlowAnalysis,

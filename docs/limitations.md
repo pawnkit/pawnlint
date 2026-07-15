@@ -78,9 +78,11 @@ it does not cache parser or semantic models.
 - Recognizes official release natives, released-handle use, and known
   non-owning native uses.
 - Configured project functions can declare owned returns and borrowed or
-  transferred scalar parameters when resolution is unambiguous.
-- Tracking stops once ownership may escape through user code, returns,
-  aliases, or reference parameters.
+  transferred scalar parameters.
+- Definite scalar aliases and simple project acquisition or transfer wrappers
+  are tracked across files.
+- Ambiguous calls, named arguments, complex wrappers, returns, and reference
+  parameters remain ownership escapes.
 
 ## Security analysis
 

@@ -13,4 +13,4 @@ Reports local resource handles that can reach function exit without release
 
 ## Details
 
-A local initialized from a known file or SQLite resource creator must be released on every path before the function exits. Tracking stops conservatively when ownership escapes to user code or another value.
+A local initialized from a known resource creator must be released on every path. The rule follows definite scalar aliases and simple project wrappers, then stops when ownership becomes ambiguous.

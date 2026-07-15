@@ -17,7 +17,7 @@ func (ReadAfterRelease) Metadata() lint.Metadata {
 		ID:              "read-after-release",
 		Name:            "Read after release",
 		Summary:         "Reports local resource handles used after release",
-		Explanation:     "A local handle returned by a native with release metadata is invalid after its matching releaser is called. The rule follows direct control-flow paths and stops at reassignment or ownership escape before release.",
+		Explanation:     "A local handle is invalid after release or ownership transfer. The rule follows definite scalar aliases and simple project wrappers, then stops when ownership becomes ambiguous.",
 		Category:        diagnostic.CategoryCorrectness,
 		DefaultSeverity: diagnostic.SeverityError,
 		AnalysisLevel:   lint.ControlFlowAnalysis,
@@ -103,8 +103,7 @@ func resourceReleaseCall(ctx *lint.Context, reference *parser.Node, releaser str
 		if !nodeInField(reference, arguments) {
 			return nil
 		}
-		callable, known := calledResourceFunction(ctx, parent)
-		if known && callable.name == releaser {
+		if resourceCallTransfers(ctx, parent, reference, releaser, make(map[string]bool)) {
 			return parent
 		}
 		return nil

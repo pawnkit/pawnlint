@@ -13,4 +13,4 @@ Reports local resource handles used after release
 
 ## Details
 
-A local handle returned by a native with release metadata is invalid after its matching releaser is called. The rule follows direct control-flow paths and stops at reassignment or ownership escape before release.
+A local handle is invalid after release or ownership transfer. The rule follows definite scalar aliases and simple project wrappers, then stops when ownership becomes ambiguous.
