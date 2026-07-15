@@ -2,11 +2,26 @@ package project
 
 import (
 	"sort"
-	"strconv"
 
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 )
+
+type declarationID struct {
+	file *File
+	node *parser.Node
+}
+
+type referenceID struct {
+	declaration declarationID
+	file        *File
+	node        *parser.Node
+}
+
+type declarationPair struct {
+	first  declarationID
+	second declarationID
+}
 
 func (m *Model) References(declaration Declaration) []Reference {
 	if m == nil || declaration.File == nil || declaration.Node == nil {
@@ -31,7 +46,7 @@ func (m *Model) FunctionVariants(file *File, node *parser.Node) []Declaration {
 		return nil
 	}
 	name := file.Walk.Text(node)
-	seen := make(map[string]Declaration)
+	seen := make(map[declarationID]Declaration)
 	for _, unit := range m.Units {
 		if _, contains := unit.members[file]; !contains {
 			continue
@@ -106,7 +121,7 @@ func (m *Model) buildDeclarations() {
 
 func (m *Model) buildReferences() {
 	bySymbol := make(map[*semantic.Symbol]Declaration)
-	seen := make(map[string]struct{})
+	seen := make(map[referenceID]struct{})
 	for _, declarations := range m.Declarations {
 		for _, declaration := range declarations {
 			bySymbol[declaration.Symbol] = declaration
@@ -184,9 +199,9 @@ func (m *Model) resolveInUnit(unit *Unit, from *File, name string, target semant
 	return candidates[0], true
 }
 
-func (m *Model) addReference(declaration Declaration, reference Reference, seen map[string]struct{}) {
+func (m *Model) addReference(declaration Declaration, reference Reference, seen map[referenceID]struct{}) {
 	key := declarationKey(declaration)
-	referenceKey := key + "\x00" + reference.File.instance + "\x00" + strconv.Itoa(reference.Node.Start)
+	referenceKey := referenceID{declaration: key, file: reference.File, node: reference.Node}
 	if _, exists := seen[referenceKey]; exists {
 		return
 	}
@@ -211,13 +226,17 @@ func (m *Model) addReference(declaration Declaration, reference Reference, seen 
 
 func sortDeclarations(declarations []Declaration) {
 	sort.SliceStable(declarations, func(i, j int) bool {
-		if declarations[i].File.instance != declarations[j].File.instance {
-			return declarations[i].File.instance < declarations[j].File.instance
-		}
-		return declarations[i].Node.Start < declarations[j].Node.Start
+		return declarationLess(declarations[i], declarations[j])
 	})
 }
 
-func declarationKey(declaration Declaration) string {
-	return declaration.File.instance + "\x00" + strconv.Itoa(declaration.Node.Start)
+func declarationKey(declaration Declaration) declarationID {
+	return declarationID{file: declaration.File, node: declaration.Node}
+}
+
+func declarationLess(left, right Declaration) bool {
+	if left.File.instance != right.File.instance {
+		return left.File.instance < right.File.instance
+	}
+	return left.Node.Start < right.Node.Start
 }

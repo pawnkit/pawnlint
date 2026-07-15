@@ -120,10 +120,10 @@ type Model struct {
 	byCanonical       map[string]*File
 	byContext         map[string]*File
 	physical          map[string]*physicalFile
-	references        map[string][]Reference
+	references        map[declarationID][]Reference
 	resolved          map[*File]map[*parser.Node]Declaration
 	ambiguous         map[*File]map[*parser.Node]bool
-	effects           map[string]FunctionEffects
+	effects           map[declarationID]FunctionEffects
 	sourceFiles       map[uint32]*File
 	options           Options
 }
@@ -155,7 +155,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 		byCanonical:  make(map[string]*File),
 		byContext:    make(map[string]*File),
 		physical:     make(map[string]*physicalFile),
-		references:   make(map[string][]Reference),
+		references:   make(map[declarationID][]Reference),
 		resolved:     make(map[*File]map[*parser.Node]Declaration),
 		ambiguous:    make(map[*File]map[*parser.Node]bool),
 		sourceFiles:  make(map[uint32]*File),

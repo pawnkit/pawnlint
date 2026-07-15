@@ -22,8 +22,8 @@ type functionEffectState struct {
 	complete            bool
 	intrinsicImpure     bool
 	pure                bool
-	reads               map[string]Declaration
-	writes              map[string]Declaration
+	reads               map[declarationID]Declaration
+	writes              map[declarationID]Declaration
 	mutated             map[int]bool
 	calls               []Call
 	parameterIndexes    map[*semantic.Symbol]int
@@ -46,11 +46,11 @@ func (m *Model) FunctionEffects(function Declaration) (FunctionEffects, bool) {
 }
 
 func (m *Model) buildFunctionEffects() {
-	m.effects = make(map[string]FunctionEffects)
+	m.effects = make(map[declarationID]FunctionEffects)
 	if m.CallGraph == nil {
 		return
 	}
-	states := make(map[string]*functionEffectState, len(m.CallGraph.Functions))
+	states := make(map[declarationID]*functionEffectState, len(m.CallGraph.Functions))
 	references := make(map[*File]map[*parser.Node]semantic.ReferenceKind)
 	symbols := make(map[*parser.Node][]*semantic.Symbol)
 	for _, file := range m.Files {
@@ -86,8 +86,8 @@ func (m *Model) directFunctionEffects(function Declaration, referenceKinds map[*
 	state := &functionEffectState{
 		complete:            true,
 		pure:                true,
-		reads:               make(map[string]Declaration),
-		writes:              make(map[string]Declaration),
+		reads:               make(map[declarationID]Declaration),
+		writes:              make(map[declarationID]Declaration),
 		mutated:             make(map[int]bool),
 		parameterIndexes:    make(map[*semantic.Symbol]int),
 		referenceParameters: make(map[*semantic.Symbol]bool),
@@ -192,7 +192,7 @@ func (m *Model) indexEffectParameters(file *File, function *parser.Node, state *
 	}
 }
 
-func (m *Model) mergeFunctionEffects(function Declaration, state *functionEffectState, states map[string]*functionEffectState) bool {
+func (m *Model) mergeFunctionEffects(function Declaration, state *functionEffectState, states map[declarationID]*functionEffectState) bool {
 	complete := state.complete
 	intrinsicImpure := state.intrinsicImpure
 	reads := cloneEffectDeclarations(state.reads)
@@ -222,7 +222,7 @@ func (m *Model) mergeFunctionEffects(function Declaration, state *functionEffect
 	return changed
 }
 
-func (m *Model) mapMutatedArguments(state *functionEffectState, call Call, calleeMutated map[int]bool, mutated map[int]bool, writes map[string]Declaration) bool {
+func (m *Model) mapMutatedArguments(state *functionEffectState, call Call, calleeMutated map[int]bool, mutated map[int]bool, writes map[declarationID]Declaration) bool {
 	arguments := call.Node.Field("arguments")
 	if arguments == nil {
 		return false
@@ -318,13 +318,13 @@ func effectInside(node, container *parser.Node) bool {
 	return node != nil && container != nil && node.Start >= container.Start && node.End <= container.End
 }
 
-func cloneEffectDeclarations(values map[string]Declaration) map[string]Declaration {
-	result := make(map[string]Declaration, len(values))
+func cloneEffectDeclarations(values map[declarationID]Declaration) map[declarationID]Declaration {
+	result := make(map[declarationID]Declaration, len(values))
 	mergeEffectDeclarations(result, values)
 	return result
 }
 
-func mergeEffectDeclarations(target, source map[string]Declaration) {
+func mergeEffectDeclarations(target, source map[declarationID]Declaration) {
 	for key, declaration := range source {
 		target[key] = declaration
 	}
@@ -338,7 +338,7 @@ func cloneEffectParameters(values map[int]bool) map[int]bool {
 	return result
 }
 
-func sameEffectDeclarations(left, right map[string]Declaration) bool {
+func sameEffectDeclarations(left, right map[declarationID]Declaration) bool {
 	if len(left) != len(right) {
 		return false
 	}

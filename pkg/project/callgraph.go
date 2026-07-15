@@ -45,14 +45,14 @@ type CallGraph struct {
 	Calls         []Call
 	AsyncCalls    []Call
 	EntryPoints   []EntryPoint
-	outgoing      map[string][]Call
-	asyncOutgoing map[string][]Call
-	asyncIncoming map[string][]Call
+	outgoing      map[declarationID][]Call
+	asyncOutgoing map[declarationID][]Call
+	asyncIncoming map[declarationID][]Call
 	recursive     [][]Declaration
 }
 
 func (m *Model) buildCallGraph() *CallGraph {
-	graph := &CallGraph{outgoing: make(map[string][]Call), asyncOutgoing: make(map[string][]Call), asyncIncoming: make(map[string][]Call)}
+	graph := &CallGraph{outgoing: make(map[declarationID][]Call), asyncOutgoing: make(map[declarationID][]Call), asyncIncoming: make(map[declarationID][]Call)}
 	byNode := make(map[*File]map[*parser.Node]Declaration)
 	for _, declarations := range m.Declarations {
 		for _, declaration := range declarations {
@@ -100,7 +100,7 @@ func (m *Model) buildCallGraph() *CallGraph {
 	sort.SliceStable(graph.Calls, func(i, j int) bool {
 		left, right := graph.Calls[i], graph.Calls[j]
 		if declarationKey(left.Caller) != declarationKey(right.Caller) {
-			return declarationKey(left.Caller) < declarationKey(right.Caller)
+			return declarationLess(left.Caller, right.Caller)
 		}
 		if left.File.canonical != right.File.canonical {
 			return left.File.canonical < right.File.canonical
@@ -108,7 +108,7 @@ func (m *Model) buildCallGraph() *CallGraph {
 		if left.Node.Start != right.Node.Start {
 			return left.Node.Start < right.Node.Start
 		}
-		return declarationKey(left.Callee) < declarationKey(right.Callee)
+		return declarationLess(left.Callee, right.Callee)
 	})
 	graph.buildRuntimeEdges(m, byNode)
 	graph.recursive = graph.findRecursiveComponents()
@@ -171,22 +171,22 @@ func (g *CallGraph) buildRuntimeEdges(model *Model, byNode map[*File]map[*parser
 		}
 	}
 	sort.SliceStable(g.EntryPoints, func(i, j int) bool {
-		return declarationKey(g.EntryPoints[i].Function) < declarationKey(g.EntryPoints[j].Function)
+		return declarationLess(g.EntryPoints[i].Function, g.EntryPoints[j].Function)
 	})
 	sort.SliceStable(g.AsyncCalls, func(i, j int) bool {
 		left, right := g.AsyncCalls[i], g.AsyncCalls[j]
 		if declarationKey(left.Caller) != declarationKey(right.Caller) {
-			return declarationKey(left.Caller) < declarationKey(right.Caller)
+			return declarationLess(left.Caller, right.Caller)
 		}
 		if left.Node.Start != right.Node.Start {
 			return left.Node.Start < right.Node.Start
 		}
-		return declarationKey(left.Callee) < declarationKey(right.Callee)
+		return declarationLess(left.Callee, right.Callee)
 	})
 	sort.SliceStable(g.Calls, func(i, j int) bool {
 		left, right := g.Calls[i], g.Calls[j]
 		if declarationKey(left.Caller) != declarationKey(right.Caller) {
-			return declarationKey(left.Caller) < declarationKey(right.Caller)
+			return declarationLess(left.Caller, right.Caller)
 		}
 		if left.File.canonical != right.File.canonical {
 			return left.File.canonical < right.File.canonical
@@ -194,9 +194,9 @@ func (g *CallGraph) buildRuntimeEdges(model *Model, byNode map[*File]map[*parser
 		if left.Node.Start != right.Node.Start {
 			return left.Node.Start < right.Node.Start
 		}
-		return declarationKey(left.Callee) < declarationKey(right.Callee)
+		return declarationLess(left.Callee, right.Callee)
 	})
-	g.outgoing = make(map[string][]Call)
+	g.outgoing = make(map[declarationID][]Call)
 	for _, call := range g.Calls {
 		key := declarationKey(call.Caller)
 		g.outgoing[key] = append(g.outgoing[key], call)
@@ -261,7 +261,7 @@ func runtimeCallbackName(tree *walk.Model, source []byte, node *parser.Node) (st
 }
 
 func (m *Model) runtimeDefinitions(file *File, name string) []Declaration {
-	seen := make(map[string]Declaration)
+	seen := make(map[declarationID]Declaration)
 	for _, unit := range m.Units {
 		if _, included := unit.members[file]; !included {
 			continue
@@ -291,7 +291,7 @@ func (m *Model) callDefinition(from *File, resolved Declaration) (Declaration, b
 	if resolved.Node != nil && resolved.Node.Kind == parser.KindFunctionDefinition && resolved.Symbol != nil && !resolved.Symbol.Ambiguous {
 		return resolved, true
 	}
-	seen := make(map[string]Declaration)
+	seen := make(map[declarationID]Declaration)
 	for _, unit := range m.Units {
 		contains := false
 		for _, file := range unit.Files {
@@ -357,9 +357,9 @@ func (g *CallGraph) findRecursiveComponents() [][]Declaration {
 		return nil
 	}
 	index := 0
-	indices := make(map[string]int)
-	lowlink := make(map[string]int)
-	onStack := make(map[string]bool)
+	indices := make(map[declarationID]int)
+	lowlink := make(map[declarationID]int)
+	onStack := make(map[declarationID]bool)
 	stack := make([]Declaration, 0, len(g.Functions))
 	var components [][]Declaration
 	var connect func(Declaration)
@@ -407,7 +407,7 @@ func (g *CallGraph) findRecursiveComponents() [][]Declaration {
 		}
 	}
 	sort.SliceStable(components, func(i, j int) bool {
-		return declarationKey(components[i][0]) < declarationKey(components[j][0])
+		return declarationLess(components[i][0], components[j][0])
 	})
 	return components
 }

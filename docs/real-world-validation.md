@@ -14,11 +14,11 @@ Three warm process runs used the `all` profile. Runtime is wall-clock median; me
 
 | Corpus | Milestone 7 | Milestone 8 | Change | M7 memory | M8 memory | Change |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| ScavengeSurvive | 0.57 s | 0.91 s | +60% | 747 MiB | 906 MiB | +21% |
-| gta-open | 0.34 s | 0.55 s | +62% | 474 MiB | 832 MiB | +76% |
-| AKRP-V5 | 0.29 s | 0.37 s | +28% | 450 MiB | 594 MiB | +32% |
+| ScavengeSurvive | 0.57 s | 0.60 s | +5% | 747 MiB | 539 MiB | -28% |
+| gta-open | 0.34 s | 0.37 s | +9% | 474 MiB | 427 MiB | -10% |
+| AKRP-V5 | 0.29 s | 0.28 s | -3% | 450 MiB | 339 MiB | -25% |
 
-Project construction accounts for the increase. Cross-file summaries add most of the cost; macro views and dynamic edges add smaller increments. The contextual-include benchmark changed from 1.35 ms and 1.36 MB to 1.45 ms and 1.47 MB per build.
+Pointer-based declaration identities removed repeated project-key allocation. Total ScavengeSurvive allocation fell from 1.30 GB to 626 MB. The contextual-include benchmark changed from 1.35 ms and 1.36 MB to 1.42 ms and 1.39 MB per build.
 
 ## Diagnostics
 

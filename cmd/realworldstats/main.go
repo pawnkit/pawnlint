@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"runtime/pprof"
 
 	"github.com/pawnkit/pawnlint/internal/config"
 	"github.com/pawnkit/pawnlint/pkg/project"
@@ -32,6 +34,7 @@ func main() {
 	root := flag.String("root", "", "")
 	entry := flag.String("entry", "", "")
 	configPath := flag.String("config", "", "")
+	heapProfile := flag.String("heap-profile", "", "")
 	flag.Parse()
 	if *root == "" || *entry == "" || *configPath == "" {
 		flag.Usage()
@@ -93,6 +96,21 @@ func main() {
 	}
 	if err := json.NewEncoder(os.Stdout).Encode(output); err != nil {
 		fatal(err)
+	}
+	if *heapProfile != "" {
+		runtime.GC()
+		file, err := os.Create(*heapProfile)
+		if err != nil {
+			fatal(err)
+		}
+		if err := pprof.WriteHeapProfile(file); err != nil {
+			_ = file.Close()
+			fatal(err)
+		}
+		if err := file.Close(); err != nil {
+			fatal(err)
+		}
+		runtime.KeepAlive(model)
 	}
 }
 

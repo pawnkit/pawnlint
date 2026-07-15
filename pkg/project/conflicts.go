@@ -23,7 +23,7 @@ func (m *Model) ConflictingIncludeSymbols() []SymbolConflict {
 }
 
 func (m *Model) buildConflictingIncludeSymbols() []SymbolConflict {
-	seen := make(map[string]struct{})
+	seen := make(map[declarationPair]struct{})
 	var result []SymbolConflict
 	for _, unit := range m.Units {
 		qualifiers := functionMacroQualifiers(unit)
@@ -48,7 +48,7 @@ func (m *Model) buildConflictingIncludeSymbols() []SymbolConflict {
 					if first.File == unit.Root && second.File == unit.Root {
 						continue
 					}
-					key := declarationKey(first) + "\x00" + declarationKey(second)
+					key := declarationPair{first: declarationKey(first), second: declarationKey(second)}
 					if _, exists := seen[key]; exists {
 						break
 					}

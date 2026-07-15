@@ -9,10 +9,10 @@ func (m *Model) Eval(file *File, node *parser.Node) (int64, bool) {
 	if m == nil || file == nil || file.Semantic == nil || node == nil {
 		return 0, false
 	}
-	return m.eval(file, node, make(map[string]bool))
+	return m.eval(file, node, make(map[declarationID]bool))
 }
 
-func (m *Model) eval(file *File, node *parser.Node, visiting map[string]bool) (int64, bool) {
+func (m *Model) eval(file *File, node *parser.Node, visiting map[declarationID]bool) (int64, bool) {
 	return file.Semantic.EvalWithResolver(node, func(identifier *parser.Node) (int64, bool) {
 		declaration, ok := m.Resolve(file, identifier)
 		if !ok || declaration.Symbol == nil || !declaration.Symbol.Constant || declaration.Symbol.Ambiguous {
@@ -29,7 +29,7 @@ func (m *Model) eval(file *File, node *parser.Node, visiting map[string]bool) (i
 	})
 }
 
-func (m *Model) declarationValue(declaration Declaration, visiting map[string]bool) (int64, bool) {
+func (m *Model) declarationValue(declaration Declaration, visiting map[declarationID]bool) (int64, bool) {
 	if value, ok := declaration.File.Semantic.ConstantValue(declaration.Symbol); ok {
 		return value, true
 	}
@@ -42,7 +42,7 @@ func (m *Model) declarationValue(declaration Declaration, visiting map[string]bo
 	return 0, false
 }
 
-func (m *Model) enumEntryValue(target Declaration, visiting map[string]bool) (int64, bool) {
+func (m *Model) enumEntryValue(target Declaration, visiting map[declarationID]bool) (int64, bool) {
 	body := target.File.Walk.Parent(target.Node)
 	declaration := target.File.Walk.Parent(body)
 	if body == nil || declaration == nil || declaration.Kind != parser.KindEnumDeclaration || declaration.Field("increment") != nil || target.File.Walk.Uncertain(declaration) {

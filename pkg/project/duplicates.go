@@ -13,7 +13,7 @@ func (m *Model) DuplicateFunctions() []DuplicateFunction {
 	if m == nil {
 		return nil
 	}
-	seen := make(map[string]struct{})
+	seen := make(map[declarationPair]struct{})
 	var result []DuplicateFunction
 	for _, unit := range m.Units {
 		macroQualifiers := functionMacroQualifiers(unit)
@@ -56,7 +56,7 @@ func (m *Model) DuplicateFunctions() []DuplicateFunction {
 				if first.File.canonical == duplicate.File.canonical && first.Node.Start == duplicate.Node.Start {
 					continue
 				}
-				key := declarationKey(first) + "\x00" + declarationKey(duplicate)
+				key := declarationPair{first: declarationKey(first), second: declarationKey(duplicate)}
 				if _, exists := seen[key]; exists {
 					continue
 				}
@@ -79,7 +79,7 @@ func (m *Model) DuplicateFunctions() []DuplicateFunction {
 		if result[i].Name != result[j].Name {
 			return result[i].Name < result[j].Name
 		}
-		return declarationKey(result[i].First) < declarationKey(result[j].First)
+		return declarationLess(result[i].First, result[j].First)
 	})
 	return result
 }
@@ -88,7 +88,7 @@ func (m *Model) DuplicateGlobals() []DuplicateGlobal {
 	if m == nil {
 		return nil
 	}
-	seen := make(map[string]struct{})
+	seen := make(map[declarationPair]struct{})
 	var result []DuplicateGlobal
 	for _, unit := range m.Units {
 		byName := make(map[string][]Declaration)
@@ -127,7 +127,7 @@ func (m *Model) DuplicateGlobals() []DuplicateGlobal {
 				if first.File.canonical == duplicate.File.canonical && first.Node.Start == duplicate.Node.Start {
 					continue
 				}
-				key := declarationKey(first) + "\x00" + declarationKey(duplicate)
+				key := declarationPair{first: declarationKey(first), second: declarationKey(duplicate)}
 				if _, exists := seen[key]; exists {
 					continue
 				}
