@@ -1,0 +1,25 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "cyclomatic-complexity",
+      "severity": "warning",
+      "message": "function \"ComplexFlow\" has cyclomatic complexity 7, exceeding the maximum of 3",
+      "startLine": 1,
+      "startCol": 1,
+      "endLine": 1,
+      "endCol": 12
+    },
+    {
+      "ruleId": "cyclomatic-complexity",
+      "severity": "warning",
+      "message": "function \"BooleanPaths\" has cyclomatic complexity 4, exceeding the maximum of 3",
+      "startLine": 18,
+      "startCol": 1,
+      "endLine": 18,
+      "endCol": 13
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

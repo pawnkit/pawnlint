@@ -77,9 +77,9 @@ max-diagnostics = 0
 #   [rules]
 #   float-equality = "off"
 #
-#   [rules.function-complexity]
+#   [rules.cyclomatic-complexity]
 #   severity = "warning"
-#   threshold = 20
+#   maximum = 20
 [rules]
 `)
 	metas := reg.Sorted()

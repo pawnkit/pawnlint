@@ -15,6 +15,7 @@ Rules are stable unless their page marks them as preview.
 | [`conflicting-include-symbol`](conflicting-include-symbol.md) | correctness | error | on | no | Reports namespace collisions contributed by included files |
 | [`confusable-identifier`](confusable-identifier.md) | suspicious | warning | off | no | Reports visible declarations with visually confusable names |
 | [`constant-condition`](constant-condition.md) | suspicious | warning | off | no | Reports if and ternary conditions with a constant result |
+| [`cyclomatic-complexity`](cyclomatic-complexity.md) | maintainability | warning | off | no | Reports functions with too many independent control-flow paths |
 | [`dead-write`](dead-write.md) | suspicious | warning | off | no | Reports local assignments whose stored value is never read |
 | [`deprecated-function`](deprecated-function.md) | openmp | warning | off | no | Reports deprecated compatibility functions in open.mp |
 | [`deprecated-native`](deprecated-native.md) | openmp | warning | off | no | Reports calls to natives deprecated by the selected API |

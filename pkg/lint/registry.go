@@ -42,7 +42,7 @@ var curate = map[Profile]map[string]struct{}{
 		"unescaped-sql-format": {}, "discarded-repeating-timer": {}, "raw-tick-subtraction": {},
 		"sscanf-format-argument-count": {}, "settimerex-format-argument-count": {},
 		"confusable-identifier":    {},
-		"inconsistent-enum-prefix": {},
+		"inconsistent-enum-prefix": {}, "cyclomatic-complexity": {},
 	},
 }
 
