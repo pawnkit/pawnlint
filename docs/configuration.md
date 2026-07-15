@@ -314,6 +314,19 @@ maximum-age-days = 90
 Task metadata uses `TODO(owner, YYYY-MM-DD, ISSUE-123): description` at the
 start of a comment line.
 
+```toml
+[rules.public-documentation]
+severity = "warning"
+storage = ["public", "stock"]
+include = ["^API_"]
+minimum-description-length = 10
+require-parameters = true
+require-return = true
+```
+
+Documentation uses an adjacent `/** */` block or consecutive `///` lines with
+`@param name description` and `@return description` entries.
+
 ## Precedence
 
 Highest priority first:

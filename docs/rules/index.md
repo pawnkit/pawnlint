@@ -56,6 +56,7 @@ Rules are stable unless their page marks them as preview.
 | [`out-of-bounds-constant-index`](out-of-bounds-constant-index.md) | correctness | error | on | no | Reports constant indexes outside a known array dimension |
 | [`overwritten-resource-handle`](overwritten-resource-handle.md) | correctness | warning | off | no | Reports resource handles overwritten before any use or release |
 | [`possibly-uninitialized`](possibly-uninitialized.md) | correctness | warning | off | no | Reports local variables read before an explicit assignment on every path |
+| [`public-documentation`](public-documentation.md) | style | warning | off | no | Reports selected functions without complete API documentation |
 | [`raw-tick-subtraction`](raw-tick-subtraction.md) | correctness | warning | off | no | Reports GetTickCount() subtracted directly instead of through a wraparound-safe helper |
 | [`read-after-release`](read-after-release.md) | correctness | error | on | no | Reports local resource handles used after release |
 | [`recursive-call`](recursive-call.md) | suspicious | warning | off | no | Reports direct and mutual recursion in the project call graph |

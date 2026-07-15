@@ -1,0 +1,8 @@
+{
+  "storage": ["public", "stock"],
+  "include": ["^(API_|On)"],
+  "exclude": ["Internal$"],
+  "minimum-description-length": 8,
+  "require-parameters": true,
+  "require-return": true
+}

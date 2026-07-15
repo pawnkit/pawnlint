@@ -1,0 +1,98 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "public-documentation",
+      "severity": "warning",
+      "message": "function \"OnOrdinaryComment\" requires API documentation",
+      "startLine": 2,
+      "startCol": 8,
+      "endLine": 2,
+      "endCol": 25
+    },
+    {
+      "ruleId": "public-documentation",
+      "severity": "warning",
+      "message": "function \"OnDetached\" requires API documentation",
+      "startLine": 9,
+      "startCol": 8,
+      "endLine": 9,
+      "endCol": 18
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "public-documentation",
+      "severity": "warning",
+      "message": "function \"OnMissing\" requires API documentation",
+      "startLine": 1,
+      "startCol": 8,
+      "endLine": 1,
+      "endCol": 17
+    },
+    {
+      "ruleId": "public-documentation",
+      "severity": "warning",
+      "message": "function \"API_Short\" requires a description of at least 8 characters",
+      "startLine": 7,
+      "startCol": 7,
+      "endLine": 7,
+      "endCol": 16
+    },
+    {
+      "ruleId": "public-documentation",
+      "severity": "warning",
+      "message": "function \"API_MissingParameter\" requires an @param entry for \"value\"",
+      "startLine": 16,
+      "startCol": 7,
+      "endLine": 16,
+      "endCol": 27
+    },
+    {
+      "ruleId": "public-documentation",
+      "severity": "warning",
+      "message": "function \"API_EmptyParameter\" requires a description for parameter \"value\"",
+      "startLine": 26,
+      "startCol": 7,
+      "endLine": 26,
+      "endCol": 25
+    },
+    {
+      "ruleId": "public-documentation",
+      "severity": "warning",
+      "message": "function \"API_DuplicateParameter\" documents parameter \"value\" more than once",
+      "startLine": 37,
+      "startCol": 7,
+      "endLine": 37,
+      "endCol": 29
+    },
+    {
+      "ruleId": "public-documentation",
+      "severity": "warning",
+      "message": "function \"API_UnknownParameter\" documents unknown parameter \"other\"",
+      "startLine": 47,
+      "startCol": 7,
+      "endLine": 47,
+      "endCol": 27
+    },
+    {
+      "ruleId": "public-documentation",
+      "severity": "warning",
+      "message": "function \"API_MissingReturn\" requires an @return entry",
+      "startLine": 55,
+      "startCol": 7,
+      "endLine": 55,
+      "endCol": 24
+    },
+    {
+      "ruleId": "public-documentation",
+      "severity": "warning",
+      "message": "function \"API_EmptyReturn\" requires an @return description",
+      "startLine": 64,
+      "startCol": 7,
+      "endLine": 64,
+      "endCol": 22
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
