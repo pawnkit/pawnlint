@@ -65,23 +65,10 @@ Calculate(value)
 ### Good
 
 ```pawn
-const MAX_RETRIES = 42;
+const MAX_LOGIN_ATTEMPTS = 3;
 
-enum State
+CanRetry(attempts)
 {
-    STATE_IDLE = 7,
-    STATE_BUSY = 12
-}
-
-#define RETRY_DELAY (5000)
-
-Check(value = 30)
-{
-    new values[16];
-    new Float:zero = -0.0;
-    values[2] = 100;
-    CreatePoint(75, 125);
-    SendClientMessage(value, -1, "ok");
-    return value == 0 || value == 1 || value == -1 || value == 0xFFFFFFFF;
+    return attempts < MAX_LOGIN_ATTEMPTS;
 }
 ```

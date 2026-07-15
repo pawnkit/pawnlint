@@ -33,25 +33,10 @@ native Consume(Resource:resource);
 
 main()
 {
-	new Resource:resource = Acquire();
-	Release(resource);
-	Consume(resource);
-	if (resource)
-	{
-		Release(resource);
-	}
+    new Resource:resource = Acquire();
+    Release(resource);
+    Consume(resource);
 }
-
-stock Conditional(bool:release)
-{
-	new Resource:resource = Acquire();
-	if (release)
-	{
-		Release(resource);
-	}
-	Consume(resource);
-}
-// …
 ```
 
 ### Good
@@ -63,17 +48,8 @@ native Consume(Resource:resource);
 
 main()
 {
-	new Resource:resource = Acquire();
-	Consume(resource);
-	Release(resource);
-}
-
-stock Reassigned()
-{
-	new Resource:resource = Acquire();
-	Release(resource);
-	resource = Acquire();
-	Consume(resource);
-	Release(resource);
+    new Resource:resource = Acquire();
+    Consume(resource);
+    Release(resource);
 }
 ```

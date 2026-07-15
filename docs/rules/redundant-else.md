@@ -27,45 +27,28 @@ redundant-else = "warning"
 ### Bad
 
 ```pawn
-ReturnValue(value)
+ClampScore(score)
 {
-    if (value < 0)
+    if (score < 0)
     {
         return 0;
     }
     else
     {
-        return value;
+        return score;
     }
 }
-// …
 ```
 
 ### Good
 
 ```pawn
-CheckValue(value)
+ClampScore(score)
 {
-    if (value < 0)
+    if (score < 0)
     {
-        value = 0;
+        return 0;
     }
-    else
-    {
-        value++;
-    }
-
-    if (value == 1)
-    {
-        if (value < 0)
-            return 0;
-    }
-    else
-    {
-        value--;
-    }
-    return value;
+    return score;
 }
-
-#define RETURN_VALUE(%0) if (%0) return 1; else return 0
 ```

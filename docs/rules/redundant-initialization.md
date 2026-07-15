@@ -27,62 +27,20 @@ redundant-initialization = "warning"
 ### Bad
 
 ```pawn
-native Use(value);
-
-main()
+GetWorld()
 {
-	Immediate();
-	BothBranches(true);
-	EarlyExit(true);
-	DoLoop(true);
+    new world = 0;
+    world = 1;
+    return world;
 }
-
-stock Immediate()
-{
-	new value = 0;
-	value = 1;
-	Use(value);
-}
-
-stock BothBranches(bool:condition)
-{
-	new value = 10;
-	if (condition)
-	{
-		value = 1;
-	}
-	else
-	{
-		value = 2;
-	}
-	Use(value);
-}
-// …
 ```
 
 ### Good
 
 ```pawn
-native Use(value);
-native SideEffect();
-
-main()
+GetWorld()
 {
-	ReadBeforeWrite();
-	PartialWrite(true);
-	Effectful();
-	ReadWrite();
-	NoOverwrite();
-	LoopDeclaration();
-	StaticLocal();
-	SameDeclaration();
+    new world = 1;
+    return world;
 }
-
-stock ReadBeforeWrite()
-{
-	new value = 0;
-	Use(value);
-	value = 1;
-}
-// …
 ```

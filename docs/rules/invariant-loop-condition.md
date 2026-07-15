@@ -27,32 +27,12 @@ invariant-loop-condition = "warning"
 ### Bad
 
 ```pawn
-Check()
+WaitForPlayers()
 {
     new remaining = 10;
     while (remaining > 0)
     {
         print("waiting");
-    }
-
-    new limit = 5;
-    for (new index = 0; limit < 10; index++)
-    {
-        print("limited");
-    }
-
-    new ready;
-    do
-    {
-        print("checking");
-    }
-    while (!ready);
-
-    new lower = 1;
-    new upper = 10;
-    while (lower < upper)
-    {
-        break;
     }
 }
 ```
@@ -60,35 +40,13 @@ Check()
 ### Good
 
 ```pawn
-new global_running;
-
-Check(parameter)
+WaitForPlayers()
 {
     new remaining = 10;
     while (remaining > 0)
+    {
         remaining--;
-
-    for (new index = 0; index < 10; index++)
-        print("working");
-
-    for (new item = 0, length = 10; item != length; ++item)
-        print("multiple");
-
-    for (new reverse = 10; --reverse != -1;)
-        print("condition update");
-
-    while (IsReady())
-        print("waiting");
-
-    while (global_running)
-        print("global");
-
-    while (parameter)
-        print("parameter");
-
-    new changed = 1;
-    while (changed)
-        Mutate(changed);
-
-// …
+    }
+    return remaining;
+}
 ```

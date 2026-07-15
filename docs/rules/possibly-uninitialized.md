@@ -27,64 +27,19 @@ possibly-uninitialized = "warning"
 ### Bad
 
 ```pawn
-Use(value)
+GetDefaultWorld()
 {
-    return value;
+    new world;
+    return world;
 }
-
-direct_read()
-{
-    new value;
-    Use(value);
-}
-
-one_branch(bool:condition)
-{
-    new value;
-    if (condition)
-        value = 1;
-    Use(value);
-}
-
-optional_loop()
-{
-    new value;
-    while (Check())
-    {
-        value = 1;
-    }
-    Use(value);
-}
-// …
 ```
 
 ### Good
 
 ```pawn
-Use(value)
+GetDefaultWorld()
 {
-    return value;
+    new world = 0;
+    return world;
 }
-
-SetValue(&value)
-{
-    value = 1;
-}
-
-initialized()
-{
-    new value = 1;
-    Use(value);
-}
-
-both_branches(bool:condition)
-{
-    new value;
-    if (condition)
-        value = 1;
-    else
-        value = 2;
-    Use(value);
-}
-// …
 ```

@@ -27,30 +27,11 @@ unreachable-code = "warning"
 ### Bad
 
 ```pawn
-after_return()
+GetDefaultScore()
 {
-    return;
-    new first;
-    new second;
+    return 10;
+    return 0;
 }
-
-after_if()
-{
-    if (condition)
-        return;
-    else
-        return;
-    result = 1;
-}
-
-after_goto()
-{
-    goto done;
-    skipped = 1;
-done:
-    return;
-}
-// …
 ```
 
 ### Good

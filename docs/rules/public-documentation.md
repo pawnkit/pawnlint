@@ -50,36 +50,10 @@ require-return = true
 ### Bad
 
 ```pawn
-public OnMissing(playerid)
+stock API_CreateAccount(playerid, const name[])
 {
-    return playerid;
+    return playerid + name[0];
 }
-
-/** Short. */
-stock API_Short()
-{
-    return 1;
-}
-
-/**
- * Documents parameters.
- * @return A value.
- */
-stock API_MissingParameter(value)
-{
-    return value;
-}
-
-/**
- * Documents parameters.
- * @param value
- * @return A value.
- */
-stock API_EmptyParameter(value)
-{
-    return value;
-}
-// …
 ```
 
 ### Good
@@ -94,23 +68,5 @@ stock API_EmptyParameter(value)
 stock API_CreateAccount(playerid, const name[])
 {
     return playerid + name[0];
-}
-
-/// Handles a connection.
-/// @param playerid Player identifier.
-/// @return Non-zero on success.
-public OnPlayerConnect(playerid)
-{
-    return 1;
-}
-
-public OnInternal()
-{
-    return 1;
-}
-
-stock Helper()
-{
-    return 1;
 }
 ```

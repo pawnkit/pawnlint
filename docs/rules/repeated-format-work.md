@@ -27,67 +27,28 @@ repeated-format-work = "warning"
 ### Bad
 
 ```pawn
-CheckFormat(limit, value)
+BuildLabel(count, value)
 {
-    new output[64];
-    new total;
-    for (new i; i < limit; i++) {
-        format(output, sizeof output, "value %d", value);
-        total += i;
+    new label[32];
+    for (new i; i < count; i++)
+    {
+        format(label, sizeof label, "Value: %d", value);
     }
-    Consume(output);
-    return total;
-}
-
-CheckStrformat(limit)
-{
-    new output[64];
-    while (limit-- > 0) {
-        strformat(output, sizeof output, false, "ready");
-    }
-    Consume(output);
-}
-
-CheckOpenMPFormat(limit)
-{
-    new output[64];
-    do {
-        Format(output, sizeof output, "ready");
-    } while (--limit > 0);
-    Consume(output);
+    return label[0];
 }
 ```
 
 ### Good
 
 ```pawn
-CheckChanging(limit)
+BuildLabel(count, value)
 {
-    new output[64];
-    for (new i; i < limit; i++) {
-        format(output, sizeof output, "value %d", i);
+    new label[32];
+    format(label, sizeof label, "Value: %d", value);
+    for (new i; i < count; i++)
+    {
+        printf("%s", label);
     }
-    Consume(output);
+    return label[0];
 }
-
-CheckConsumed(limit, value)
-{
-    new output[64];
-    for (new i; i < limit; i++) {
-        format(output, sizeof output, "value %d", value);
-        Consume(output);
-    }
-}
-
-CheckConditional(limit, value)
-{
-    new output[64];
-    for (new i; i < limit; i++) {
-        if (i > 2) {
-            format(output, sizeof output, "value %d", value);
-        }
-    }
-    Consume(output);
-}
-// …
 ```

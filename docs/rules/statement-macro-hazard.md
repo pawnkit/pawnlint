@@ -27,29 +27,21 @@ statement-macro-hazard = "warning"
 ### Bad
 
 ```pawn
-#define TWO(x) First(x); Second(x)
-#define TERMINATED(x) Work(x);
-#define CONDITIONAL(x) if (x) Work()
+#define LOG_BOTH(%0) print(%0); printf("Logged: %s", %0)
 
 main()
 {
-    TWO(1);
+    LOG_BOTH("server started");
 }
 ```
 
 ### Good
 
 ```pawn
-#define WRAPPED(x) do { First(x); Second(x); } while (0)
-#define BLOCK(x) { First(x); Second(x); }
-#define COMPLETE(x) if (x) First(); else Second()
-#define CALL(x) Work(x)
-#define VALUE(x) ((x) + 1)
-#define EMPTY()
-#define DECLARE(name) forward name(); public name()
+#define LOG_BOTH(%0) do { print(%0); printf("Logged: %s", %0); } while (0)
 
 main()
 {
-    WRAPPED(1);
+    LOG_BOTH("server started");
 }
 ```

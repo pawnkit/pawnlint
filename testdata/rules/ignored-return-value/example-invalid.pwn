@@ -1,0 +1,6 @@
+native RequiredResult();
+
+main()
+{
+    RequiredResult();
+}

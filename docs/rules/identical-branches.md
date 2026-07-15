@@ -27,34 +27,30 @@ identical-branches = "warning"
 ### Bad
 
 ```pawn
-same_if(bool:condition)
+GetTeamColour(bool:isRedTeam)
 {
-    if (condition)
+    new colour;
+    if (isRedTeam)
     {
-        result = 1;
+        colour = 0xFF0000FF;
     }
     else
     {
-        result = 1;
+        colour = 0xFF0000FF;
     }
-}
-
-same_ternary(bool:condition)
-{
-    new value = condition ? result + 1 : result + 1;
+    return colour;
 }
 ```
 
 ### Good
 
 ```pawn
-main(bool:condition)
+GetTeamColour(bool:isRedTeam)
 {
-    if (condition)
-        result = 1;
-    else
-        result = 2;
-
-    new value = condition ? 1 : 0;
+    if (isRedTeam)
+    {
+        return 0xFF0000FF;
+    }
+    return 0x0000FFFF;
 }
 ```

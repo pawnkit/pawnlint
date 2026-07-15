@@ -38,21 +38,11 @@ empty-condition-body = "error"
 ### Bad
 
 ```pawn
-main()
+main(playerid)
 {
     if (IsPlayerConnected(playerid));
     {
         Kick(playerid);
-    }
-
-    while (running);
-    {
-        DoStuff();
-    }
-
-    for (;;);
-    {
-        break;
     }
 }
 ```
@@ -60,21 +50,11 @@ main()
 ### Good
 
 ```pawn
-main()
+main(playerid)
 {
     if (IsPlayerConnected(playerid))
     {
         Kick(playerid);
-    }
-
-    while (running)
-    {
-        DoStuff();
-    }
-
-    for (new i = 0; i < 10; i++)
-    {
-        Sum += i;
     }
 }
 ```

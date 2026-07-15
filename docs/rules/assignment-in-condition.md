@@ -34,39 +34,25 @@ assignment-in-condition = "warning"
 ### Bad
 
 ```pawn
-main()
+main(playerid)
 {
-    if (playerid = GetPlayer())
+    if (playerid = GetMaxPlayers())
     {
+        return 1;
     }
-    while (count = next())
-    {
-    }
-    if (ready = isReady())
-    {
-    }
+    return 0;
 }
 ```
 
 ### Good
 
 ```pawn
-main()
+main(playerid)
 {
-    if (IsPlayerConnected(playerid))
+    if (playerid == GetMaxPlayers())
     {
+        return 1;
     }
-    while (count > 0)
-    {
-        count--;
-    }
-    do
-    {
-        x++;
-    }
-    while (x < 10);
-    if ((result = compute()) != 0)
-    {
-    }
+    return 0;
 }
 ```

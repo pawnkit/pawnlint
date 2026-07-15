@@ -27,25 +27,11 @@ missing-return-value = "warning"
 ### Bad
 
 ```pawn
-falls_through(bool:condition)
+GetTeamScore(bool:redTeam)
 {
-    if (condition)
-        return 1;
-}
-
-bare_return(bool:condition)
-{
-    if (condition)
-        return 1;
-    return;
-}
-
-switch_path(value)
-{
-    switch (value)
+    if (redTeam)
     {
-        case 1: return 1;
-        default: result = 0;
+        return 10;
     }
 }
 ```
@@ -53,25 +39,12 @@ switch_path(value)
 ### Good
 
 ```pawn
-all_paths(bool:condition)
+GetTeamScore(bool:redTeam)
 {
-    if (condition)
-        return 1;
-    return 0;
-}
-
-no_value_result()
-{
-    if (condition)
-        return;
-}
-
-value_or_loop(bool:condition)
-{
-    if (condition)
-        return 1;
-    while (true)
+    if (redTeam)
     {
+        return 10;
     }
+    return 8;
 }
 ```

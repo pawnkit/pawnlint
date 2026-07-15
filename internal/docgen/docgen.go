@@ -119,11 +119,25 @@ func writeExamples(b *strings.Builder, id string) {
 	}
 	b.WriteString("\n## Examples\n\n")
 	if hasBad {
-		b.WriteString("### Bad\n\n```pawn\n" + bad + "\n```\n\n")
+		b.WriteString("### Bad\n\n")
+		writeExampleSupport(b, id, "invalid")
+		b.WriteString("```pawn\n" + bad + "\n```\n\n")
 	}
 	if hasGood {
-		b.WriteString("### Good\n\n```pawn\n" + good + "\n```\n")
+		b.WriteString("### Good\n\n")
+		writeExampleSupport(b, id, "valid")
+		b.WriteString("```pawn\n" + good + "\n```\n")
 	}
+}
+
+func writeExampleSupport(b *strings.Builder, id, name string) {
+	content, ok := readExampleSupport(id, name)
+	if !ok {
+		return
+	}
+	b.WriteString("`example-" + name + ".inc`:\n\n")
+	b.WriteString("```pawn\n" + content + "\n```\n\n")
+	b.WriteString("`example-" + name + ".pwn`:\n\n")
 }
 
 const maxExampleLines = 30
@@ -157,6 +171,15 @@ func readExample(id, name string) (string, bool) {
 		lines = append(lines[:cut], "// …")
 	}
 	return strings.Join(lines, "\n"), true
+}
+
+func readExampleSupport(id, name string) (string, bool) {
+	content, err := os.ReadFile(filepath.Join(testdataRulesDir(), id, "example-"+name+".inc"))
+	if err != nil {
+		return "", false
+	}
+	text := strings.Trim(string(content), "\n")
+	return text, text != ""
 }
 
 func testdataRulesDir() string {

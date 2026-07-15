@@ -27,62 +27,25 @@ dead-write = "warning"
 ### Bad
 
 ```pawn
-overwritten()
+GetSpawnWorld()
 {
-    new value;
-    value = 1;
-    value = 2;
-    Use(value);
+	new world;
+	world = 1;
+    world = 2;
+    return world;
 }
-
-before_exit()
-{
-    new value;
-    value = 1;
-    return;
-}
-
-branches(bool:condition)
-{
-    new value;
-    if (condition)
-        value = 1;
-    else
-        value = 2;
-}
-// …
 ```
 
 ### Good
 
 ```pawn
-used_after_write(bool:condition)
+GetSpawnWorld()
 {
-    new value;
-    value = 1;
-    Use(value);
-
-    if (condition)
-        value = 2;
-    else
-        value = 3;
-    Use(value);
-}
-
-other_symbols(parameter)
-{
-    global_value = 1;
-    parameter = 2;
-}
-
-do_condition()
-{
-    new value;
-    do
+    new world = 1;
+    if (random(2))
     {
-        value = 1;
+        world = 2;
     }
-    while (value);
+    return world;
 }
-// …
 ```

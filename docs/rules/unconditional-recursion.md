@@ -27,62 +27,21 @@ unconditional-recursion = "warning"
 ### Bad
 
 ```pawn
-Direct()
+Countdown(value)
 {
-    Direct();
+    return Countdown(value - 1);
 }
-
-ReturnDirect()
-{
-    return ReturnDirect();
-}
-
-BothBranches(value)
-{
-    if (value)
-        BothBranches(value - 1);
-    else
-        BothBranches(value + 1);
-}
-
-MutualA()
-{
-    MutualB();
-}
-
-MutualB()
-{
-    MutualA();
-}
-// …
 ```
 
 ### Good
 
 ```pawn
-WithBaseCase(value)
+Countdown(value)
 {
     if (value <= 0)
+    {
         return 0;
-    return WithBaseCase(value - 1);
+    }
+    return Countdown(value - 1);
 }
-
-ConditionalCall(value)
-{
-    value && ConditionalCall(value - 1);
-    return value;
-}
-
-MutualBaseA(value)
-{
-    if (value <= 0)
-        return 0;
-    return MutualBaseB(value - 1);
-}
-
-MutualBaseB(value)
-{
-    return MutualBaseA(value);
-}
-// …
 ```

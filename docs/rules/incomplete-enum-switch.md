@@ -36,21 +36,13 @@ enum PlayerState
 
 CheckState(PlayerState:current)
 {
-    switch (current)
-    {
-        case STATE_NONE:
-            return 0;
-    }
-    return 1;
+	switch (current)
+	{
+		case STATE_NONE:
+			return 0;
+	}
+	return 1;
 }
-
-enum Code
-{
-    CODE_FIRST = 10,
-    CODE_SECOND,
-    CODE_THIRD
-}
-// …
 ```
 
 ### Good
@@ -63,27 +55,14 @@ enum PlayerState
     STATE_DEAD
 }
 
-AllStates(PlayerState:current)
+IsAlive(PlayerState:state)
 {
-    switch (current)
-    {
-        case STATE_NONE, STATE_ALIVE:
-            return 0;
-        case STATE_DEAD:
-            return 1;
+	switch (state)
+	{
+		case STATE_ALIVE: return 1;
+		case STATE_NONE: return 0;
+		case STATE_DEAD: return 0;
     }
     return 0;
 }
-
-DefaultState(PlayerState:current)
-{
-    switch (current)
-    {
-        case STATE_NONE:
-            return 0;
-        default:
-            return 1;
-    }
-}
-// …
 ```

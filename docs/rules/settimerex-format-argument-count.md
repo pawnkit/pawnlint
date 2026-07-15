@@ -37,11 +37,11 @@ settimerex-format-argument-count = "error"
 ### Bad
 
 ```pawn
-main()
+forward OnRespawn(playerid, hospitalid);
+
+main(playerid)
 {
-    SetTimerEx("OnDone", 1000, false, "dd", 0);
-    SetTimerEx("OnDone", 1000, false, "d", 0, 1);
-    SetTimerEx("OnDone", 1000, false, "ai", myArray);
+    SetTimerEx("OnRespawn", 1000, false, "ii", playerid);
 }
 ```
 

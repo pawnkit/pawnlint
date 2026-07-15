@@ -29,59 +29,18 @@ unreleased-resource-handle = "warning"
 ```pawn
 main()
 {
-	new File:file = fopen("server.log");
-	new File:temporary = ftemp();
-	new DB:database = DB_Open("server.db");
-	new DBResult:result = DB_ExecuteQuery(DB:1, "SELECT 1");
+    new File:log = fopen("server.log");
+    fwrite(log, "server started");
 }
-
-stock WriteFile(bool:condition)
-{
-	new File:file = fopen("output.log");
-	fwrite(file, "entry");
-	if (condition)
-	{
-		fclose(file);
-	}
-}
-
-stock AssignFile()
-{
-	new File:file;
-	file = fopen("assigned.log");
-}
-// …
 ```
 
 ### Good
 
 ```pawn
-stock File:OpenLog()
-{
-	new File:file = fopen("server.log");
-	return file;
-}
-
 main()
 {
-	new DB:database = DB_Open("server.db");
-	DB_Close(database);
-
-	new DBResult:result = DB_ExecuteQuery(DB:1, "SELECT 1");
-	ConsumeResult(result);
+    new File:log = fopen("server.log");
+    fwrite(log, "server started");
+    fclose(log);
 }
-
-stock UseFile(bool:condition)
-{
-	new File:file = fopen("server.log");
-	if (condition)
-	{
-		fclose(file);
-	}
-	else
-	{
-		fclose(file);
-	}
-}
-// …
 ```

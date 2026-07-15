@@ -33,60 +33,29 @@ Set options under `[rules.npath-complexity]`.
 ### Bad
 
 ```pawn
-ManyPaths(first, second, third)
+UpdateValues(first, second, third)
 {
-    if (first)
-    {
-        first++;
-    }
-    if (second)
-    {
-        second++;
-    }
-    if (third)
-    {
-        third++;
-    }
+    if (first) first++;
+    if (second) second++;
+    if (third) third++;
     while (first)
     {
-        if (second)
-        {
-            break;
-        }
+        if (second) break;
         first--;
     }
     return first + second + third;
 }
-// …
 ```
 
 ### Good
 
 ```pawn
-Boundary(first, second, third)
+UpdateValue(value)
 {
-    if (first)
+    if (value > 0)
     {
-        first++;
+        value--;
     }
-    if (second)
-    {
-        second++;
-    }
-    while (third)
-    {
-        third--;
-    }
-    return first + second + third;
-}
-
-SwitchValue(value)
-{
-    switch (value)
-    {
-        case 1: return 1;
-        case 2: return 2;
-        default: return 0;
-    }
+    return value;
 }
 ```

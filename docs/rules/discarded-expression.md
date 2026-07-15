@@ -36,38 +36,18 @@ discarded-expression = "warning"
 ```pawn
 main()
 {
-    playerid + 1;
-    a * b;
-    x && y;
-    arr[0] | mask;
-    (a + b);
+    new score = 10;
+    score + 5;
 }
 ```
 
 ### Good
 
 ```pawn
-enum E_VALUES
-{
-    E_VALUE
-}
-
 main()
 {
-    Kick(playerid);
-    x = 10;
-    y++;
-    z--;
-    ++y;
-    --z;
-    foo(a, b, c);
-    bar(x);
-    return callcmd::goto(playerid, params);
-}
-
-StopTimers()
-{
-    stop timerid;
-    stop timers[playerid];
+    new score = 10;
+    score += 5;
+    return score;
 }
 ```

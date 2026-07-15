@@ -26,18 +26,45 @@ unused-include = "warning"
 
 ### Bad
 
-```pawn
-#include "unused.inc"
+`example-invalid.inc`:
 
-main() {}
+```pawn
+stock SetExampleMode()
+{
+    return 1;
+}
+```
+
+`example-invalid.pwn`:
+
+```pawn
+#include "example-invalid.inc"
+
+main()
+{
+	return 1;
+}
 ```
 
 ### Good
 
-```pawn
-#include "used.inc"
+`example-valid.inc`:
 
-main() {
-    Used();
+```pawn
+stock SetExampleMode()
+{
+    return 1;
+}
+```
+
+`example-valid.pwn`:
+
+```pawn
+#include "example-valid.inc"
+
+main()
+{
+	SetExampleMode();
+	return 1;
 }
 ```

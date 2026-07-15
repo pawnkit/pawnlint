@@ -44,13 +44,12 @@ main()
 ### Good
 
 ```pawn
-main(divisor)
+Average(total, count)
 {
-    new value = 10 / 2;
-    value = value / divisor;
-
-    new changed = 0;
-    Change(changed);
-    value = value / changed;
+    if (count == 0)
+    {
+        return 0;
+    }
+    return total / count;
 }
 ```

@@ -31,35 +31,23 @@ unknown-suppression = "warning"
 ### Bad
 
 ```pawn
-// pawnlint-disable-next-line bogus-rule
-x;
-
 main()
 {
-    // pawnlint-enable never-disabled
-    y;
-    // pawnlint-disable-next-line
-    z;
-    // pawnlint-disable-next-line foo, bar
-    a;
+    new value = 1;
+    // pawnlint-disable-next-line rule-that-does-not-exist
+    value + 1;
+    return value;
 }
 ```
 
 ### Good
 
 ```pawn
-// pawnlint-disable-next-line discarded-expression
-playerid + 1;
-
 main()
 {
-    // pawnlint-disable discarded-expression
-    a + 1;
-    b + 2;
-    // pawnlint-enable discarded-expression
-    c + 3;
+    new value = 1;
+    // pawnlint-disable-next-line discarded-expression
+    value + 1;
+    return value;
 }
-
-// pawnlint-disable-next-line all
-x + 1;
 ```

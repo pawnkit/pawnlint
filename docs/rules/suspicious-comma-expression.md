@@ -35,25 +35,21 @@ suspicious-comma-expression = "warning"
 ### Bad
 
 ```pawn
-main()
+GetResult()
 {
-    return Function1(), Function2(), 3;
-    a = b, c = d;
-    x++, y++;
+    new first = random(10);
+    new second = random(10);
+    return first, second;
 }
 ```
 
 ### Good
 
 ```pawn
-main()
+GetResult()
 {
-    return 0;
-    a = 1, b = 2;
-    foo(a, b, c);
-    new list[] = {1, 2, 3};
-    for (new i = 0, j = 10; i < j; i++, j--)
-    {
-    }
+    new first = random(10);
+    new second = random(10);
+    return first + second;
 }
 ```

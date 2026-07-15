@@ -45,21 +45,16 @@ main()
 ### Good
 
 ```pawn
-main()
+GetSign(value)
 {
-    new value;
-    if (value == 1)
+    if (value > 0)
     {
+        return 1;
     }
-    else if (value == 2)
+    else if (value < 0)
     {
+        return -1;
     }
-
-    if (Check())
-    {
-    }
-    else if (Check())
-    {
-    }
+    return 0;
 }
 ```

@@ -27,55 +27,26 @@ redundant-forward = "warning"
 ### Bad
 
 ```pawn
-forward UnusedForward();
+forward GetScore(playerid);
 
-UnusedForward()
+GetScore(playerid)
 {
-    return 1;
-}
-
-forward CalledAfterDefinition(value);
-
-CalledAfterDefinition(value)
-{
-    return value;
-}
-
-main()
-{
-    return CalledAfterDefinition(1);
+    return GetPlayerScore(playerid);
 }
 ```
 
 ### Good
 
 ```pawn
-forward RequiredForward(value);
+forward GetScore(playerid);
 
 main()
 {
-    return RequiredForward(1);
+    return GetScore(0);
 }
 
-RequiredForward(value)
+GetScore(playerid)
 {
-    return value;
+    return GetPlayerScore(playerid);
 }
-
-forward ExternalCallback();
-
-forward public ExportedByForward();
-
-ExportedByForward()
-{
-    return 1;
-}
-
-forward AcrossInclude();
-#include <other>
-AcrossInclude()
-{
-    return 1;
-}
-// …
 ```

@@ -32,56 +32,17 @@ unused-parameter = "warning"
 ### Bad
 
 ```pawn
-stock Add(left, right)
+stock AddScore(playerid, amount)
 {
-    return left;
-}
-
-stock Empty(argc)
-{
-}
-
-stock OtherPragmaScope(value)
-{
-}
-
-stock UnrelatedPragma(value)
-{
-    #pragma unused OtherPragmaScope
+    return amount;
 }
 ```
 
 ### Good
 
 ```pawn
-public OnPlayerConnect(playerid)
+stock AddScore(playerid, amount)
 {
-    return 1;
+    return GetPlayerScore(playerid) + amount;
 }
-
-stock Add(left, right)
-{
-    return left + right;
-}
-
-stock Ignore(_value)
-{
-    return 1;
-}
-
-CMD:ExternalCommand(playerid, params[])
-{
-    return 1;
-}
-
-hook OnPlayerEnterVehicle(playerid, vehicleid, ispassenger)
-{
-    return playerid;
-}
-
-inline Response(pid, dialogid, response, listitem, string:inputtext[])
-{
-    return pid;
-}
-// …
 ```

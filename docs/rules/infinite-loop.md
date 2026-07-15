@@ -27,59 +27,24 @@ infinite-loop = "warning"
 ### Bad
 
 ```pawn
-Forever()
+WaitForPlayers()
 {
-    while (1)
+    while (true)
     {
-        print("forever");
+        print("waiting");
     }
 }
-
-EmptyFor()
-{
-    for (;;)
-    {
-        print("forever");
-    }
-}
-
-Invariant()
-{
-    new running = 1;
-    while (running)
-    {
-        print("forever");
-    }
-}
-// …
 ```
 
 ### Good
 
 ```pawn
-BreakLoop()
+WaitForPlayers(attempts)
 {
-    while (1)
+    while (attempts > 0)
     {
-        break;
+        attempts--;
     }
+    return attempts;
 }
-
-ReturnLoop()
-{
-    for (;;)
-    {
-        return 1;
-    }
-}
-
-ChangedCondition()
-{
-    new running = 1;
-    while (running)
-    {
-        running = 0;
-    }
-}
-// …
 ```

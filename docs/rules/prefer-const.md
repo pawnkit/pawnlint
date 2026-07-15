@@ -27,33 +27,19 @@ prefer-const = "warning"
 ### Bad
 
 ```pawn
-ReadValue(value)
+GetDefaultWorld()
 {
-    return value;
-}
-
-main()
-{
-    new literal = 1;
-    new expression = 2 + 3;
-    new runtime = ReadValue(literal);
-    new byValue = 4;
-    ReadValue(byValue);
-    return literal + expression + runtime + byValue;
+    new world = 1;
+    return world;
 }
 ```
 
 ### Good
 
 ```pawn
-ReadValue(value)
+GetDefaultWorld()
 {
-    return value;
+    const world = 1;
+    return world;
 }
-
-MutateValue(&value)
-{
-    value++;
-}
-// …
 ```

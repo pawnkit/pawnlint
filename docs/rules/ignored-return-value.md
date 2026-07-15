@@ -27,7 +27,10 @@ ignored-return-value = "warning"
 ### Bad
 
 ```pawn
-main() {
+native RequiredResult();
+
+main()
+{
     RequiredResult();
 }
 ```
@@ -35,8 +38,11 @@ main() {
 ### Good
 
 ```pawn
-main() {
-    new value = RequiredResult();
-    OrdinaryResult();
+native RequiredResult();
+
+main()
+{
+    new result = RequiredResult();
+    return result;
 }
 ```

@@ -44,23 +44,25 @@ unescaped-sql-format = "warning"
 ### Bad
 
 ```pawn
-main()
+#include <a_mysql>
+
+FormatLookup(connection, const name[])
 {
     new query[128];
-    new name[MAX_PLAYER_NAME];
-    mysql_format(1, query, sizeof(query), "SELECT * FROM users WHERE name = '%s'", name);
+    mysql_format(connection, query, sizeof query, "SELECT id FROM users WHERE name = '%s'", name);
+    return query[0];
 }
 ```
 
 ### Good
 
 ```pawn
-main()
+#include <a_mysql>
+
+FormatLookup(connection, const name[])
 {
     new query[128];
-    new name[MAX_PLAYER_NAME];
-    mysql_format(1, query, sizeof(query), "SELECT * FROM users WHERE name = '%e'", name);
-    mysql_format(1, query, sizeof(query), "SELECT * FROM `%s` WHERE id = %d", "users", 1);
-    mysql_format(1, query, sizeof(query), "SELECT * FROM users WHERE id = %d", 1);
+    mysql_format(connection, query, sizeof query, "SELECT id FROM users WHERE name = '%e'", name);
+    return query[0];
 }
 ```

@@ -27,51 +27,21 @@ forward-signature-mismatch = "error"
 ### Bad
 
 ```pawn
-forward CountMismatch(value);
+forward SetScore(playerid, score);
 
-CountMismatch(value, extra)
+SetScore(playerid)
 {
+    return playerid;
 }
-
-forward Float:ReturnTag();
-
-ReturnTag()
-{
-}
-
-forward ParamTag(Float:value);
-
-ParamTag(value)
-{
-}
-
-forward ArrayRank(values[]);
-
-ArrayRank(values)
-{
-}
-
-forward Varargs(format[], ...);
-
-Varargs(format[], value)
-{
-}
-// …
 ```
 
 ### Good
 
 ```pawn
-forward Float:Measure(const values[], count);
+forward SetScore(playerid, score);
 
-Float:Measure(const values[], count)
+SetScore(playerid, score)
 {
-    return 0.0;
-}
-
-forward Log(format[], ...);
-
-Log(format[], ...)
-{
+    return playerid + score;
 }
 ```

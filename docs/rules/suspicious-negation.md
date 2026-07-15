@@ -35,42 +35,19 @@ suspicious-negation = "warning"
 ### Bad
 
 ```pawn
-main()
+HasAdminFlag(flags)
 {
-    if (!flags & FLAG_ADMIN)
-    {
-    }
-    if (!value == expected)
-    {
-    }
-    if (!a | b)
-    {
-    }
-    if (!mask ^ tag)
-    {
-    }
+    const FLAG_ADMIN = 1;
+    return !flags & FLAG_ADMIN;
 }
 ```
 
 ### Good
 
 ```pawn
-main()
+HasAdminFlag(flags)
 {
-    if (!connected)
-    {
-    }
-    if (flags & FLAG_ADMIN)
-    {
-    }
-    if (value != expected)
-    {
-    }
-    if (!flags)
-    {
-    }
-    if (!(flags & FLAG))
-    {
-    }
+    const FLAG_ADMIN = 1;
+    return !(flags & FLAG_ADMIN);
 }
 ```

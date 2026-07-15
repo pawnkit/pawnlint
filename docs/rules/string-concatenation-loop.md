@@ -27,64 +27,27 @@ string-concatenation-loop = "warning"
 ### Bad
 
 ```pawn
-BuildString(limit, const piece[])
+BuildList(count, const item[])
 {
-    new output[256] = "";
-    for (new i; i < limit; i++) {
-        strcat(output, piece, sizeof output);
+    new output[128];
+    for (new i; i < count; i++)
+    {
+        strcat(output, item, sizeof output);
     }
-    Consume(output);
-}
-
-BuildDefaultLimit(limit, const piece[])
-{
-    new output[256] = "";
-    do {
-        strcat(output, piece);
-    } while (--limit > 0);
-    Consume(output);
-}
-
-BuildDelimited(limit, const piece[])
-{
-    new output[256] = "";
-    for (new i; i < limit; i++) {
-        strcat(output, piece, sizeof output);
-        strcat(output, ",", sizeof output);
-    }
-    Consume(output);
+    return output[0];
 }
 ```
 
 ### Good
 
 ```pawn
-BuildScratch(limit, const piece[])
+BuildList(count, const item[])
 {
-    for (new i; i < limit; i++) {
-        new output[256] = "";
-        strcat(output, piece, sizeof output);
-        Consume(output);
+    new output[128];
+    for (new i; i < count; i++)
+    {
+        format(output, sizeof output, "%s%s", output, item);
     }
+    return output[0];
 }
-
-BuildReset(limit, const piece[])
-{
-    new output[256] = "";
-    for (new i; i < limit; i++) {
-        output[0] = EOS;
-        strcat(output, piece, sizeof output);
-    }
-    Consume(output);
-}
-
-BuildConsumed(limit, const piece[])
-{
-    new output[256] = "";
-    for (new i; i < limit; i++) {
-        strcat(output, piece, sizeof output);
-        Consume(output);
-    }
-}
-// …
 ```
