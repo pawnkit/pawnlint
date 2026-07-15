@@ -96,6 +96,10 @@ it does not cache parser or semantic models.
 - Tracks define contexts and include order while sharing parsed CSTs.
 - Resolves function and value references, constant values, tags, and compatible
   state variants; reports duplicate or unused project symbols.
+- Function effects propagate definite global access, reference-parameter
+  mutation, calls, and purity across resolved project functions.
+- Effects are unknown for unresolved calls, macros, malformed syntax, ambiguous
+  reference flows, and complex state selectors.
 - Macro-generated includes are not expanded; uncertain includes are skipped.
 - Contexts track macro names, not values; identical contexts share one instance.
 

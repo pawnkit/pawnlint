@@ -70,7 +70,7 @@ func redundantInitializerCandidates(ctx *lint.Context, function *controlflow.Fun
 			continue
 		}
 		initializer := symbol.Decl.Field("initializer")
-		if initializer == nil || !ctx.Semantic.Pure(initializer) {
+		if initializer == nil || !ctx.Pure(initializer) {
 			continue
 		}
 		if len(symbol.Decl.Children) != 0 && hasDimension(symbol.Decl) {

@@ -114,6 +114,7 @@ type Model struct {
 	references        map[string][]Reference
 	resolved          map[*File]map[*parser.Node]Declaration
 	ambiguous         map[*File]map[*parser.Node]bool
+	effects           map[string]FunctionEffects
 	options           Options
 }
 
@@ -177,6 +178,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 	model.buildReferences()
 	model.unusedIncludes = model.buildUnusedIncludes()
 	model.CallGraph = model.buildCallGraph()
+	model.buildFunctionEffects()
 	return model, nil
 }
 

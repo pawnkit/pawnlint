@@ -128,6 +128,96 @@ func (ctx *Context) ExpressionTag(node *parser.Node) (string, bool) {
 	return tags[0], true
 }
 
+func (ctx *Context) Pure(node *parser.Node) bool {
+	if ctx == nil || ctx.Semantic == nil || node == nil || node.HasError || ctx.Walk.Uncertain(node) {
+		return false
+	}
+	if ctx.Semantic.Pure(node) {
+		return true
+	}
+	for node.Kind == parser.KindParenthesizedExpression {
+		node = node.Field("expression")
+		if node == nil {
+			return false
+		}
+	}
+	switch node.Kind {
+	case parser.KindCallExpression:
+		if _, pure := ctx.PureCall(node); !pure {
+			return false
+		}
+		arguments := node.Field("arguments")
+		if arguments == nil {
+			return true
+		}
+		for _, argument := range arguments.Children {
+			if !ctx.Pure(argument) {
+				return false
+			}
+		}
+		return true
+	case parser.KindUnaryExpression:
+		if node.Tok.Kind == token.PlusPlus || node.Tok.Kind == token.MinusMinus {
+			return false
+		}
+	case parser.KindBinaryExpression, parser.KindTernaryExpression, parser.KindSubscriptExpression,
+		parser.KindSizeofExpression, parser.KindTagofExpression, parser.KindTaggedExpression:
+	default:
+		return false
+	}
+	for _, child := range node.Children {
+		if !ctx.Pure(child) {
+			return false
+		}
+	}
+	return true
+}
+
+func (ctx *Context) PureCall(call *parser.Node) (string, bool) {
+	if ctx == nil || call == nil || call.Kind != parser.KindCallExpression {
+		return "", false
+	}
+	callee := call.Field("function")
+	if callee == nil || callee.Kind != parser.KindIdentifier || callee.Tok.Origin != nil {
+		return "", false
+	}
+	name := ctx.Walk.Text(callee)
+	if ctx.Project != nil && ctx.ProjectFile != nil {
+		variants := ctx.Project.FunctionVariants(ctx.ProjectFile, callee)
+		if len(variants) != 0 {
+			projectFunction := false
+			for _, declaration := range variants {
+				if declaration.Kind != semantic.SymbolFunction || declaration.Node == nil {
+					return "", false
+				}
+				if walk.HasChildToken(declaration.Node, token.KwNative) {
+					continue
+				}
+				projectFunction = true
+				effects, known := ctx.Project.FunctionEffects(declaration)
+				if !known || !effects.Complete || !effects.Pure {
+					return "", false
+				}
+			}
+			if projectFunction {
+				return name, true
+			}
+		}
+		for _, declaration := range ctx.Project.Declarations[name] {
+			if declaration.Kind == semantic.SymbolFunction && len(variants) == 0 {
+				return "", false
+			}
+		}
+	}
+	if native, ok := ctx.Natives()[name]; ok && native.Pure {
+		return name, true
+	}
+	if function, ok := ctx.Functions()[name]; ok && function.Pure {
+		return name, true
+	}
+	return "", false
+}
+
 func (ctx *Context) Natives() map[string]api.Native {
 	if ctx != nil && ctx.API != nil {
 		return ctx.API.Natives

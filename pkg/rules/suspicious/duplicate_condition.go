@@ -35,7 +35,7 @@ func (DuplicateCondition) Run(ctx *lint.Context) {
 		var seen []*parser.Node
 		for current := node; current != nil && current.Kind == parser.KindIfStatement; {
 			condition := current.Field("condition")
-			if ctx.Semantic.Pure(condition) {
+			if ctx.Pure(condition) {
 				for _, first := range seen {
 					if !ctx.Semantic.Equivalent(first, condition) {
 						continue

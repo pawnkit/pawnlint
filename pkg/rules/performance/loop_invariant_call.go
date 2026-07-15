@@ -6,7 +6,6 @@ import (
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/semantic"
-	"github.com/pawnkit/pawnlint/internal/source/walk"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 )
@@ -18,7 +17,7 @@ func (LoopInvariantCall) Metadata() lint.Metadata {
 		ID:              "loop-invariant-call",
 		Name:            "Loop-invariant call",
 		Summary:         "Reports pure calls repeated with unchanged arguments in loops",
-		Explanation:     "A pure call with unchanged arguments returns the same result on every iteration. The rule checks calls marked pure in API metadata and selected deterministic standard-library natives. Mutable arrays, globals, changed locals, unresolved calls, macros, uncertain loops, and strlen calls handled by the dedicated rule are ignored.",
+		Explanation:     "A pure call with unchanged arguments returns the same result on every iteration. The rule checks inferred project-function effects, API purity metadata, and selected deterministic standard-library natives. Mutable arrays, globals, changed locals, unresolved calls, macros, uncertain loops, and strlen calls handled by the dedicated rule are ignored.",
 		Category:        diagnostic.CategoryPerformance,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.SemanticAnalysis,
@@ -132,42 +131,7 @@ func loopInvariantExpression(ctx *lint.Context, node, loop *parser.Node, symbols
 }
 
 func loopInvariantPureCall(ctx *lint.Context, call *parser.Node) (string, bool) {
-	callee := call.Field("function")
-	if callee == nil || callee.Kind != parser.KindIdentifier || callee.Tok.Origin != nil {
-		return "", false
-	}
-	name := ctx.Walk.Text(callee)
-	native, nativeKnown := ctx.Natives()[name]
-	function, functionKnown := ctx.Functions()[name]
-	if !nativeKnown || !native.Pure {
-		if !functionKnown || !function.Pure {
-			return "", false
-		}
-	}
-	if ctx.Project != nil && ctx.ProjectFile != nil {
-		if declaration, ok := ctx.Project.Resolve(ctx.ProjectFile, callee); ok {
-			if declaration.Kind != semantic.SymbolFunction || declaration.Node == nil {
-				return "", false
-			}
-			if walk.HasChildToken(declaration.Node, token.KwNative) {
-				return name, nativeKnown && native.Pure
-			}
-			return name, functionKnown && function.Pure
-		}
-		if len(ctx.Project.Declarations[name]) != 0 {
-			return "", false
-		}
-	}
-	if symbol := ctx.Semantic.ResolveAsCallTarget(callee); symbol != nil {
-		if symbol.Kind != semantic.SymbolFunction || symbol.Decl == nil || symbol.Ambiguous {
-			return "", false
-		}
-		if walk.HasChildToken(symbol.Decl, token.KwNative) {
-			return name, nativeKnown && native.Pure
-		}
-		return name, functionKnown && function.Pure
-	}
-	return name, nativeKnown && native.Pure || functionKnown && function.Pure
+	return ctx.PureCall(call)
 }
 
 func loopInvariantSymbolChanges(ctx *lint.Context, loop *parser.Node, symbol *semantic.Symbol) bool {
