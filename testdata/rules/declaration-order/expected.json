@@ -1,0 +1,34 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "declaration-order",
+      "severity": "warning",
+      "message": "constant declarations must appear before global variable declarations",
+      "startLine": 9,
+      "startCol": 7,
+      "endLine": 9,
+      "endCol": 20
+    },
+    {
+      "ruleId": "declaration-order",
+      "severity": "warning",
+      "message": "local declarations must appear before executable statements in their block",
+      "startLine": 14,
+      "startCol": 9,
+      "endLine": 14,
+      "endCol": 18
+    },
+    {
+      "ruleId": "declaration-order",
+      "severity": "warning",
+      "message": "local declarations must appear before executable statements in their block",
+      "startLine": 18,
+      "startCol": 13,
+      "endLine": 18,
+      "endCol": 23
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

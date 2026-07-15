@@ -18,6 +18,7 @@ Rules are stable unless their page marks them as preview.
 | [`constant-condition`](constant-condition.md) | suspicious | warning | off | no | Reports if and ternary conditions with a constant result |
 | [`cyclomatic-complexity`](cyclomatic-complexity.md) | maintainability | warning | off | no | Reports functions with too many independent control-flow paths |
 | [`dead-write`](dead-write.md) | suspicious | warning | off | no | Reports local assignments whose stored value is never read |
+| [`declaration-order`](declaration-order.md) | style | warning | off | no | Reports declarations outside the configured source order |
 | [`deprecated-function`](deprecated-function.md) | openmp | warning | off | no | Reports deprecated compatibility functions in open.mp |
 | [`deprecated-native`](deprecated-native.md) | openmp | warning | off | no | Reports calls to natives deprecated by the selected API |
 | [`disallowed-name`](disallowed-name.md) | restriction | warning | off | no | Reports declarations denied by configured name policies |

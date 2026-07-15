@@ -1,0 +1,4 @@
+{
+  "order": ["include", "define", "enum", "constant", "variable", "native", "forward", "function"],
+  "locals-before-statements": true
+}
