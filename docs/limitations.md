@@ -136,9 +136,10 @@ it does not cache parser or semantic models.
 
 ## Dynamic calls
 
-- The project call graph resolves only direct, unambiguous calls.
-- Dynamic calls by name, function references, callbacks, timers, hooks, and
-  generated dispatch remain conservative graph roots or unresolved edges.
+- The project call graph resolves direct calls, main and public entry points,
+  literal named calls, and literal timer callbacks.
+- Timer edges are asynchronous. SetTimerEx arguments feed taint analysis.
+- Dynamic strings, function indexes, hooks, and generated dispatch remain unresolved.
 
 ## Pawn semantics
 

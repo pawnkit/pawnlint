@@ -1,5 +1,24 @@
 {
-  "edge-cases.pwn": [],
+  "edge-cases.pwn": [
+    {
+      "ruleId": "recursive-call",
+      "severity": "warning",
+      "message": "function \"main\" calls itself recursively",
+      "startLine": 1,
+      "startCol": 1,
+      "endLine": 1,
+      "endCol": 5,
+      "notes": [
+        {
+          "message": "recursive call to \"main\" is here",
+          "startLine": 3,
+          "startCol": 2,
+          "endLine": 3,
+          "endCol": 19
+        }
+      ]
+    }
+  ],
   "invalid.pwn": [
     {
       "ruleId": "recursive-call",

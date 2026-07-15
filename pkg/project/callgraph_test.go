@@ -74,3 +74,102 @@ func TestCallGraphKeepsSharedCSTContextsIndependent(t *testing.T) {
 		}
 	}
 }
+
+func TestCallGraphAddsCallbackEntriesAndTimerEdges(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	source := []byte(`public OnGameModeInit()
+{
+	SetTimer("Tick", 1000, false);
+	return 1;
+}
+
+public Tick()
+{
+	SetTimer("Tick", 1000, false);
+}
+`)
+	model, err := project.Build([]project.Source{{Path: path, Content: source}}, project.Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	graph := model.CallGraph
+	if len(graph.EntryPoints) != 2 || len(graph.AsyncCalls) != 2 {
+		t.Fatalf("entries=%#v async=%#v", graph.EntryPoints, graph.AsyncCalls)
+	}
+	for _, call := range graph.AsyncCalls {
+		if call.Kind != project.CallTimer || call.Callee.Name != "Tick" {
+			t.Fatalf("call = %#v", call)
+		}
+	}
+	if len(graph.RecursiveComponents()) != 0 {
+		t.Fatalf("timer scheduling was treated as recursion: %#v", graph.RecursiveComponents())
+	}
+	var tick project.Declaration
+	for _, function := range graph.Functions {
+		if function.Name == "Tick" {
+			tick = function
+		}
+	}
+	if outgoing := graph.AsyncOutgoing(tick); len(outgoing) != 1 || outgoing[0].Callee.Name != "Tick" {
+		t.Fatalf("outgoing = %#v", outgoing)
+	}
+}
+
+func TestCallGraphResolvesMacroTimerCallback(t *testing.T) {
+	dir := t.TempDir()
+	includePath := filepath.Join(dir, "timer.inc")
+	mainPath := filepath.Join(dir, "main.pwn")
+	if err := os.WriteFile(includePath, []byte("#define TIMER_CALLBACK \"Tick\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	source := []byte(`#include "timer.inc"
+main()
+{
+	SetTimer(TIMER_CALLBACK, 1000, false);
+}
+
+public Tick()
+{
+}
+`)
+	model, err := project.Build([]project.Source{{Path: mainPath, Content: source}}, project.Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(model.CallGraph.AsyncCalls) != 1 || model.CallGraph.AsyncCalls[0].Callee.Name != "Tick" {
+		t.Fatalf("async calls = %#v", model.CallGraph.AsyncCalls)
+	}
+	origins := model.ExpansionOrigins(model.File(mainPath), model.CallGraph.AsyncCalls[0].Node)
+	if len(origins) == 0 {
+		t.Fatal("timer edge lost macro origin")
+	}
+}
+
+func TestCallGraphResolvesDynamicFunctionCall(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	source := []byte(`main()
+{
+	CallLocalFunction("Dispatch", "i", 1);
+}
+
+public Dispatch(value)
+{
+}
+`)
+	model, err := project.Build([]project.Source{{Path: path, Content: source}}, project.Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mainFunction project.Declaration
+	for _, function := range model.CallGraph.Functions {
+		if function.Name == "main" {
+			mainFunction = function
+		}
+	}
+	calls := model.CallGraph.Outgoing(mainFunction)
+	if len(calls) != 1 || calls[0].Kind != project.CallDynamic || calls[0].Callee.Name != "Dispatch" || calls[0].ArgumentOffset != 2 {
+		t.Fatalf("calls = %#v", calls)
+	}
+}

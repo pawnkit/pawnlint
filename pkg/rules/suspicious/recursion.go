@@ -16,7 +16,7 @@ func (RecursiveCall) Metadata() lint.Metadata {
 		ID:              "recursive-call",
 		Name:            "Recursive call",
 		Summary:         "Reports direct and mutual recursion in the project call graph",
-		Explanation:     "Recursive Pawn calls consume a fixed runtime stack and can overflow. The rule reports only statically resolved direct-call cycles and skips dynamic or ambiguous calls.",
+		Explanation:     "Recursive Pawn calls consume a fixed runtime stack and can overflow. The rule reports statically resolved direct and named-call cycles and skips ambiguous targets.",
 		Category:        diagnostic.CategorySuspicious,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.ProjectAnalysis,

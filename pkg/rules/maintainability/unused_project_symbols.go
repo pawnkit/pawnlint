@@ -19,7 +19,7 @@ func (UnusedFunction) Metadata() lint.Metadata {
 		ID:              "unused-function",
 		Name:            "Unused function",
 		Summary:         "Reports internal functions unused by any translation unit",
-		Explanation:     "An unreferenced internal function may be dead code. Main, public, stock, callback, command-handler, state-qualified, operator, and underscore-prefixed functions are skipped. Translation units containing parser error nodes are skipped because references may be hidden.",
+		Explanation:     "An unreferenced internal function may be dead code. Main, externally callable functions, resolved timer targets, state-qualified functions, operators, and underscore-prefixed functions are skipped. Translation units containing parser errors are skipped.",
 		Category:        diagnostic.CategoryMaintainability,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.ProjectAnalysis,
@@ -56,7 +56,7 @@ func (UnusedFunction) Run(ctx *lint.Context) {
 			continue
 		}
 		declaration, ok := projectDeclaration(ctx.Project, file, symbol)
-		if !ok || len(ctx.Project.References(declaration)) != 0 {
+		if !ok || len(ctx.Project.References(declaration)) != 0 || ctx.Project.CallGraph != nil && len(ctx.Project.CallGraph.AsyncIncoming(declaration)) != 0 {
 			continue
 		}
 		ctx.Report(diagnostic.Diagnostic{

@@ -229,11 +229,12 @@ func (m *Model) mapMutatedArguments(state *functionEffectState, call Call, calle
 	}
 	complete := true
 	for index := range calleeMutated {
-		if index >= len(arguments.Children) {
+		argumentIndex := index + call.ArgumentOffset
+		if argumentIndex < 0 || argumentIndex >= len(arguments.Children) {
 			complete = false
 			continue
 		}
-		identifier := effectBaseIdentifier(call.File, arguments.Children[index])
+		identifier := effectBaseIdentifier(call.File, arguments.Children[argumentIndex])
 		if identifier == nil {
 			complete = false
 			continue

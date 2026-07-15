@@ -55,6 +55,11 @@ type taintCallable struct {
 	known      bool
 }
 
+type taintAsyncCall struct {
+	callee *taintFunction
+	offset int
+}
+
 type taintFinding struct {
 	file    *project.File
 	node    *parser.Node
@@ -64,17 +69,19 @@ type taintFinding struct {
 }
 
 type taintAnalyzer struct {
-	ctx       *lint.Context
-	unit      *project.Unit
-	functions map[taintFunctionKey]*taintFunction
-	calls     map[taintCallKey][]*taintFunction
-	inputs    map[taintFunctionKey]map[int]taintLabels
-	returns   map[taintFunctionKey]taintLabels
-	outputs   map[taintFunctionKey]map[int]taintLabels
-	callers   map[taintFunctionKey]map[taintFunctionKey]struct{}
-	queued    map[taintFunctionKey]bool
-	queue     []taintFunctionKey
-	findings  map[string]taintFinding
+	ctx          *lint.Context
+	unit         *project.Unit
+	functions    map[taintFunctionKey]*taintFunction
+	calls        map[taintCallKey][]*taintFunction
+	asyncCalls   map[taintCallKey][]taintAsyncCall
+	dynamicCalls map[taintCallKey][]taintAsyncCall
+	inputs       map[taintFunctionKey]map[int]taintLabels
+	returns      map[taintFunctionKey]taintLabels
+	outputs      map[taintFunctionKey]map[int]taintLabels
+	callers      map[taintFunctionKey]map[taintFunctionKey]struct{}
+	queued       map[taintFunctionKey]bool
+	queue        []taintFunctionKey
+	findings     map[string]taintFinding
 }
 
 func (TaintedDataToSink) Metadata() lint.Metadata {
@@ -115,16 +122,18 @@ func (TaintedDataToSink) Run(ctx *lint.Context) {
 
 func newTaintAnalyzer(ctx *lint.Context, unit *project.Unit) *taintAnalyzer {
 	analyzer := &taintAnalyzer{
-		ctx:       ctx,
-		unit:      unit,
-		functions: make(map[taintFunctionKey]*taintFunction),
-		calls:     make(map[taintCallKey][]*taintFunction),
-		inputs:    make(map[taintFunctionKey]map[int]taintLabels),
-		returns:   make(map[taintFunctionKey]taintLabels),
-		outputs:   make(map[taintFunctionKey]map[int]taintLabels),
-		callers:   make(map[taintFunctionKey]map[taintFunctionKey]struct{}),
-		queued:    make(map[taintFunctionKey]bool),
-		findings:  make(map[string]taintFinding),
+		ctx:          ctx,
+		unit:         unit,
+		functions:    make(map[taintFunctionKey]*taintFunction),
+		calls:        make(map[taintCallKey][]*taintFunction),
+		asyncCalls:   make(map[taintCallKey][]taintAsyncCall),
+		dynamicCalls: make(map[taintCallKey][]taintAsyncCall),
+		inputs:       make(map[taintFunctionKey]map[int]taintLabels),
+		returns:      make(map[taintFunctionKey]taintLabels),
+		outputs:      make(map[taintFunctionKey]map[int]taintLabels),
+		callers:      make(map[taintFunctionKey]map[taintFunctionKey]struct{}),
+		queued:       make(map[taintFunctionKey]bool),
+		findings:     make(map[string]taintFinding),
 	}
 	members := make(map[*project.File]struct{}, len(unit.Files))
 	for _, file := range unit.Files {
@@ -146,6 +155,11 @@ func newTaintAnalyzer(ctx *lint.Context, unit *project.Unit) *taintAnalyzer {
 		}
 		callee := analyzer.functions[taintFunctionKey{file: call.Callee.File, node: call.Callee.Node}]
 		if callee != nil {
+			if call.Kind == project.CallDynamic {
+				key := taintCallKey{file: call.File, node: call.Node}
+				analyzer.dynamicCalls[key] = append(analyzer.dynamicCalls[key], taintAsyncCall{callee: callee, offset: call.ArgumentOffset})
+				continue
+			}
 			callKey := taintCallKey{file: call.File, node: call.Node}
 			analyzer.calls[callKey] = append(analyzer.calls[callKey], callee)
 			callerNode := call.File.Walk.EnclosingFunction(call.Node)
@@ -156,6 +170,16 @@ func newTaintAnalyzer(ctx *lint.Context, unit *project.Unit) *taintAnalyzer {
 				}
 				analyzer.callers[callee.key][callerKey] = struct{}{}
 			}
+		}
+	}
+	for _, call := range ctx.Project.CallGraph.AsyncCalls {
+		if _, included := members[call.File]; !included || call.ArgumentOffset < 0 {
+			continue
+		}
+		callee := analyzer.functions[taintFunctionKey{file: call.Callee.File, node: call.Callee.Node}]
+		if callee != nil {
+			key := taintCallKey{file: call.File, node: call.Node}
+			analyzer.asyncCalls[key] = append(analyzer.asyncCalls[key], taintAsyncCall{callee: callee, offset: call.ArgumentOffset})
 		}
 	}
 	for _, function := range analyzer.functions {
@@ -322,6 +346,24 @@ func (analyzer *taintAnalyzer) applyCall(function *taintFunction, environment ma
 			concrete := concreteTaintLabels(labels)
 			if known[index] && len(concrete) != 0 && index < len(callee.parameters) {
 				analyzer.addInput(callee.key, index, concrete)
+			}
+		}
+	}
+	for _, target := range analyzer.asyncCalls[taintCallKey{file: file, node: call}] {
+		for index := target.offset; index < len(facts); index++ {
+			concrete := concreteTaintLabels(facts[index])
+			parameter := index - target.offset
+			if known[index] && len(concrete) != 0 && parameter < len(target.callee.parameters) {
+				analyzer.addInput(target.callee.key, parameter, concrete)
+			}
+		}
+	}
+	for _, target := range analyzer.dynamicCalls[taintCallKey{file: file, node: call}] {
+		for index := target.offset; index < len(facts); index++ {
+			concrete := concreteTaintLabels(facts[index])
+			parameter := index - target.offset
+			if known[index] && len(concrete) != 0 && parameter < len(target.callee.parameters) {
+				analyzer.addInput(target.callee.key, parameter, concrete)
 			}
 		}
 	}

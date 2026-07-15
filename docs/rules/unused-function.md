@@ -13,4 +13,4 @@ Reports internal functions unused by any translation unit
 
 ## Details
 
-An unreferenced internal function may be dead code. Main, public, stock, callback, command-handler, state-qualified, operator, and underscore-prefixed functions are skipped. Translation units containing parser error nodes are skipped because references may be hidden.
+An unreferenced internal function may be dead code. Main, externally callable functions, resolved timer targets, state-qualified functions, operators, and underscore-prefixed functions are skipped. Translation units containing parser errors are skipped.

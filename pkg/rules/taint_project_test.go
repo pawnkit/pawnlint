@@ -134,3 +134,71 @@ public OnPluginInput(playerid, value)
 		t.Fatalf("source counts = %#v", counts)
 	}
 }
+
+func TestTaintedDataCrossesTimerEdge(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	source := []byte(`public OnPluginInput(value)
+{
+	SetTimerEx("Delayed", 1000, false, "i", value);
+}
+
+public Delayed(value)
+{
+	Dangerous(value);
+}
+`)
+	model, err := project.Build([]project.Source{{Path: path, Content: source}}, project.Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	metadata, err := api.Merge("openmp", &api.Metadata{
+		Callbacks: map[string]api.Callback{
+			"OnPluginInput": {Parameters: []api.Parameter{{Name: "value", TaintSource: "player-input"}}},
+		},
+		Natives: map[string]api.Native{
+			"Dangerous": {Parameters: []api.Parameter{{Name: "value", TaintSink: "command"}}},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	diagnostics := lintProjectRule(t, model, metadata, path, "tainted-data-to-sink")
+	if len(diagnostics) != 1 || diagnostics[0].Filename != path || !strings.Contains(diagnostics[0].Message, `"player-input" reaches "command"`) {
+		t.Fatalf("diagnostics = %#v", diagnostics)
+	}
+}
+
+func TestTaintedDataCrossesDynamicFunctionCall(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	source := []byte(`public OnPluginInput(value)
+{
+	CallLocalFunction("Dispatch", "i", value);
+}
+
+public Dispatch(value)
+{
+	Dangerous(value);
+}
+`)
+	model, err := project.Build([]project.Source{{Path: path, Content: source}}, project.Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	metadata, err := api.Merge("openmp", &api.Metadata{
+		Callbacks: map[string]api.Callback{
+			"OnPluginInput": {Parameters: []api.Parameter{{Name: "value", TaintSource: "player-input"}}},
+		},
+		Natives: map[string]api.Native{
+			"Dangerous": {Parameters: []api.Parameter{{Name: "value", TaintSink: "command"}}},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	diagnostics := lintProjectRule(t, model, metadata, path, "tainted-data-to-sink")
+	if len(diagnostics) != 1 || !strings.Contains(diagnostics[0].Message, `"player-input" reaches "command"`) {
+		t.Fatalf("diagnostics = %#v", diagnostics)
+	}
+}
