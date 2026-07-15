@@ -33,15 +33,19 @@ Generated from rule metadata. Do not edit by hand.
 | [`misspelled-callback`](misspelled-callback.md) | suspicious | warning | off | no | Reports public functions one edit away from a target callback |
 | [`native-argument-count`](native-argument-count.md) | correctness | error | off | no | Reports calls with an impossible number of arguments for a known native |
 | [`negative-or-zero-array-size`](negative-or-zero-array-size.md) | correctness | error | on | no | Reports array dimensions that evaluate to zero or less |
+| [`non-callable-symbol`](non-callable-symbol.md) | correctness | error | on | no | Reports calls whose callee resolves to a variable, not a function |
 | [`non-public-callback`](non-public-callback.md) | correctness | warning | off | no | Reports functions named exactly like a callback but missing the public qualifier |
 | [`out-of-bounds-constant-index`](out-of-bounds-constant-index.md) | correctness | error | on | no | Reports constant indexes outside a known array dimension |
 | [`overwritten-resource-handle`](overwritten-resource-handle.md) | correctness | warning | off | no | Reports resource handles overwritten before any use or release |
 | [`possibly-uninitialized`](possibly-uninitialized.md) | correctness | warning | off | no | Reports local variables read before an explicit assignment on every path |
+| [`raw-tick-subtraction`](raw-tick-subtraction.md) | correctness | warning | off | no | Reports GetTickCount() subtracted directly instead of through a wraparound-safe helper |
 | [`recursive-call`](recursive-call.md) | suspicious | warning | off | no | Reports direct and mutual recursion in the project call graph |
 | [`redundant-boolean-comparison`](redundant-boolean-comparison.md) | suspicious | warning | off | no | Reports boolean expressions compared with true or false |
 | [`repeated-strlen-in-loop`](repeated-strlen-in-loop.md) | performance | warning | off | no | Reports loop conditions that repeatedly scan an unchanged local string |
 | [`self-assignment`](self-assignment.md) | correctness | warning | on | yes | Reports assignments that store a symbol back into itself |
+| [`settimerex-format-argument-count`](settimerex-format-argument-count.md) | correctness | error | off | no | Reports SetTimerEx() calls whose specifier string and argument count differ |
 | [`shadowed-variable`](shadowed-variable.md) | maintainability | warning | off | no | Reports local declarations that hide an outer variable |
+| [`sscanf-format-argument-count`](sscanf-format-argument-count.md) | correctness | error | off | no | Reports sscanf() calls whose format string and argument count differ |
 | [`suspicious-comma-expression`](suspicious-comma-expression.md) | suspicious | warning | on | no | The comma operator chains sub-expressions; it is rarely intended in statements or returns |
 | [`suspicious-negation`](suspicious-negation.md) | suspicious | warning | on | no | '!' binds tighter than &/\|/^/==/!=, so !x & y is (!x) & y |
 | [`target-constant-availability`](target-constant-availability.md) | openmp | error | off | no | Reports open.mp-only constants when targeting SA-MP |

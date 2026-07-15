@@ -8,7 +8,7 @@ The Pawn compiler is still the source of truth for compilation.
 ## Features
 
 - Syntax, semantic, control-flow, and include-graph analysis
-- 53 built-in rules across correctness, suspicious, performance,
+- 57 built-in rules across correctness, suspicious, performance,
   maintainability, and open.mp categories
 - Safe automatic fixes, inline suppressions, and configurable profiles
 - Text, JSON, JSONL, SARIF, and GitHub Actions output

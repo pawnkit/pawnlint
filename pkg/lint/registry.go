@@ -39,7 +39,8 @@ var curate = map[Profile]map[string]struct{}{
 		"legacy-include": {}, "native-argument-count": {}, "deprecated-native": {}, "format-argument-count": {},
 		"buffer-size": {}, "target-native-availability": {}, "target-constant-availability": {},
 		"float-equality": {}, "non-public-callback": {}, "invalid-sentinel-comparison": {},
-		"unescaped-sql-format": {}, "discarded-repeating-timer": {},
+		"unescaped-sql-format": {}, "discarded-repeating-timer": {}, "raw-tick-subtraction": {},
+		"sscanf-format-argument-count": {}, "settimerex-format-argument-count": {},
 	},
 }
 

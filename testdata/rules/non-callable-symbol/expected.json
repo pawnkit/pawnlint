@@ -1,0 +1,33 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "non-callable-symbol",
+      "severity": "error",
+      "message": "local variable \"time\" is not callable, so calling it is a compile error",
+      "startLine": 7,
+      "startCol": 18,
+      "endLine": 7,
+      "endCol": 22
+    },
+    {
+      "ruleId": "non-callable-symbol",
+      "severity": "error",
+      "message": "parameter \"count\" is not callable, so calling it is a compile error",
+      "startLine": 12,
+      "startCol": 12,
+      "endLine": 12,
+      "endCol": 17
+    },
+    {
+      "ruleId": "non-callable-symbol",
+      "severity": "error",
+      "message": "global variable \"gTotal\" is not callable, so calling it is a compile error",
+      "startLine": 17,
+      "startCol": 12,
+      "endLine": 17,
+      "endCol": 18
+    }
+  ],
+  "valid.pwn": []
+}

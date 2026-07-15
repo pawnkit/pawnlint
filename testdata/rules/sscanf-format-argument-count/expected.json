@@ -1,0 +1,42 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "sscanf-format-argument-count",
+      "severity": "error",
+      "message": "format string requires 2 arguments, but 1 was provided",
+      "startLine": 5,
+      "startCol": 16,
+      "endLine": 5,
+      "endCol": 20
+    },
+    {
+      "ruleId": "sscanf-format-argument-count",
+      "severity": "error",
+      "message": "format string requires 1 argument, but 2 were provided",
+      "startLine": 6,
+      "startCol": 16,
+      "endLine": 6,
+      "endCol": 19
+    },
+    {
+      "ruleId": "sscanf-format-argument-count",
+      "severity": "error",
+      "message": "format string requires 2 arguments, but 1 was provided",
+      "startLine": 7,
+      "startCol": 16,
+      "endLine": 7,
+      "endCol": 24
+    },
+    {
+      "ruleId": "sscanf-format-argument-count",
+      "severity": "error",
+      "message": "format string requires 1 argument, but 2 were provided",
+      "startLine": 8,
+      "startCol": 16,
+      "endLine": 8,
+      "endCol": 29
+    }
+  ],
+  "valid.pwn": []
+}

@@ -1,0 +1,23 @@
+{
+  "invalid.pwn": [
+    {
+      "ruleId": "raw-tick-subtraction",
+      "severity": "warning",
+      "message": "GetTickCount() subtracted directly; use a wraparound-safe tick difference helper instead",
+      "startLine": 3,
+      "startCol": 9,
+      "endLine": 3,
+      "endCol": 46
+    },
+    {
+      "ruleId": "raw-tick-subtraction",
+      "severity": "warning",
+      "message": "GetTickCount() subtracted directly; use a wraparound-safe tick difference helper instead",
+      "startLine": 14,
+      "startCol": 20,
+      "endLine": 14,
+      "endCol": 44
+    }
+  ],
+  "valid.pwn": []
+}

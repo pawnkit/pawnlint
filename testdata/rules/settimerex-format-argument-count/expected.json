@@ -1,0 +1,33 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "settimerex-format-argument-count",
+      "severity": "error",
+      "message": "specifier string requires 2 arguments, but 1 was provided",
+      "startLine": 3,
+      "startCol": 39,
+      "endLine": 3,
+      "endCol": 43
+    },
+    {
+      "ruleId": "settimerex-format-argument-count",
+      "severity": "error",
+      "message": "specifier string requires 1 argument, but 2 were provided",
+      "startLine": 4,
+      "startCol": 39,
+      "endLine": 4,
+      "endCol": 42
+    },
+    {
+      "ruleId": "settimerex-format-argument-count",
+      "severity": "error",
+      "message": "specifier string requires 2 arguments, but 1 was provided",
+      "startLine": 5,
+      "startCol": 39,
+      "endLine": 5,
+      "endCol": 43
+    }
+  ],
+  "valid.pwn": []
+}

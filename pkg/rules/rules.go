@@ -63,6 +63,10 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(openmp.InvalidSentinelComparison{})
 	reg.MustRegister(openmp.UnescapedSQLFormat{})
 	reg.MustRegister(openmp.DiscardedRepeatingTimer{})
+	reg.MustRegister(correctness.NonCallableSymbol{})
+	reg.MustRegister(openmp.RawTickSubtraction{})
+	reg.MustRegister(openmp.SscanfFormatArgumentCount{})
+	reg.MustRegister(openmp.SetTimerExFormatArgumentCount{})
 }
 
 func Default() *lint.Registrar {

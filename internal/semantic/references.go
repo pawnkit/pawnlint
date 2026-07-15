@@ -1,7 +1,7 @@
 package semantic
 
 import (
-	"github.com/pawnkit/pawn-parser"
+	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 )
 
@@ -54,6 +54,15 @@ func (m *Model) resolve(node *parser.Node) *Symbol {
 	if !reference {
 		return nil
 	}
+	return m.resolveInScope(node, allowed)
+}
+
+func (m *Model) ResolveAsCallTarget(node *parser.Node) *Symbol {
+	allowed := func(kind SymbolKind) bool { return kind != SymbolLabel }
+	return m.resolveInScope(node, allowed)
+}
+
+func (m *Model) resolveInScope(node *parser.Node, allowed func(SymbolKind) bool) *Symbol {
 	name := m.Walk.Text(node)
 	for scope := m.nodeScopes[node]; scope != nil; scope = scope.Parent {
 		var candidates []*Symbol
