@@ -23,3 +23,5 @@ Configuration, build contexts, variants, overrides, baselines, and diagnostic
 limits match the CLI. Requested buffers replace disk content. Build file globs
 do not restrict requested buffers. Cancellation is checked between contexts and
 files. Without `ConfigPath`, analysis uses defaults and does not discover files.
+
+Configured external rules also run through this API and honor request cancellation.

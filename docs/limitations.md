@@ -31,6 +31,12 @@ it does not cache parser or semantic models.
 - The analyzer API provides diagnostics and actions, not editor or LSP integration.
 - Cancellation is checked between contexts and files, not during a parser or rule call.
 
+## External rules
+
+- External rules receive project sources and build context, not pawnlint semantic models.
+- Commands run once per context and are excluded from the diagnostic cache.
+- Related locations and edits are limited to the diagnostic file.
+
 ## Preprocessor
 
 - Project files expose separate expanded CST and semantic views for active

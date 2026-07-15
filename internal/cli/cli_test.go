@@ -86,6 +86,28 @@ func TestCLIUsesPreset(t *testing.T) {
 	}
 }
 
+func TestCLIRunsConfiguredExternalRules(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "pawnlint.toml")
+	scriptPath := filepath.Join(dir, "external.sh")
+	sourcePath := filepath.Join(dir, "main.pwn")
+	config := "[[external-rules]]\nname = \"custom\"\ncommand = \"./external.sh\"\n"
+	script := "#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' '{\"protocolVersion\":1,\"diagnostics\":[{\"ruleId\":\"example\",\"severity\":\"warning\",\"category\":\"style\",\"message\":\"external finding\",\"path\":\"main.pwn\",\"startOffset\":0,\"endOffset\":4}]}'\n"
+	if err := os.WriteFile(configPath, []byte(config), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(scriptPath, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(sourcePath, []byte("main() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, stderr, code := runCLI(t, []string{"--config", configPath, "--format", "compact", sourcePath}, "")
+	if code != 0 || stderr != "" || !strings.Contains(out, "external/custom/example") || !strings.Contains(out, "external finding") {
+		t.Fatalf("code=%d output=%q stderr=%q", code, out, stderr)
+	}
+}
+
 func TestCLITimings(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "main.pwn")

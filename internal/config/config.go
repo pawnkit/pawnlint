@@ -29,22 +29,31 @@ type LintSection struct {
 }
 
 type File struct {
-	Presets      []string       `toml:"presets" json:"presets" yaml:"presets"`
-	Profile      string         `toml:"profile" json:"profile" yaml:"profile"`
-	Target       string         `toml:"target" json:"target" yaml:"target"`
-	Include      []string       `toml:"include" json:"include" yaml:"include"`
-	Exclude      []string       `toml:"exclude" json:"exclude" yaml:"exclude"`
-	Defines      []string       `toml:"defines" json:"defines" yaml:"defines"`
-	IncludePaths []string       `toml:"include-paths" json:"include-paths" yaml:"include-paths"`
-	APIMetadata  []string       `toml:"api-metadata" json:"api-metadata" yaml:"api-metadata"`
-	Baseline     string         `toml:"baseline" json:"baseline" yaml:"baseline"`
-	Cache        string         `toml:"cache" json:"cache" yaml:"cache"`
-	Lint         LintSection    `toml:"lint" json:"lint" yaml:"lint"`
-	Rules        map[string]any `toml:"rules" json:"rules" yaml:"rules"`
-	Builds       []Build        `toml:"builds" json:"builds" yaml:"builds"`
-	Variants     []Variant      `toml:"variants" json:"variants" yaml:"variants"`
-	Overrides    []Override     `toml:"overrides" json:"overrides" yaml:"overrides"`
-	presence     filePresence
+	Presets       []string       `toml:"presets" json:"presets" yaml:"presets"`
+	Profile       string         `toml:"profile" json:"profile" yaml:"profile"`
+	Target        string         `toml:"target" json:"target" yaml:"target"`
+	Include       []string       `toml:"include" json:"include" yaml:"include"`
+	Exclude       []string       `toml:"exclude" json:"exclude" yaml:"exclude"`
+	Defines       []string       `toml:"defines" json:"defines" yaml:"defines"`
+	IncludePaths  []string       `toml:"include-paths" json:"include-paths" yaml:"include-paths"`
+	APIMetadata   []string       `toml:"api-metadata" json:"api-metadata" yaml:"api-metadata"`
+	Baseline      string         `toml:"baseline" json:"baseline" yaml:"baseline"`
+	Cache         string         `toml:"cache" json:"cache" yaml:"cache"`
+	Lint          LintSection    `toml:"lint" json:"lint" yaml:"lint"`
+	Rules         map[string]any `toml:"rules" json:"rules" yaml:"rules"`
+	Builds        []Build        `toml:"builds" json:"builds" yaml:"builds"`
+	Variants      []Variant      `toml:"variants" json:"variants" yaml:"variants"`
+	Overrides     []Override     `toml:"overrides" json:"overrides" yaml:"overrides"`
+	ExternalRules []ExternalRule `toml:"external-rules" json:"external-rules" yaml:"external-rules"`
+	presence      filePresence
+}
+
+type ExternalRule struct {
+	Name          string         `toml:"name" json:"name" yaml:"name"`
+	Command       string         `toml:"command" json:"command" yaml:"command"`
+	Arguments     []string       `toml:"arguments" json:"arguments" yaml:"arguments"`
+	TimeoutMS     int            `toml:"timeout-ms" json:"timeout-ms" yaml:"timeout-ms"`
+	Configuration map[string]any `toml:"configuration" json:"configuration" yaml:"configuration"`
 }
 
 type filePresence struct {

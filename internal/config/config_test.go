@@ -70,6 +70,40 @@ alpha = "error"
 	}
 }
 
+func TestExternalRuleConfiguration(t *testing.T) {
+	content := `[[external-rules]]
+name = "custom"
+command = "./pawnlint-custom"
+arguments = ["--mode", "lint"]
+timeout-ms = 2500
+[external-rules.configuration]
+mode = "strict"
+`
+	file, err := config.Load(writeTemp(t, content))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := config.Resolve(file, "", regWith(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resolved.Source.ExternalRules) != 1 || resolved.Source.ExternalRules[0].Name != "custom" || resolved.Source.ExternalRules[0].TimeoutMS != 2500 || resolved.Source.ExternalRules[0].Configuration["mode"] != "strict" {
+		t.Fatalf("external rules = %#v", resolved.Source.ExternalRules)
+	}
+}
+
+func TestExternalRuleConfigurationRejectsInvalidEntries(t *testing.T) {
+	file := config.Defaults()
+	file.ExternalRules = []config.ExternalRule{{Name: "bad/name", Command: "tool"}}
+	if _, err := config.Resolve(file, "", regWith(t)); err == nil {
+		t.Fatal("invalid external rule name accepted")
+	}
+	file.ExternalRules = []config.ExternalRule{{Name: "custom", Command: "tool", TimeoutMS: 300001}}
+	if _, err := config.Resolve(file, "", regWith(t)); err == nil {
+		t.Fatal("invalid external rule timeout accepted")
+	}
+}
+
 func TestPresetMergeAndLocalOverride(t *testing.T) {
 	dir := t.TempDir()
 	policyDir := filepath.Join(dir, "policy")

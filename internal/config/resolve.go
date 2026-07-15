@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 )
+
+var externalRuleNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]*$`)
 
 func Resolve(f File, sourcePath string, reg *lint.Registrar) (*Resolved, error) {
 	r := &Resolved{
@@ -64,6 +67,28 @@ func Resolve(f File, sourcePath string, reg *lint.Registrar) (*Resolved, error) 
 	}
 	if len(f.Builds) > 0 && len(f.Variants) > 0 {
 		return nil, fmt.Errorf("config: builds and variants cannot be configured together")
+	}
+	seenExternal := make(map[string]struct{}, len(f.ExternalRules))
+	for index, external := range f.ExternalRules {
+		name := strings.TrimSpace(external.Name)
+		if name == "" {
+			return nil, fmt.Errorf("config: external-rules[%d] must have a non-empty name", index)
+		}
+		if !externalRuleNamePattern.MatchString(name) {
+			return nil, fmt.Errorf("config: external rule name %q must contain only letters, digits, dots, underscores, and hyphens", name)
+		}
+		if _, duplicate := seenExternal[name]; duplicate {
+			return nil, fmt.Errorf("config: duplicate external rule name %q", name)
+		}
+		seenExternal[name] = struct{}{}
+		if strings.TrimSpace(external.Command) == "" {
+			return nil, fmt.Errorf("config: external rule %q must have a non-empty command", name)
+		}
+		if external.TimeoutMS < 0 || external.TimeoutMS > 300000 {
+			return nil, fmt.Errorf("config: external rule %q timeout-ms must be between 0 and 300000", name)
+		}
+		r.Source.ExternalRules[index].Name = name
+		r.Source.ExternalRules[index].Command = strings.TrimSpace(external.Command)
 	}
 	seenBuild := make(map[string]struct{}, len(f.Builds))
 	for _, build := range f.Builds {

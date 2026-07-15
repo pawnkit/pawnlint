@@ -108,6 +108,31 @@ func TestAnalyzeHonorsCancellation(t *testing.T) {
 	}
 }
 
+func TestAnalyzeRunsConfiguredExternalRules(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "pawnlint.toml")
+	scriptPath := filepath.Join(dir, "external.sh")
+	config := "[[external-rules]]\nname = \"custom\"\ncommand = \"./external.sh\"\n"
+	script := "#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' '{\"protocolVersion\":1,\"diagnostics\":[{\"ruleId\":\"example\",\"severity\":\"warning\",\"category\":\"style\",\"message\":\"external finding\",\"path\":\"main.pwn\",\"startOffset\":0,\"endOffset\":4}]}'\n"
+	if err := os.WriteFile(configPath, []byte(config), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(scriptPath, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	result, err := analyzer.Analyze(context.Background(), analyzer.Request{
+		ConfigPath: configPath,
+		Sources:    []analyzer.Source{{Path: "main.pwn", Content: []byte("main() {}\n")}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	index := diagnosticIndex(result.Diagnostics, "external/custom/example")
+	if index < 0 || result.Diagnostics[index].Path != filepath.Join(dir, "main.pwn") || result.Diagnostics[index].Range.End.Offset != 4 {
+		t.Fatalf("diagnostics = %+v", result.Diagnostics)
+	}
+}
+
 func TestAnalyzeIncrementalCache(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "pawnlint.toml")

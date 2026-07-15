@@ -383,6 +383,10 @@ require-return = true
 Documentation uses an adjacent `/** */` block or consecutive `///` lines with
 `@param name description` and `@return description` entries.
 
+## External rules
+
+Configure versioned process rules with `[[external-rules]]`. See [External rules](external-rules.md) for the protocol and limits.
+
 ## Precedence
 
 Highest priority first:

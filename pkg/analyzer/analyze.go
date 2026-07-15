@@ -12,6 +12,7 @@ import (
 	"github.com/pawnkit/pawnlint/internal/baseline"
 	"github.com/pawnkit/pawnlint/internal/cache"
 	"github.com/pawnkit/pawnlint/internal/config"
+	"github.com/pawnkit/pawnlint/internal/external"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 	"github.com/pawnkit/pawnlint/pkg/project"
@@ -104,6 +105,15 @@ func analyze(ctx context.Context, request Request) (Result, error) {
 		} else if resolved.Source.Cache != "" {
 			cacheStats.Misses++
 		}
+		targetPaths := make([]string, len(provided))
+		for index, source := range provided {
+			targetPaths[index] = source.Path
+		}
+		externalDiagnostics, err := external.Run(ctx, resolved.Source.ExternalRules, external.ProjectInput(projectDir, settings.name, settings.target, settings.defines, model, targetPaths))
+		if err != nil {
+			return Result{}, fmt.Errorf("analyzer: %w", err)
+		}
+		findings.diagnostics = append(findings.diagnostics, externalDiagnostics...)
 		perContext = append(perContext, findings.diagnostics)
 	}
 	merged := mergeAnalyzerDiagnostics(perContext, variants)

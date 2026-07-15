@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/pawnkit/pawnlint/internal/config"
+	"github.com/pawnkit/pawnlint/internal/external"
 	"github.com/pawnkit/pawnlint/internal/fix"
 	"github.com/pawnkit/pawnlint/internal/output"
 	discovery "github.com/pawnkit/pawnlint/internal/project"
@@ -113,6 +115,12 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 			}
 			return diagnostics
 		})
+		externalDiagnostics, err := external.Run(context.Background(), r.Source.ExternalRules, external.ProjectInput(projectDir, variant.Name, string(r.Target), variant.Defines, model, targetPaths))
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "pawnlint: %v\n", err)
+			return exitInternal
+		}
+		diags = append(diags, externalDiagnostics...)
 		perVariant = append(perVariant, diags)
 	}
 	all := mergeVariantDiagnostics(perVariant)
@@ -221,6 +229,12 @@ func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registra
 			}
 			return findings
 		})
+		externalDiagnostics, err := external.Run(context.Background(), r.Source.ExternalRules, external.ProjectInput(projectDir, build.Name, string(target), defines, model, targetPaths))
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "pawnlint: build %q: %v\n", build.Name, err)
+			return exitInternal
+		}
+		diagnostics = append(diagnostics, externalDiagnostics...)
 		perBuild = append(perBuild, diagnostics)
 		for _, file := range model.Files {
 			sources[file.Path] = file.Source
