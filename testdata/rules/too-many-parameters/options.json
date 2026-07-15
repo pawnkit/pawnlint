@@ -1,0 +1,6 @@
+{
+  "maximum": 3,
+  "include-public": false,
+  "include-callbacks": false,
+  "exclude": ["^Generated_"]
+}

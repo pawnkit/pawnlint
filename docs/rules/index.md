@@ -81,6 +81,7 @@ Rules are stable unless their page marks them as preview.
 | [`target-constant-availability`](target-constant-availability.md) | openmp | error | off | no | Reports open.mp-only constants when targeting SA-MP |
 | [`target-native-availability`](target-native-availability.md) | openmp | error | off | no | Reports open.mp-only native calls when targeting SA-MP |
 | [`todo-policy`](todo-policy.md) | restriction | warning | off | no | Reports task comments that violate configured metadata policy |
+| [`too-many-parameters`](too-many-parameters.md) | maintainability | warning | off | no | Reports functions with too many parameters |
 | [`unescaped-sql-format`](unescaped-sql-format.md) | correctness | warning | off | no | Reports mysql_format calls using %s for a non-literal string argument |
 | [`unimplemented-function`](unimplemented-function.md) | openmp | error | off | no | Reports legacy API calls intentionally not implemented by open.mp |
 | [`unknown-suppression`](unknown-suppression.md) | maintainability | warning | on | no | Reports unknown, malformed, or unused pawnlint suppression directives |

@@ -1,0 +1,35 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "too-many-parameters",
+      "severity": "warning",
+      "message": "function \"Tagged\" has 4 parameters, exceeding the maximum of 3",
+      "startLine": 1,
+      "startCol": 1,
+      "endLine": 1,
+      "endCol": 7
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "too-many-parameters",
+      "severity": "warning",
+      "message": "function \"TooMany\" has 4 parameters, exceeding the maximum of 3",
+      "startLine": 1,
+      "startCol": 1,
+      "endLine": 1,
+      "endCol": 8
+    },
+    {
+      "ruleId": "too-many-parameters",
+      "severity": "warning",
+      "message": "function \"IncludesVariadic\" has 4 parameters, exceeding the maximum of 3",
+      "startLine": 6,
+      "startCol": 1,
+      "endLine": 6,
+      "endCol": 17
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}
