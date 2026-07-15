@@ -1,0 +1,49 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "string-concatenation-loop",
+      "severity": "warning",
+      "message": "strcat repeatedly scans the growing string \"output\" inside the loop",
+      "startLine": 5,
+      "startCol": 9,
+      "endLine": 5,
+      "endCol": 45,
+      "suggestions": [
+        {
+          "description": "append with a tracked write position"
+        }
+      ]
+    },
+    {
+      "ruleId": "string-concatenation-loop",
+      "severity": "warning",
+      "message": "strcat repeatedly scans the growing string \"output\" inside the loop",
+      "startLine": 14,
+      "startCol": 9,
+      "endLine": 14,
+      "endCol": 30,
+      "suggestions": [
+        {
+          "description": "append with a tracked write position"
+        }
+      ]
+    },
+    {
+      "ruleId": "string-concatenation-loop",
+      "severity": "warning",
+      "message": "strcat repeatedly scans the growing string \"output\" inside the loop",
+      "startLine": 23,
+      "startCol": 9,
+      "endLine": 23,
+      "endCol": 45,
+      "suggestions": [
+        {
+          "description": "append with a tracked write position"
+        }
+      ]
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

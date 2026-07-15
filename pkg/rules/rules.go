@@ -114,6 +114,7 @@ func Register(reg *lint.Registrar) {
 	reg.MustRegister(performance.LoopInvariantCall{})
 	reg.MustRegister(performance.OverwrittenCopy{})
 	reg.MustRegister(performance.RepeatedFormatWork{})
+	reg.MustRegister(performance.StringConcatenationLoop{})
 	reg.MustRegister(suspicious.FloatEquality{})
 	reg.MustRegister(openmp.NonPublicCallback{})
 	reg.MustRegister(openmp.InvalidSentinelComparison{})
