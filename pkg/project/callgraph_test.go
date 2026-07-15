@@ -175,6 +175,35 @@ public Tick()
 	}
 }
 
+func TestCallGraphDetachesGeneratedRuntimeCall(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	source := []byte(`#define START_TIMER() SetTimer("Tick", 1000, false)
+main()
+{
+	START_TIMER();
+}
+
+public Tick()
+{
+}
+`)
+	model, err := project.Build([]project.Source{{Path: path, Content: source}}, project.Options{WorkingDir: dir, DefinesComplete: true, ReleaseExpanded: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(model.CallGraph.AsyncCalls) != 1 {
+		t.Fatalf("async calls = %#v", model.CallGraph.AsyncCalls)
+	}
+	call := model.CallGraph.AsyncCalls[0]
+	if call.Node == nil || call.Node.Start < 0 || call.Node.End > len(source) {
+		t.Fatalf("call node = %#v", call.Node)
+	}
+	if origins := model.ExpansionOrigins(model.File(path), call.Node); len(origins) == 0 {
+		t.Fatal("generated call lost its origin")
+	}
+}
+
 func TestCallGraphResolvesDynamicFunctionCall(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "main.pwn")

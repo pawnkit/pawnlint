@@ -161,7 +161,8 @@ func (m *Model) captureRuntimeCalls(file *File) {
 		if caller == "" {
 			continue
 		}
-		fact := runtimeCallFact{caller: caller, target: target, node: call, kind: CallTimer, argumentOffset: -1}
+		node := compactRuntimeCallNode(file, parsed, call, callee)
+		fact := runtimeCallFact{caller: caller, target: target, node: node, kind: CallTimer, argumentOffset: -1}
 		if name == "SetTimerEx" {
 			fact.argumentOffset = 4
 		} else if name == "CallLocalFunction" || name == "CallRemoteFunction" {
@@ -169,20 +170,43 @@ func (m *Model) captureRuntimeCalls(file *File) {
 			fact.argumentOffset = 2
 		}
 		file.runtimeCalls = append(file.runtimeCalls, fact)
-		file.captureExpansionOrigins(parsed, call)
+		file.captureExpansionOrigins(parsed, call, node)
 	}
 }
 
-func (f *File) captureExpansionOrigins(parsed *parser.File, node *parser.Node) {
+func compactRuntimeCallNode(file *File, parsed *parser.File, call, callee *parser.Node) *parser.Node {
+	if parsed == file.Parsed {
+		return call
+	}
+	var location *token.Origin
+	for origin := callee.Tok.Origin; origin != nil; origin = origin.Parent {
+		if origin.Span.File != file.sourceID {
+			continue
+		}
+		location = origin
+		for _, original := range file.Walk.OfKind(parser.KindCallExpression) {
+			function := original.Field("function")
+			if function != nil && function.Start == origin.Span.Start.Offset {
+				return original
+			}
+		}
+	}
+	if location == nil {
+		return &parser.Node{Kind: parser.KindCallExpression, Start: call.Start, End: call.End}
+	}
+	return &parser.Node{Kind: parser.KindCallExpression, Start: location.Span.Start.Offset, End: location.Span.End.Offset}
+}
+
+func (f *File) captureExpansionOrigins(parsed *parser.File, expanded, compact *parser.Node) {
 	for _, current := range parsed.Tokens {
-		if current.Kind == token.EOF || current.End.Offset <= node.Start || current.Start.Offset >= node.End || current.Origin == nil {
+		if current.Kind == token.EOF || current.End.Offset <= expanded.Start || current.Start.Offset >= expanded.End || current.Origin == nil {
 			continue
 		}
 		if f.expansionOrigins == nil {
 			f.expansionOrigins = make(map[*parser.Node][]expansionOriginFact)
 		}
 		for origin := current.Origin; origin != nil; origin = origin.Parent {
-			f.expansionOrigins[node] = append(f.expansionOrigins[node], expansionOriginFact{span: origin.Span, macro: origin.Macro})
+			f.expansionOrigins[compact] = append(f.expansionOrigins[compact], expansionOriginFact{span: origin.Span, macro: origin.Macro})
 		}
 		return
 	}
