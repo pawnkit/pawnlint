@@ -185,16 +185,29 @@ Use JSON to describe plugin or project APIs:
       "parameters": [{"name": "result", "reference": true, "output": true}]
     }
   },
+  "functions": {
+    "OpenLog": {
+      "returnTag": "File",
+      "release": "CloseLog"
+    },
+    "CloseLog": {
+      "parameters": [{"name": "file", "tag": "File", "ownership": "transferred"}]
+    },
+    "InspectLog": {
+      "parameters": [{"name": "file", "tag": "File", "ownership": "borrowed"}]
+    }
+  },
   "constants": {
     "PLUGIN_LIMIT": {}
   }
 }
 ```
 
-Native entries also support `deprecated`, `mustUse`, `requiresBefore`, `formatParameter`, and `buffers`,
-plus parameter fields `tag`, `arrayRank`, `const`, `reference`, `output`,
-`variadic`, `default`, `minimum`, and `maximum`. Invalid fields and references are configuration
-errors.
+Function ownership contracts apply only to unambiguous project definitions.
+`release` marks an owned return value. Scalar input parameters may use
+`ownership` values `borrowed` or `transferred`. Native entries also support
+`deprecated`, `mustUse`, `requiresBefore`, `formatParameter`, and `buffers`.
+Invalid fields and relations are configuration errors.
 
 ## Profiles
 

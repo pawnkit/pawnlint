@@ -68,6 +68,8 @@
   control-flow branches.
 - Recognizes official release natives, released-handle use, and known
   non-owning native uses.
+- Configured project functions can declare owned returns and borrowed or
+  transferred scalar parameters when resolution is unambiguous.
 - Tracking stops once ownership may escape through user code, returns,
   aliases, or reference parameters.
 

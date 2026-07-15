@@ -17,6 +17,7 @@ type Parameter struct {
 	Default   bool   `json:"default,omitempty"`
 	Minimum   *int64 `json:"minimum,omitempty"`
 	Maximum   *int64 `json:"maximum,omitempty"`
+	Ownership string `json:"ownership,omitempty"`
 }
 
 type Native struct {
@@ -30,6 +31,13 @@ type Native struct {
 	Release         string      `json:"release,omitempty"`
 	MustUse         bool        `json:"mustUse,omitempty"`
 	RequiresBefore  []string    `json:"requiresBefore,omitempty"`
+}
+
+type Function struct {
+	Name       string      `json:"name,omitempty"`
+	ReturnTag  string      `json:"returnTag,omitempty"`
+	Parameters []Parameter `json:"parameters,omitempty"`
+	Release    string      `json:"release,omitempty"`
 }
 
 type Constant struct {

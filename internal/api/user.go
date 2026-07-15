@@ -13,6 +13,7 @@ import (
 type Metadata struct {
 	Callbacks map[string]Callback `json:"callbacks,omitempty"`
 	Natives   map[string]Native   `json:"natives,omitempty"`
+	Functions map[string]Function `json:"functions,omitempty"`
 	Constants map[string]Constant `json:"constants,omitempty"`
 }
 
@@ -20,6 +21,7 @@ func Builtin(target string) *Metadata {
 	return &Metadata{
 		Callbacks: copyMap(Callbacks(target)),
 		Natives:   copyMap(Natives(target)),
+		Functions: make(map[string]Function),
 		Constants: copyMap(Constants(target)),
 	}
 }
@@ -64,12 +66,16 @@ func Merge(target string, custom ...*Metadata) (*Metadata, error) {
 			native.Name = name
 			result.Natives[name] = native
 		}
+		for name, function := range metadata.Functions {
+			function.Name = name
+			result.Functions[name] = function
+		}
 		for name, constant := range metadata.Constants {
 			constant.Name = name
 			result.Constants[name] = constant
 		}
 	}
-	if err := validateNativeRelations(result.Natives); err != nil {
+	if err := validateRelations(result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -81,6 +87,9 @@ func (m *Metadata) initialize() {
 	}
 	if m.Natives == nil {
 		m.Natives = make(map[string]Native)
+	}
+	if m.Functions == nil {
+		m.Functions = make(map[string]Function)
 	}
 	if m.Constants == nil {
 		m.Constants = make(map[string]Constant)
@@ -129,6 +138,15 @@ func (m *Metadata) validate(path string) error {
 			seenRequirements[requirement] = struct{}{}
 		}
 	}
+	for name, function := range m.Functions {
+		if strings.TrimSpace(name) == "" {
+			problems = append(problems, "function name is empty")
+			continue
+		}
+		function.Name = name
+		m.Functions[name] = function
+		validateParameters("function "+name, function.Parameters, &problems)
+	}
 	for name, constant := range m.Constants {
 		if strings.TrimSpace(name) == "" {
 			problems = append(problems, "constant name is empty")
@@ -145,6 +163,11 @@ func (m *Metadata) validate(path string) error {
 }
 
 func validateNativeRelations(natives map[string]Native) error {
+	return validateRelations(&Metadata{Natives: natives, Functions: make(map[string]Function)})
+}
+
+func validateRelations(metadata *Metadata) error {
+	natives := metadata.Natives
 	names := make([]string, 0, len(natives))
 	for name := range natives {
 		names = append(names, name)
@@ -154,8 +177,13 @@ func validateNativeRelations(natives map[string]Native) error {
 	for _, name := range names {
 		native := natives[name]
 		if native.Release != "" {
-			if _, ok := natives[native.Release]; !ok {
+			_, nativeRelease := natives[native.Release]
+			_, functionRelease := metadata.Functions[native.Release]
+			if !nativeRelease && !functionRelease {
 				problems = append(problems, fmt.Sprintf("native %q names unknown releaser %q", name, native.Release))
+			}
+			if native.Release == name {
+				problems = append(problems, fmt.Sprintf("native %q releases itself", name))
 			}
 		}
 		for _, requirement := range native.RequiresBefore {
@@ -165,6 +193,25 @@ func validateNativeRelations(natives map[string]Native) error {
 			if requirement == name {
 				problems = append(problems, fmt.Sprintf("native %q requires itself", name))
 			}
+		}
+	}
+	functionNames := make([]string, 0, len(metadata.Functions))
+	for name := range metadata.Functions {
+		functionNames = append(functionNames, name)
+	}
+	sort.Strings(functionNames)
+	for _, name := range functionNames {
+		function := metadata.Functions[name]
+		if function.Release == "" {
+			continue
+		}
+		_, nativeRelease := natives[function.Release]
+		_, functionRelease := metadata.Functions[function.Release]
+		if !nativeRelease && !functionRelease {
+			problems = append(problems, fmt.Sprintf("function %q names unknown releaser %q", name, function.Release))
+		}
+		if function.Release == name {
+			problems = append(problems, fmt.Sprintf("function %q releases itself", name))
 		}
 	}
 	if cycle := nativeRequirementCycle(natives, names); len(cycle) != 0 {
@@ -236,6 +283,12 @@ func validateParameters(owner string, parameters []Parameter, problems *[]string
 			if minimumOutside || maximumOutside {
 				*problems = append(*problems, position+" has value bounds outside the Pawn cell range")
 			}
+		}
+		if parameter.Ownership != "" && parameter.Ownership != "borrowed" && parameter.Ownership != "transferred" {
+			*problems = append(*problems, position+" has invalid ownership "+parameter.Ownership)
+		}
+		if parameter.Ownership != "" && (parameter.ArrayRank != 0 || parameter.Reference || parameter.Output || parameter.Variadic) {
+			*problems = append(*problems, position+" has ownership on a non-scalar input parameter")
 		}
 		if variadic {
 			*problems = append(*problems, fmt.Sprintf("%s has a parameter after its variadic parameter", owner))

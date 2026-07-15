@@ -72,6 +72,11 @@ func TestLoadAndMergeUserMetadata(t *testing.T) {
     "Plugin_Open": {"returnTag": "PluginHandle", "release": "Plugin_Close", "mustUse": true, "requiresBefore": ["Plugin_Init"]},
     "Plugin_Close": {"parameters": [{"name": "handle", "tag": "PluginHandle", "minimum": 1, "maximum": 8}]}
   },
+  "functions": {
+    "OpenLog": {"returnTag": "File", "release": "CloseLog"},
+    "CloseLog": {"parameters": [{"name": "file", "tag": "File", "ownership": "transferred"}]},
+    "InspectLog": {"parameters": [{"name": "file", "tag": "File", "ownership": "borrowed"}]}
+  },
   "constants": {"PLUGIN_LIMIT": {}}
 }`
 	if err := os.WriteFile(path, []byte(source), 0o644); err != nil {
@@ -86,8 +91,26 @@ func TestLoadAndMergeUserMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 	closeParameter := metadata.Natives["Plugin_Close"].Parameters[0]
-	if metadata.Natives["Plugin_Open"].Release != "Plugin_Close" || !metadata.Natives["Plugin_Open"].MustUse || len(metadata.Natives["Plugin_Open"].RequiresBefore) != 1 || closeParameter.Minimum == nil || *closeParameter.Minimum != 1 || closeParameter.Maximum == nil || *closeParameter.Maximum != 8 || metadata.Callbacks["OnPluginEvent"].Name != "OnPluginEvent" || metadata.Constants["PLUGIN_LIMIT"].Name != "PLUGIN_LIMIT" {
+	if metadata.Natives["Plugin_Open"].Release != "Plugin_Close" || !metadata.Natives["Plugin_Open"].MustUse || len(metadata.Natives["Plugin_Open"].RequiresBefore) != 1 || closeParameter.Minimum == nil || *closeParameter.Minimum != 1 || closeParameter.Maximum == nil || *closeParameter.Maximum != 8 || metadata.Functions["OpenLog"].Release != "CloseLog" || metadata.Functions["CloseLog"].Parameters[0].Ownership != "transferred" || metadata.Functions["InspectLog"].Parameters[0].Ownership != "borrowed" || metadata.Callbacks["OnPluginEvent"].Name != "OnPluginEvent" || metadata.Constants["PLUGIN_LIMIT"].Name != "PLUGIN_LIMIT" {
 		t.Fatalf("metadata = %#v", metadata)
+	}
+}
+
+func TestLoadUserMetadataRejectsInvalidOwnership(t *testing.T) {
+	for _, source := range []string{
+		`{"functions":{"Use":{"parameters":[{"ownership":"shared"}]}}}`,
+		`{"functions":{"Use":{"parameters":[{"arrayRank":1,"ownership":"borrowed"}]}}}`,
+		`{"functions":{"Use":{"parameters":[{"reference":true,"ownership":"borrowed"}]}}}`,
+		`{"functions":{"Use":{"parameters":[{"output":true,"ownership":"transferred"}]}}}`,
+		`{"functions":{"Use":{"parameters":[{"variadic":true,"ownership":"transferred"}]}}}`,
+	} {
+		path := filepath.Join(t.TempDir(), "api.json")
+		if err := os.WriteFile(path, []byte(source), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Load(path); err == nil {
+			t.Fatalf("invalid ownership accepted: %s", source)
+		}
 	}
 }
 
@@ -133,6 +156,18 @@ func TestMergeRejectsInvalidCallPrerequisiteGraph(t *testing.T) {
 	} {
 		if _, err := Merge("openmp", metadata); err == nil {
 			t.Fatalf("invalid call prerequisite graph accepted: %#v", metadata)
+		}
+	}
+}
+
+func TestMergeRejectsInvalidReleaseRelations(t *testing.T) {
+	for _, metadata := range []*Metadata{
+		{Functions: map[string]Function{"Open": {Release: "Missing"}}},
+		{Functions: map[string]Function{"Open": {Release: "Open"}}},
+		{Natives: map[string]Native{"Open": {Release: "Open"}}},
+	} {
+		if _, err := Merge("openmp", metadata); err == nil {
+			t.Fatalf("invalid release relation accepted: %#v", metadata)
 		}
 	}
 }

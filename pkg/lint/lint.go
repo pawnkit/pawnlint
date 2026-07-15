@@ -62,19 +62,20 @@ type File struct {
 }
 
 type Context struct {
-	File     *File
-	Report   func(diagnostic.Diagnostic)
-	Level    AnalysisLevel
-	Walk     *walk.Model
-	Tokens   func(k token.Kind) []*token.Token
-	Supp     []suppress.Directive
-	Known    map[string]struct{}
-	PerRule  map[string]map[string]any
-	Semantic *semantic.Model
-	Flow     *controlflow.Model
-	Project  *project.Model
-	Target   string
-	API      *api.Metadata
+	File        *File
+	Report      func(diagnostic.Diagnostic)
+	Level       AnalysisLevel
+	Walk        *walk.Model
+	Tokens      func(k token.Kind) []*token.Token
+	Supp        []suppress.Directive
+	Known       map[string]struct{}
+	PerRule     map[string]map[string]any
+	Semantic    *semantic.Model
+	Flow        *controlflow.Model
+	Project     *project.Model
+	ProjectFile *project.File
+	Target      string
+	API         *api.Metadata
 }
 
 func (ctx *Context) Eval(node *parser.Node) (int64, bool) {
@@ -112,6 +113,13 @@ func (ctx *Context) Callbacks() map[string]api.Callback {
 		target = ctx.Target
 	}
 	return api.Callbacks(target)
+}
+
+func (ctx *Context) Functions() map[string]api.Function {
+	if ctx != nil && ctx.API != nil {
+		return ctx.API.Functions
+	}
+	return nil
 }
 
 func (ctx *Context) Constants() map[string]api.Constant {

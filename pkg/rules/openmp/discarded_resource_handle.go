@@ -34,12 +34,12 @@ func (DiscardedResourceHandle) Run(ctx *lint.Context) {
 		if expression == nil || expression.Kind != parser.KindCallExpression {
 			return
 		}
-		native, name, ok := calledNative(ctx, expression)
-		if !ok || native.Release == "" || native.MustUse {
+		callable, ok := calledResourceFunction(ctx, expression)
+		if !ok || callable.release == "" || callable.mustUse {
 			return
 		}
 		ctx.Report(diagnostic.Diagnostic{
-			Message:  fmt.Sprintf("resource handle returned by %q is discarded; release it with %q", name, native.Release),
+			Message:  fmt.Sprintf("resource handle returned by %q is discarded; release it with %q", callable.name, callable.release),
 			Filename: ctx.File.Path,
 			Range:    ctx.Walk.Range(expression),
 		})

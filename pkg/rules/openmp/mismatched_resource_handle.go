@@ -26,10 +26,9 @@ func (MismatchedResourceHandle) Metadata() lint.Metadata {
 }
 
 func (MismatchedResourceHandle) Run(ctx *lint.Context) {
-	releasers := resourceReleasers(ctx)
 	ctx.Walk.IterKind(parser.KindCallExpression, func(call *parser.Node) {
-		_, name, ok := calledNative(ctx, call)
-		expected, release := releasers[name]
+		callable, ok := calledResourceFunction(ctx, call)
+		expected, release := resourceReleaserTag(ctx, callable)
 		if !ok || !release {
 			return
 		}
@@ -43,26 +42,28 @@ func (MismatchedResourceHandle) Run(ctx *lint.Context) {
 			return
 		}
 		ctx.Report(diagnostic.Diagnostic{
-			Message:  fmt.Sprintf("%q releases %s handles, but this argument has tag %s", name, expected, actual),
+			Message:  fmt.Sprintf("%q releases %s handles, but this argument has tag %s", callable.name, expected, actual),
 			Filename: ctx.File.Path,
 			Range:    ctx.Walk.Range(argument),
 		})
 	})
 }
 
-func resourceReleasers(ctx *lint.Context) map[string]string {
-	natives := ctx.Natives()
-	result := make(map[string]string)
-	for _, creator := range natives {
-		if creator.Release == "" {
-			continue
-		}
-		releaser, ok := natives[creator.Release]
-		if ok && len(releaser.Parameters) != 0 && releaser.Parameters[0].Tag != "" {
-			result[creator.Release] = releaser.Parameters[0].Tag
+func resourceReleaserTag(ctx *lint.Context, callable resourceCallable) (string, bool) {
+	if len(callable.parameters) == 0 || callable.parameters[0].Tag == "" {
+		return "", false
+	}
+	for _, native := range ctx.Natives() {
+		if native.Release == callable.name {
+			return callable.parameters[0].Tag, true
 		}
 	}
-	return result
+	for _, function := range ctx.Functions() {
+		if function.Release == callable.name {
+			return callable.parameters[0].Tag, true
+		}
+	}
+	return "", false
 }
 
 func resourceTag(ctx *lint.Context, node *parser.Node) (string, bool) {
@@ -73,9 +74,9 @@ func resourceTag(ctx *lint.Context, node *parser.Node) (string, bool) {
 	if node == nil || node.Kind != parser.KindCallExpression {
 		return "", false
 	}
-	native, _, ok := calledNative(ctx, node)
-	if !ok || native.ReturnTag == "" {
+	callable, ok := calledResourceFunction(ctx, node)
+	if !ok || callable.returnTag == "" {
 		return "", false
 	}
-	return native.ReturnTag, true
+	return callable.returnTag, true
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
+	"github.com/pawnkit/pawnlint/internal/api"
 	"github.com/pawnkit/pawnlint/internal/controlflow"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
@@ -18,6 +19,47 @@ type resourceAcquisition struct {
 	block   *controlflow.Block
 	name    string
 	release string
+}
+
+type resourceCallable struct {
+	name       string
+	returnTag  string
+	parameters []api.Parameter
+	release    string
+	mustUse    bool
+	project    bool
+}
+
+func calledResourceFunction(ctx *lint.Context, call *parser.Node) (resourceCallable, bool) {
+	if native, name, ok := calledNative(ctx, call); ok {
+		return resourceCallable{name: name, returnTag: native.ReturnTag, parameters: native.Parameters, release: native.Release, mustUse: native.MustUse}, true
+	}
+	if call == nil || call.HasError || ctx.Walk.Uncertain(call) {
+		return resourceCallable{}, false
+	}
+	callee := call.Field("function")
+	if callee == nil || callee.Kind != parser.KindIdentifier {
+		return resourceCallable{}, false
+	}
+	name := ctx.Walk.Text(callee)
+	contract, known := ctx.Functions()[name]
+	if !known || projectDefinesName(ctx, name) {
+		return resourceCallable{}, false
+	}
+	if symbol := ctx.Semantic.Resolve(callee); symbol != nil {
+		if symbol.Ambiguous || symbol.Kind != semantic.SymbolFunction || symbol.Decl == nil || symbol.Decl.Kind != parser.KindFunctionDefinition || walk.HasChildToken(symbol.Decl, token.KwNative) {
+			return resourceCallable{}, false
+		}
+		return resourceCallable{name: name, returnTag: contract.ReturnTag, parameters: contract.Parameters, release: contract.Release, project: true}, true
+	}
+	if ctx.Project == nil || ctx.ProjectFile == nil {
+		return resourceCallable{}, false
+	}
+	declaration, resolved := ctx.Project.Resolve(ctx.ProjectFile, callee)
+	if !resolved || declaration.Kind != semantic.SymbolFunction || declaration.Node == nil || declaration.Node.Kind != parser.KindFunctionDefinition || declaration.Symbol == nil || declaration.Symbol.Ambiguous {
+		return resourceCallable{}, false
+	}
+	return resourceCallable{name: name, returnTag: contract.ReturnTag, parameters: contract.Parameters, release: contract.Release, project: true}, true
 }
 
 func resourceAcquisitions(ctx *lint.Context) map[*semantic.Symbol][]resourceAcquisition {
@@ -44,16 +86,16 @@ func declaredResourceAcquisition(ctx *lint.Context, symbol *semantic.Symbol) (re
 	if call == nil || call.Kind != parser.KindCallExpression {
 		return resourceAcquisition{}, false
 	}
-	native, name, ok := calledNative(ctx, call)
+	callable, ok := calledResourceFunction(ctx, call)
 	function := ctx.Flow.Function(symbol.Function)
-	if !ok || native.Release == "" || function == nil || function.Uncertain {
+	if !ok || callable.release == "" || function == nil || function.Uncertain {
 		return resourceAcquisition{}, false
 	}
 	block := function.Block(call)
 	if !function.ReachableBlock(block) {
 		return resourceAcquisition{}, false
 	}
-	return resourceAcquisition{call: call, write: symbol.NameNode, symbol: symbol, block: block, name: name, release: native.Release}, true
+	return resourceAcquisition{call: call, write: symbol.NameNode, symbol: symbol, block: block, name: callable.name, release: callable.release}, true
 }
 
 func assignedResourceAcquisition(ctx *lint.Context, assignment *parser.Node) (resourceAcquisition, bool) {
@@ -70,16 +112,16 @@ func assignedResourceAcquisition(ctx *lint.Context, assignment *parser.Node) (re
 	if symbol == nil || symbol.Kind != semantic.SymbolLocal || symbol.Ambiguous || walk.HasChildToken(ctx.Walk.Parent(symbol.Decl), token.KwStatic) {
 		return resourceAcquisition{}, false
 	}
-	native, name, ok := calledNative(ctx, call)
+	callable, ok := calledResourceFunction(ctx, call)
 	function := ctx.Flow.Function(symbol.Function)
-	if !ok || native.Release == "" || function == nil || function.Uncertain {
+	if !ok || callable.release == "" || function == nil || function.Uncertain {
 		return resourceAcquisition{}, false
 	}
 	block := function.Block(assignment)
 	if !function.ReachableBlock(block) {
 		return resourceAcquisition{}, false
 	}
-	return resourceAcquisition{call: call, write: left, symbol: symbol, block: block, name: name, release: native.Release}, true
+	return resourceAcquisition{call: call, write: left, symbol: symbol, block: block, name: callable.name, release: callable.release}, true
 }
 
 func resourceReferencesByBlock(ctx *lint.Context, function *controlflow.Function, symbol *semantic.Symbol) map[*controlflow.Block][]semantic.Reference {
@@ -132,22 +174,27 @@ func resourceOwnershipEscapes(ctx *lint.Context, symbol *semantic.Symbol, refere
 		if !nodeInField(reference.Node, arguments) {
 			continue
 		}
-		native, name, known := calledNative(ctx, parent)
+		callable, known := calledResourceFunction(ctx, parent)
 		if !known {
 			return true
 		}
-		if name == releaser {
+		if callable.name == releaser {
+			return true
+		}
+		if hasNamedArgument(arguments) {
 			return true
 		}
 		for index, argument := range arguments.Children {
-			if !nodeInField(reference.Node, argument) || index >= len(native.Parameters) {
+			if !nodeInField(reference.Node, argument) || index >= len(callable.parameters) {
 				continue
 			}
-			if native.Parameters[index].Reference {
+			parameter := callable.parameters[index]
+			if parameter.Reference || parameter.Ownership == "transferred" || callable.project && parameter.Ownership != "borrowed" {
 				return true
 			}
+			return false
 		}
-		return false
+		return true
 	}
 	return false
 }

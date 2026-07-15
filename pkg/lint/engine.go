@@ -59,6 +59,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 		semantics = contextFile.Semantic
 	} else if e.Project != nil {
 		if projectFile := e.Project.File(path); projectFile != nil && bytes.Equal(projectFile.Source, src) {
+			contextFile = projectFile
 			pf = projectFile.Parsed
 			m = projectFile.Walk
 			semantics = projectFile.Semantic
@@ -135,18 +136,19 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 			continue
 		}
 		ctx := &Context{
-			File:     file,
-			Level:    meta.AnalysisLevel,
-			Walk:     m,
-			Tokens:   tokensByKind,
-			Supp:     supps,
-			Known:    known,
-			PerRule:  perRule,
-			Semantic: semantics,
-			Flow:     flow,
-			Project:  e.Project,
-			Target:   e.Target,
-			API:      e.API,
+			File:        file,
+			Level:       meta.AnalysisLevel,
+			Walk:        m,
+			Tokens:      tokensByKind,
+			Supp:        supps,
+			Known:       known,
+			PerRule:     perRule,
+			Semantic:    semantics,
+			Flow:        flow,
+			Project:     e.Project,
+			ProjectFile: contextFile,
+			Target:      e.Target,
+			API:         e.API,
 		}
 		collected := make([]diagnostic.Diagnostic, 0, 8)
 		ctx.Report = func(d diagnostic.Diagnostic) {

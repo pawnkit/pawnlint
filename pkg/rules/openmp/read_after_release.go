@@ -103,8 +103,8 @@ func resourceReleaseCall(ctx *lint.Context, reference *parser.Node, releaser str
 		if !nodeInField(reference, arguments) {
 			return nil
 		}
-		_, name, known := calledNative(ctx, parent)
-		if known && name == releaser {
+		callable, known := calledResourceFunction(ctx, parent)
+		if known && callable.name == releaser {
 			return parent
 		}
 		return nil
