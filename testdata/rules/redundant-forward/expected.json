@@ -1,0 +1,25 @@
+{
+  "edge-cases.pwn": [],
+  "invalid.pwn": [
+    {
+      "ruleId": "redundant-forward",
+      "severity": "warning",
+      "message": "forward declaration of \"UnusedForward\" is redundant",
+      "startLine": 1,
+      "startCol": 9,
+      "endLine": 1,
+      "endCol": 22
+    },
+    {
+      "ruleId": "redundant-forward",
+      "severity": "warning",
+      "message": "forward declaration of \"CalledAfterDefinition\" is redundant",
+      "startLine": 8,
+      "startCol": 9,
+      "endLine": 8,
+      "endCol": 30
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

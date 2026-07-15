@@ -47,6 +47,7 @@ var curate = map[Profile]map[string]struct{}{
 		"maximum-nesting":     {},
 		"too-many-parameters": {},
 		"prefer-const":        {},
+		"redundant-forward":   {},
 	},
 }
 
