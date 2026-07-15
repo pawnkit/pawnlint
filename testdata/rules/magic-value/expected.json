@@ -1,0 +1,89 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "magic-value",
+      "severity": "warning",
+      "message": "numeric literal 4 is a magic value",
+      "startLine": 14,
+      "startCol": 18,
+      "endLine": 14,
+      "endCol": 19
+    },
+    {
+      "ruleId": "magic-value",
+      "severity": "warning",
+      "message": "string literal is a magic value",
+      "startLine": 15,
+      "startCol": 15,
+      "endLine": 15,
+      "endCol": 24
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "magic-value",
+      "severity": "warning",
+      "message": "numeric literal 42 is a magic value",
+      "startLine": 3,
+      "startCol": 17,
+      "endLine": 3,
+      "endCol": 19
+    },
+    {
+      "ruleId": "magic-value",
+      "severity": "warning",
+      "message": "numeric literal 60 is a magic value",
+      "startLine": 4,
+      "startCol": 24,
+      "endLine": 4,
+      "endCol": 26
+    },
+    {
+      "ruleId": "magic-value",
+      "severity": "warning",
+      "message": "string literal is a magic value",
+      "startLine": 6,
+      "startCol": 14,
+      "endLine": 6,
+      "endCol": 23
+    },
+    {
+      "ruleId": "magic-value",
+      "severity": "warning",
+      "message": "numeric literal 2500 is a magic value",
+      "startLine": 6,
+      "startCol": 25,
+      "endLine": 6,
+      "endCol": 29
+    },
+    {
+      "ruleId": "magic-value",
+      "severity": "warning",
+      "message": "numeric literal 3.5 is a magic value",
+      "startLine": 7,
+      "startCol": 23,
+      "endLine": 7,
+      "endCol": 26
+    },
+    {
+      "ruleId": "magic-value",
+      "severity": "warning",
+      "message": "numeric literal 7 is a magic value",
+      "startLine": 11,
+      "startCol": 14,
+      "endLine": 11,
+      "endCol": 15
+    },
+    {
+      "ruleId": "magic-value",
+      "severity": "warning",
+      "message": "string literal is a magic value",
+      "startLine": 15,
+      "startCol": 34,
+      "endLine": 15,
+      "endCol": 41
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

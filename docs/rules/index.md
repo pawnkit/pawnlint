@@ -48,6 +48,7 @@ Rules are stable unless their page marks them as preview.
 | [`invalid-shift-count`](invalid-shift-count.md) | correctness | error | on | no | Reports constant shift counts outside the 32-bit cell width |
 | [`large-local-array`](large-local-array.md) | performance | warning | off | no | Reports large automatic arrays allocated on the Pawn stack |
 | [`legacy-include`](legacy-include.md) | openmp | warning | off | no | Reports official SA-MP wrapper includes when targeting open.mp |
+| [`magic-value`](magic-value.md) | maintainability | warning | off | no | Reports unexplained numeric and string literals |
 | [`maximum-nesting`](maximum-nesting.md) | maintainability | warning | off | no | Reports functions with deeply nested control statements |
 | [`mismatched-resource-handle`](mismatched-resource-handle.md) | correctness | error | off | no | Reports handles passed to the wrong resource releaser |
 | [`missing-include`](missing-include.md) | correctness | error | on | no | Reports required includes that cannot be resolved |

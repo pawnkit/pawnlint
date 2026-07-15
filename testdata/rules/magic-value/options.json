@@ -1,0 +1,6 @@
+{
+  "check-strings": true,
+  "allowed-numbers": ["-1", "0", "1", "-1.0", "0.0", "1.0", "100"],
+  "allowed-strings": ["ok"],
+  "ignore-functions": ["^CreatePoint$"]
+}
