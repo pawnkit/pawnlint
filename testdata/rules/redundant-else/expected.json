@@ -1,0 +1,122 @@
+{
+  "edge-cases.pwn": [
+    {
+      "ruleId": "redundant-else",
+      "severity": "warning",
+      "message": "else is redundant because the preceding branch cannot continue",
+      "startLine": 16,
+      "startCol": 5,
+      "endLine": 16,
+      "endCol": 9,
+      "fix": {
+        "description": "remove the redundant else",
+        "edits": [
+          {
+            "startOffset": 192,
+            "endOffset": 196,
+            "newText": ""
+          }
+        ]
+      }
+    }
+  ],
+  "invalid.pwn": [
+    {
+      "ruleId": "redundant-else",
+      "severity": "warning",
+      "message": "else is redundant because the preceding branch cannot continue",
+      "startLine": 7,
+      "startCol": 5,
+      "endLine": 7,
+      "endCol": 9,
+      "fix": {
+        "description": "remove the redundant else",
+        "edits": [
+          {
+            "startOffset": 74,
+            "endOffset": 78,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "redundant-else",
+      "severity": "warning",
+      "message": "else is redundant because the preceding branch cannot continue",
+      "startLine": 21,
+      "startCol": 9,
+      "endLine": 21,
+      "endCol": 13,
+      "fix": {
+        "description": "remove the redundant else",
+        "edits": [
+          {
+            "startOffset": 232,
+            "endOffset": 236,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "redundant-else",
+      "severity": "warning",
+      "message": "else is redundant because the preceding branch cannot continue",
+      "startLine": 26,
+      "startCol": 5,
+      "endLine": 26,
+      "endCol": 9,
+      "fix": {
+        "description": "remove the redundant else",
+        "edits": [
+          {
+            "startOffset": 290,
+            "endOffset": 294,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "redundant-else",
+      "severity": "warning",
+      "message": "else is redundant because the preceding branch cannot continue",
+      "startLine": 41,
+      "startCol": 9,
+      "endLine": 41,
+      "endCol": 13,
+      "fix": {
+        "description": "remove the redundant else",
+        "edits": [
+          {
+            "startOffset": 503,
+            "endOffset": 507,
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "ruleId": "redundant-else",
+      "severity": "warning",
+      "message": "else is redundant because the preceding branch cannot continue",
+      "startLine": 46,
+      "startCol": 9,
+      "endLine": 46,
+      "endCol": 13,
+      "fix": {
+        "description": "remove the redundant else",
+        "edits": [
+          {
+            "startOffset": 597,
+            "endOffset": 601,
+            "newText": ""
+          }
+        ]
+      }
+    }
+  ],
+  "malformed.pwn": [],
+  "valid.pwn": []
+}

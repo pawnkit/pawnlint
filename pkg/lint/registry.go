@@ -49,6 +49,7 @@ var curate = map[Profile]map[string]struct{}{
 		"prefer-const":        {},
 		"redundant-forward":   {},
 		"redundant-tag":       {},
+		"redundant-else":      {},
 	},
 }
 

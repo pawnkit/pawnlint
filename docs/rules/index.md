@@ -69,6 +69,7 @@ Rules are stable unless their page marks them as preview.
 | [`read-after-release`](read-after-release.md) | correctness | error | on | no | Reports local resource handles used after release |
 | [`recursive-call`](recursive-call.md) | suspicious | warning | off | no | Reports direct and mutual recursion in the project call graph |
 | [`redundant-boolean-comparison`](redundant-boolean-comparison.md) | suspicious | warning | off | no | Reports boolean expressions compared with true or false |
+| [`redundant-else`](redundant-else.md) | maintainability | warning | off | yes | Reports else branches after unconditional control transfer |
 | [`redundant-forward`](redundant-forward.md) | maintainability | warning | off | no | Reports forward declarations that are not needed before a definition |
 | [`redundant-initialization`](redundant-initialization.md) | suspicious | warning | off | no | Reports local initial values overwritten before any read |
 | [`redundant-parentheses`](redundant-parentheses.md) | style | warning | off | yes | Reports expression parentheses that do not affect parsing |
