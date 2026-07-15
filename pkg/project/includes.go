@@ -273,7 +273,8 @@ func includePath(raw string) string {
 }
 
 func includeCandidates(path string) []string {
-	if filepath.Ext(path) != "" {
+	extension := strings.ToLower(filepath.Ext(path))
+	if extension == ".inc" || extension == ".pwn" {
 		return []string{path}
 	}
 	return []string{path, path + ".inc"}

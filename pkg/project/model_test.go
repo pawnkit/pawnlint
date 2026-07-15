@@ -47,6 +47,32 @@ func TestBuildResolvesIncludesAndIndexesDeclarations(t *testing.T) {
 	}
 }
 
+func TestBuildResolvesDottedIncludeWithIncSuffix(t *testing.T) {
+	dir := t.TempDir()
+	includeDir := filepath.Join(dir, "include")
+	if err := os.Mkdir(includeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	includePath := filepath.Join(includeDir, "open.mp.inc")
+	if err := os.WriteFile(includePath, []byte("stock OpenMP() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	rootPath := filepath.Join(dir, "main.pwn")
+	source := []byte("#include <open.mp>\nmain() {}\n")
+
+	model, err := Build([]Source{{Path: rootPath, Content: source}}, Options{WorkingDir: dir, IncludePaths: []string{"include"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := model.File(rootPath)
+	if root == nil || len(root.Includes) != 1 || root.Includes[0].Resolved == nil {
+		t.Fatalf("include was not resolved: %#v", root)
+	}
+	if root.Includes[0].Resolved.canonical != includePath {
+		t.Fatalf("resolved = %q, want %q", root.Includes[0].Resolved.canonical, includePath)
+	}
+}
+
 func TestBuildReportsTimings(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "main.pwn")
