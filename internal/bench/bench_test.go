@@ -62,6 +62,15 @@ func BenchmarkWalkIndex(b *testing.B) {
 	}
 }
 
+func BenchmarkCompactWalkIndex(b *testing.B) {
+	file := parser.ParseCompact([]byte(benchSrc), parser.ParseOptions{})
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		walk.NewCompact("x.pwn", file)
+	}
+}
+
 func BenchmarkEngineLintFile(b *testing.B) {
 	engine, ruleSet, known := benchmarkSetup(b)
 	src := []byte(benchSrc)
