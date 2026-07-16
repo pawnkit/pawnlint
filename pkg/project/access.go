@@ -178,6 +178,13 @@ func (f *File) HasParseErrors() bool {
 	return f == nil || fileHasParseErrors(f)
 }
 
+func (f *File) PointerWalk(parsed *parser.File) *walk.Model {
+	if f == nil || parsed == nil {
+		return nil
+	}
+	return walk.NewWithContext(f.Path, parsed, f.defines.walk, f.snapshots, f.complete, f.LineTable(), walk.NewIndex(parsed))
+}
+
 func (c Call) Valid() bool {
 	return callSyntax(c).Valid()
 }

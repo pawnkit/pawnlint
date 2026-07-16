@@ -195,6 +195,7 @@ func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registra
 			Defines:         defines,
 			DefinesComplete: true,
 			ReleaseExpanded: true,
+			ReleaseIncludes: true,
 			Features:        &projectFeatures,
 			ObserveTiming:   projectTimingObserver(timings),
 		})

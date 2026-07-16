@@ -124,7 +124,11 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 		}}
 	}
 	if m == nil {
-		m = walk.NewWithDefines(path, pf, e.Defines)
+		if contextFile != nil {
+			m = contextFile.PointerWalk(pf)
+		} else {
+			m = walk.NewWithDefines(path, pf, e.Defines)
+		}
 	}
 	lt := m.LineTable
 
