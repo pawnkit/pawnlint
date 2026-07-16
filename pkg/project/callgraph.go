@@ -48,9 +48,9 @@ type CallGraph struct {
 	Calls         []Call
 	AsyncCalls    []Call
 	EntryPoints   []EntryPoint
-	outgoing      map[declarationID][]Call
-	asyncOutgoing map[declarationID][]Call
-	asyncIncoming map[declarationID][]Call
+	outgoing      map[declarationID][]uint32
+	asyncOutgoing map[declarationID][]uint32
+	asyncIncoming map[declarationID][]uint32
 	recursive     [][]Declaration
 }
 
@@ -69,7 +69,7 @@ type expansionOriginFact struct {
 }
 
 func (m *Model) buildCallGraph() *CallGraph {
-	graph := &CallGraph{outgoing: make(map[declarationID][]Call), asyncOutgoing: make(map[declarationID][]Call), asyncIncoming: make(map[declarationID][]Call)}
+	graph := &CallGraph{outgoing: make(map[declarationID][]uint32), asyncOutgoing: make(map[declarationID][]uint32), asyncIncoming: make(map[declarationID][]uint32)}
 	byNode := make(map[*File]map[cst.Node]Declaration)
 	for _, declarations := range m.Declarations {
 		for _, declaration := range declarations {
@@ -398,16 +398,16 @@ func (g *CallGraph) buildRuntimeEdges(model *Model) {
 		}
 		return declarationLess(left.Callee, right.Callee)
 	})
-	g.outgoing = make(map[declarationID][]Call)
-	for _, call := range g.Calls {
+	g.outgoing = make(map[declarationID][]uint32)
+	for index, call := range g.Calls {
 		key := declarationKey(call.Caller)
-		g.outgoing[key] = append(g.outgoing[key], call)
+		g.outgoing[key] = append(g.outgoing[key], uint32(index))
 	}
-	for _, call := range g.AsyncCalls {
+	for index, call := range g.AsyncCalls {
 		key := declarationKey(call.Caller)
-		g.asyncOutgoing[key] = append(g.asyncOutgoing[key], call)
+		g.asyncOutgoing[key] = append(g.asyncOutgoing[key], uint32(index))
 		calleeKey := declarationKey(call.Callee)
-		g.asyncIncoming[calleeKey] = append(g.asyncIncoming[calleeKey], call)
+		g.asyncIncoming[calleeKey] = append(g.asyncIncoming[calleeKey], uint32(index))
 	}
 }
 
@@ -533,21 +533,29 @@ func (g *CallGraph) Outgoing(function Declaration) []Call {
 	if g == nil {
 		return nil
 	}
-	return append([]Call(nil), g.outgoing[declarationKey(function)]...)
+	return indexedCalls(g.Calls, g.outgoing[declarationKey(function)])
 }
 
 func (g *CallGraph) AsyncOutgoing(function Declaration) []Call {
 	if g == nil {
 		return nil
 	}
-	return append([]Call(nil), g.asyncOutgoing[declarationKey(function)]...)
+	return indexedCalls(g.AsyncCalls, g.asyncOutgoing[declarationKey(function)])
 }
 
 func (g *CallGraph) AsyncIncoming(function Declaration) []Call {
 	if g == nil {
 		return nil
 	}
-	return append([]Call(nil), g.asyncIncoming[declarationKey(function)]...)
+	return indexedCalls(g.AsyncCalls, g.asyncIncoming[declarationKey(function)])
+}
+
+func indexedCalls(calls []Call, indices []uint32) []Call {
+	result := make([]Call, len(indices))
+	for index, callIndex := range indices {
+		result[index] = calls[callIndex]
+	}
+	return result
 }
 
 func (g *CallGraph) RecursiveComponents() [][]Declaration {
@@ -579,7 +587,8 @@ func (g *CallGraph) findRecursiveComponents() [][]Declaration {
 		lowlink[key] = index
 		stack = append(stack, function)
 		onStack[key] = true
-		for _, call := range g.outgoing[key] {
+		for _, callIndex := range g.outgoing[key] {
+			call := g.Calls[callIndex]
 			calleeKey := declarationKey(call.Callee)
 			if indices[calleeKey] == 0 {
 				connect(call.Callee)
@@ -623,7 +632,8 @@ func (g *CallGraph) findRecursiveComponents() [][]Declaration {
 
 func (g *CallGraph) selfCalls(function Declaration) bool {
 	key := declarationKey(function)
-	for _, call := range g.outgoing[key] {
+	for _, callIndex := range g.outgoing[key] {
+		call := g.Calls[callIndex]
 		if declarationKey(call.Callee) == key {
 			return true
 		}
