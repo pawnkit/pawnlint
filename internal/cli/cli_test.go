@@ -46,9 +46,37 @@ func TestCLIExplain(t *testing.T) {
 }
 
 func TestCLIInitConfig(t *testing.T) {
-	out, _, code := runCLI(t, []string{"--init-config"}, "")
-	if code != 0 || !strings.Contains(out, "profile =") || !strings.Contains(out, "empty-condition-body") {
-		t.Errorf("init-config: out=%q code=%d", out, code)
+	dir := t.TempDir()
+	path := filepath.Join(dir, "pawnlint.toml")
+	_, stderr, code := runCLI(t, []string{"--init-config", "--config", path}, "")
+	if code != 0 || !strings.Contains(stderr, path) {
+		t.Errorf("init-config: stderr=%q code=%d", stderr, code)
+	}
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("init-config: config file not written: %v", err)
+	}
+	if !strings.Contains(string(contents), "profile =") || !strings.Contains(string(contents), "empty-condition-body") {
+		t.Errorf("init-config: contents=%q", contents)
+	}
+}
+
+func TestCLIInitConfigRefusesOverwrite(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "pawnlint.toml")
+	if err := os.WriteFile(path, []byte("profile = \"strict\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, stderr, code := runCLI(t, []string{"--init-config", "--config", path}, "")
+	if code != 2 || !strings.Contains(stderr, "already exists") {
+		t.Errorf("init-config overwrite: stderr=%q code=%d", stderr, code)
+	}
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(contents) != "profile = \"strict\"\n" {
+		t.Errorf("init-config overwrite: existing file was modified: %q", contents)
 	}
 }
 

@@ -3,7 +3,9 @@
 `pawnlint` searches upward from the current directory for a config file, in
 order: `pawnlint.toml`, `pawnlint.yaml`, `pawnlint.yml`, `pawnlint.json`.
 Use `--config <path>` to select a file directly (format is chosen by
-extension), or `--init-config` to print a default TOML configuration.
+extension), or `--init-config` to write a default TOML configuration to
+`pawnlint.toml` (or the path given via `--config`). It refuses to overwrite
+an existing file.
 
 ## Example
 

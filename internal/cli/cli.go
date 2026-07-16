@@ -71,7 +71,22 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 		return exitOK
 	}
 	if opts.InitConfig {
-		_, _ = fmt.Fprint(stdout, config.InitConfigText(reg))
+		path := opts.Config
+		if path == "" {
+			path = "pawnlint.toml"
+		}
+		if _, err := os.Stat(path); err == nil {
+			_, _ = fmt.Fprintf(stderr, "pawnlint: %s already exists; remove it or pass --config with a new path\n", path)
+			return exitUsage
+		} else if !os.IsNotExist(err) {
+			_, _ = fmt.Fprintf(stderr, "pawnlint: %v\n", err)
+			return exitInternal
+		}
+		if err := os.WriteFile(path, []byte(config.InitConfigText(reg)), 0o644); err != nil {
+			_, _ = fmt.Fprintf(stderr, "pawnlint: %v\n", err)
+			return exitInternal
+		}
+		_, _ = fmt.Fprintf(stderr, "pawnlint: wrote %s\n", path)
 		return exitOK
 	}
 	if !output.AllowedFormat(opts.Format) {
