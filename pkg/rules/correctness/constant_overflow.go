@@ -1,6 +1,7 @@
 package correctness
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 
@@ -36,8 +37,9 @@ func (ConstantOverflow) Run(ctx *lint.Context) {
 	if ctx.Semantic == nil {
 		return
 	}
+	regions := constantOverflowRegions(ctx)
 	for _, literal := range ctx.Walk.OfKind(parser.KindLiteral) {
-		if literal.Tok.Kind != token.IntLiteral || constantOverflowSkipped(ctx, literal) {
+		if literal.Tok.Kind != token.IntLiteral || constantOverflowSkipped(ctx, literal, regions) {
 			continue
 		}
 		if _, ok := constantLiteralCellValue(ctx.Walk.Text(literal)); ok || constantNegatedMinimum(ctx, literal) {
@@ -50,7 +52,7 @@ func (ConstantOverflow) Run(ctx *lint.Context) {
 		})
 	}
 	for _, node := range ctx.Walk.OfKind(parser.KindUnaryExpression) {
-		if node.Tok.Kind != token.Minus || constantOverflowSkipped(ctx, node) {
+		if node.Tok.Kind != token.Minus || constantOverflowSkipped(ctx, node, regions) {
 			continue
 		}
 		if constantUnsignedMagnitude(ctx, node.Field("expression")) == uint64(2147483648) {
@@ -67,7 +69,7 @@ func (ConstantOverflow) Run(ctx *lint.Context) {
 		})
 	}
 	for _, node := range ctx.Walk.OfKind(parser.KindBinaryExpression) {
-		if constantOverflowSkipped(ctx, node) {
+		if constantOverflowSkipped(ctx, node, regions) {
 			continue
 		}
 		operation := constantOverflowOperation(node.Tok.Kind)
@@ -197,16 +199,53 @@ func constantNegatedMinimum(ctx *lint.Context, literal *parser.Node) bool {
 	return false
 }
 
-func constantOverflowSkipped(ctx *lint.Context, node *parser.Node) bool {
+type constantOverflowRegion struct {
+	start int
+	end   int
+}
+
+func constantOverflowRegions(ctx *lint.Context) []constantOverflowRegion {
+	var regions []constantOverflowRegion
+	for _, kind := range []parser.Kind{
+		parser.KindDirectiveDefine,
+		parser.KindMacroBody,
+		parser.KindMacroInvocation,
+		parser.KindMacroInvocationBlock,
+		parser.KindSharedConditional,
+		parser.KindConditionalFunction,
+		parser.KindConditionalSplice,
+	} {
+		for _, node := range ctx.Walk.OfKind(kind) {
+			regions = append(regions, constantOverflowRegion{start: node.Start, end: node.End})
+		}
+	}
+	sort.Slice(regions, func(left, right int) bool {
+		if regions[left].start != regions[right].start {
+			return regions[left].start < regions[right].start
+		}
+		return regions[left].end > regions[right].end
+	})
+	merged := regions[:0]
+	for _, region := range regions {
+		if len(merged) == 0 || region.start > merged[len(merged)-1].end {
+			merged = append(merged, region)
+			continue
+		}
+		merged[len(merged)-1].end = max(merged[len(merged)-1].end, region.end)
+	}
+	return merged
+}
+
+func constantOverflowSkipped(ctx *lint.Context, node *parser.Node, regions []constantOverflowRegion) bool {
 	if node == nil || node.HasError || node.Tok.Origin != nil || ctx.Walk.Inactive(node) || ctx.Walk.Uncertain(node) {
 		return true
 	}
-	for current := node; current != nil; current = ctx.Walk.Parent(current) {
-		switch current.Kind {
-		case parser.KindDirectiveDefine, parser.KindMacroBody, parser.KindMacroInvocation, parser.KindMacroInvocationBlock,
-			parser.KindSharedConditional, parser.KindConditionalFunction, parser.KindConditionalSplice:
-			return true
-		}
+	index := sort.Search(len(regions), func(index int) bool {
+		return regions[index].start > node.Start
+	})
+	if index == 0 {
+		return false
 	}
-	return false
+	region := regions[index-1]
+	return node.Start >= region.start && node.End <= region.end
 }
