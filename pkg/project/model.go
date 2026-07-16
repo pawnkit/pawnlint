@@ -151,6 +151,8 @@ type Model struct {
 	resolved           map[*File]map[cst.Node]Declaration
 	ambiguous          map[*File]map[cst.Node]bool
 	effects            map[declarationID]FunctionEffects
+	functionVariantMap map[functionVariantKey][]Declaration
+	functionVariantsMu sync.RWMutex
 	definedNames       map[string]struct{}
 	sourceFiles        map[uint32]*File
 	options            Options
@@ -212,6 +214,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 		references:         make(map[declarationID][]Reference),
 		resolved:           make(map[*File]map[cst.Node]Declaration),
 		ambiguous:          make(map[*File]map[cst.Node]bool),
+		functionVariantMap: make(map[functionVariantKey][]Declaration),
 		definedNames:       make(map[string]struct{}),
 		sourceFiles:        make(map[uint32]*File),
 		options:            options,
@@ -230,6 +233,9 @@ func Build(sources []Source, options Options) (*Model, error) {
 		if err := model.resolveFileIncludes(file); err != nil {
 			return nil, err
 		}
+	}
+	for _, file := range model.Files {
+		file.expansionState = nil
 	}
 	model.orderDefineEnvironments()
 	if features.Has(FeatureDefinedNames) {

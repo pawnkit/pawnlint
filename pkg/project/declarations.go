@@ -25,6 +25,11 @@ type declarationPair struct {
 	second declarationID
 }
 
+type functionVariantKey struct {
+	file *File
+	name string
+}
+
 func (m *Model) References(declaration Declaration) []Reference {
 	if m == nil || declaration.File == nil || !declarationSyntax(declaration).Valid() {
 		return nil
@@ -62,6 +67,13 @@ func (m *Model) functionVariants(file *File, node cst.Node) []Declaration {
 		return nil
 	}
 	name := node.Text()
+	key := functionVariantKey{file: file, name: name}
+	m.functionVariantsMu.RLock()
+	cached, found := m.functionVariantMap[key]
+	m.functionVariantsMu.RUnlock()
+	if found {
+		return cached
+	}
 	seen := make(map[declarationID]Declaration)
 	for _, unit := range m.Units {
 		if _, contains := unit.members[file]; !contains {
@@ -91,10 +103,21 @@ func (m *Model) functionVariants(file *File, node cst.Node) []Declaration {
 	for left := range candidates {
 		for right := left + 1; right < len(candidates); right++ {
 			if !projectStateVariantsCoexist(candidates[left], candidates[right]) {
-				return nil
+				candidates = nil
+				break
 			}
 		}
+		if candidates == nil {
+			break
+		}
 	}
+	m.functionVariantsMu.Lock()
+	if cached, found := m.functionVariantMap[key]; found {
+		candidates = cached
+	} else {
+		m.functionVariantMap[key] = candidates
+	}
+	m.functionVariantsMu.Unlock()
 	return candidates
 }
 
