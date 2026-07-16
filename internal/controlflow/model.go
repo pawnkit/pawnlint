@@ -235,6 +235,7 @@ func (b *builder) build() *Function {
 		b.connect(jump.from, target, EdgeJump)
 	}
 	b.markReachable()
+	b.indexLocations(body, nil)
 	return b.function
 }
 
@@ -244,18 +245,23 @@ func (b *builder) block(node *parser.Node) *Block {
 	b.function.Blocks = append(b.function.Blocks, block)
 	if node != nil {
 		b.function.nodes[node] = block
-		b.locate(node, block)
 	}
 	return block
 }
 
-func (b *builder) locate(node *parser.Node, block *Block) {
+func (b *builder) indexLocations(node *parser.Node, block *Block) {
 	if node == nil {
 		return
 	}
+	if current := b.function.nodes[node]; current != nil {
+		block = current
+	}
+	if current := b.function.locations[node]; current != nil {
+		block = current
+	}
 	b.function.locations[node] = block
 	for _, child := range node.Children {
-		b.locate(child, block)
+		b.indexLocations(child, block)
 	}
 }
 
@@ -328,7 +334,7 @@ func (b *builder) buildNode(node *parser.Node, incoming []*Block, target targets
 		bodyNode := node.Field("body")
 		bodyExits := b.buildNode(bodyNode, []*Block{block}, targets{breakTo: after, continueTo: conditionBlock})
 		b.connectAll(bodyExits, conditionBlock, EdgeJump)
-		b.locate(node.Field("condition"), conditionBlock)
+		b.function.locations[node.Field("condition")] = conditionBlock
 		condition, known := b.condition(node.Field("condition"))
 		if !known || condition {
 			b.connect(conditionBlock, b.function.nodes[bodyNode], EdgeBranch)
