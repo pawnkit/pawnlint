@@ -95,16 +95,20 @@ func calledResourceFunctionIn(ctx *lint.Context, file *project.File, tree *walk.
 }
 
 func inferredResourceReturn(ctx *lint.Context, declaration project.Declaration, visiting map[string]bool) (resourceCallable, bool) {
-	if declaration.File == nil || declaration.Node == nil || declaration.Node.Kind != parser.KindFunctionDefinition || declaration.Symbol == nil || declaration.Symbol.Ambiguous {
+	if declaration.File == nil || declaration.NodeKind() != parser.KindFunctionDefinition || declaration.Ambiguous() {
 		return resourceCallable{}, false
 	}
-	key := declaration.File.Path + ":" + strconv.Itoa(declaration.Node.Start)
+	node := declaration.PointerNode()
+	if node == nil {
+		return resourceCallable{}, false
+	}
+	key := declaration.File.Path + ":" + strconv.Itoa(declaration.Start())
 	if visiting[key] {
 		return resourceCallable{}, false
 	}
 	visiting[key] = true
 	defer delete(visiting, key)
-	body := declaration.Node.Field("body")
+	body := node.Field("body")
 	if body == nil || len(body.Children) != 1 {
 		return resourceCallable{}, false
 	}
@@ -266,14 +270,18 @@ func resourceArgumentIndex(arguments, reference *parser.Node) int {
 }
 
 func inferredResourceTransfer(ctx *lint.Context, declaration project.Declaration, parameterIndex int, releaser string, visiting map[string]bool) bool {
-	if declaration.File == nil || declaration.Node == nil || declaration.Node.Kind != parser.KindFunctionDefinition || declaration.Symbol == nil || declaration.Symbol.Ambiguous {
+	if declaration.File == nil || declaration.NodeKind() != parser.KindFunctionDefinition || declaration.Ambiguous() {
+		return false
+	}
+	node := declaration.PointerNode()
+	if node == nil {
 		return false
 	}
 	parameters := resourceParameters(declaration)
 	if parameterIndex < 0 || parameterIndex >= len(parameters) {
 		return false
 	}
-	key := declaration.File.Path + ":" + strconv.Itoa(declaration.Node.Start) + ":" + strconv.Itoa(parameterIndex) + ":" + releaser
+	key := declaration.File.Path + ":" + strconv.Itoa(declaration.Start()) + ":" + strconv.Itoa(parameterIndex) + ":" + releaser
 	if visiting[key] {
 		return false
 	}
@@ -319,9 +327,13 @@ func inferredResourceTransfer(ctx *lint.Context, declaration project.Declaration
 }
 
 func resourceParameters(declaration project.Declaration) []*semantic.Symbol {
+	node := declaration.PointerNode()
+	if node == nil {
+		return nil
+	}
 	var parameters []*semantic.Symbol
 	for _, symbol := range declaration.File.Semantic.Symbols {
-		if symbol.Kind == semantic.SymbolParameter && symbol.Function == declaration.Node && !symbol.Ambiguous {
+		if symbol.Kind == semantic.SymbolParameter && symbol.Function == node && !symbol.Ambiguous {
 			parameters = append(parameters, symbol)
 		}
 	}
@@ -332,7 +344,11 @@ func resourceParameters(declaration project.Declaration) []*semantic.Symbol {
 }
 
 func topLevelResourceCall(declaration project.Declaration) *parser.Node {
-	body := declaration.Node.Field("body")
+	node := declaration.PointerNode()
+	if node == nil {
+		return nil
+	}
+	body := node.Field("body")
 	if body == nil || len(body.Children) != 1 {
 		return nil
 	}

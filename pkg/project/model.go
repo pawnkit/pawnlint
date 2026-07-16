@@ -76,6 +76,8 @@ type File struct {
 	expansionOrigins  map[*parser.Node][]expansionOriginFact
 	snapshots         []walk.DefineSnapshot
 	pointerOnce       sync.Once
+	pointerNodes      map[nodeLocation]*parser.Node
+	compactNodes      map[nodeLocation]cst.Node
 }
 
 type Include struct {
@@ -159,6 +161,11 @@ type physicalFile struct {
 	compact     *parser.CompactFile
 	lineTable   *sourceinfo.LineTable
 	syntaxIndex *walk.Index
+}
+
+type nodeLocation struct {
+	kind       parser.Kind
+	start, end int
 }
 
 type fileContextKey struct {

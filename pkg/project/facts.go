@@ -11,7 +11,7 @@ func (m *Model) Eval(file *File, node *parser.Node) (int64, bool) {
 	if m == nil || file == nil || file.Semantic == nil || node == nil {
 		return 0, false
 	}
-	return m.evalSyntax(file, file.Syntax.PointerNode(node), make(map[declarationID]bool))
+	return m.evalSyntax(file, file.syntaxNode(node), make(map[declarationID]bool))
 }
 
 func (m *Model) evalSyntax(file *File, node cst.Node, visiting map[declarationID]bool) (int64, bool) {
@@ -29,9 +29,9 @@ func (m *Model) evalSyntax(file *File, node cst.Node, visiting map[declarationID
 		delete(visiting, key)
 		return value, known
 	}
-	if file.Semantic != nil {
+	if node.Pointer() != nil && file.Semantic != nil {
 		return file.Semantic.EvalWithResolver(node.Pointer(), func(identifier *parser.Node) (int64, bool) {
-			return resolve(file.Syntax.PointerNode(identifier))
+			return resolve(file.syntaxNode(identifier))
 		})
 	}
 	return file.CompactSemantic.EvalWithResolver(node.ID(), func(identifier syntax.NodeID) (int64, bool) {

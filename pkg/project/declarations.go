@@ -36,7 +36,7 @@ func (m *Model) Resolve(file *File, node *parser.Node) (Declaration, bool) {
 	if m == nil || file == nil || node == nil {
 		return Declaration{}, false
 	}
-	return m.resolveSyntax(file, file.Syntax.PointerNode(node))
+	return m.resolveSyntax(file, file.syntaxNode(node))
 }
 
 func (m *Model) resolveSyntax(file *File, node cst.Node) (Declaration, bool) {
@@ -54,7 +54,7 @@ func (m *Model) FunctionVariants(file *File, node *parser.Node) []Declaration {
 	if m == nil || file == nil || node == nil || node.Kind != parser.KindIdentifier {
 		return nil
 	}
-	return m.functionVariants(file, file.Syntax.PointerNode(node))
+	return m.functionVariants(file, file.syntaxNode(node))
 }
 
 func (m *Model) functionVariants(file *File, node cst.Node) []Declaration {

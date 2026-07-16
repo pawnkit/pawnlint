@@ -45,10 +45,10 @@ func (UnconditionalRecursion) Run(ctx *lint.Context) {
 		if !componentContainsFile(component, file) {
 			continue
 		}
-		members := make(map[*parser.Node]bool, len(component))
+		members := make(map[project.NodeKey]bool, len(component))
 		names := make([]string, 0, len(component))
 		for _, function := range component {
-			members[function.Node] = true
+			members[function.Key()] = true
 			names = append(names, function.Name)
 		}
 		if !unconditionalComponent(ctx, component, members, flows) {
@@ -56,7 +56,7 @@ func (UnconditionalRecursion) Run(ctx *lint.Context) {
 		}
 		cycle := strings.Join(names, " -> ")
 		for _, function := range component {
-			if function.File != file || function.Symbol == nil {
+			if function.File != file || !function.Valid() {
 				continue
 			}
 			message := fmt.Sprintf("function %q cannot return without calling recursive cycle %s", function.Name, cycle)
@@ -66,14 +66,15 @@ func (UnconditionalRecursion) Run(ctx *lint.Context) {
 			diagnosticValue := diagnostic.Diagnostic{
 				Message:  message,
 				Filename: ctx.File.Path,
-				Range:    file.Walk.Range(function.Symbol.NameNode),
+				Range:    function.NameRange(),
 			}
 			for _, call := range ctx.Project.CallGraph.Outgoing(function) {
-				if !members[call.Callee.Node] || !unconditionalCall(call.File, call.Node) {
+				node := call.PointerNode()
+				if !members[call.Callee.Key()] || !unconditionalCall(call.File, node) {
 					continue
 				}
 				diagnosticValue.Notes = append(diagnosticValue.Notes, diagnostic.RelatedLocation{
-					Range:   call.File.Walk.Range(call.Node.Field("function")),
+					Range:   call.FieldRange("function"),
 					Message: fmt.Sprintf("recursive call to %q is here", call.Callee.Name),
 				})
 				break
@@ -92,23 +93,28 @@ func componentContainsFile(component []project.Declaration, file *project.File) 
 	return false
 }
 
-func unconditionalComponent(ctx *lint.Context, component []project.Declaration, members map[*parser.Node]bool, flows map[*project.File]*controlflow.Model) bool {
+func unconditionalComponent(ctx *lint.Context, component []project.Declaration, members map[project.NodeKey]bool, flows map[*project.File]*controlflow.Model) bool {
 	for _, declaration := range component {
+		declarationNode := declaration.PointerNode()
+		if declarationNode == nil {
+			return false
+		}
 		flow := flows[declaration.File]
 		if flow == nil {
 			flow = controlflow.Build(declaration.File.Walk, declaration.File.Semantic)
 			flows[declaration.File] = flow
 		}
-		function := flow.Function(declaration.Node)
+		function := flow.Function(declarationNode)
 		if function == nil || function.Uncertain {
 			return false
 		}
 		targets := make(map[*controlflow.Block]bool)
 		for _, call := range ctx.Project.CallGraph.Outgoing(declaration) {
-			if !members[call.Callee.Node] || !unconditionalCall(call.File, call.Node) {
+			callNode := call.PointerNode()
+			if !members[call.Callee.Key()] || !unconditionalCall(call.File, callNode) {
 				continue
 			}
-			block := function.Block(call.Node)
+			block := function.Block(callNode)
 			if function.ReachableBlock(block) {
 				targets[block] = true
 			}

@@ -143,9 +143,10 @@ func newTaintAnalyzer(ctx *lint.Context, unit *project.Unit) *taintAnalyzer {
 		if _, included := members[declaration.File]; !included {
 			continue
 		}
-		key := taintFunctionKey{file: declaration.File, node: declaration.Node}
-		function := &taintFunction{key: key, declaration: declaration, usable: taintFunctionUsable(declaration.File, declaration.Node)}
-		function.parameters = taintParameterSymbols(declaration.File, declaration.Node)
+		node := declaration.PointerNode()
+		key := taintFunctionKey{file: declaration.File, node: node}
+		function := &taintFunction{key: key, declaration: declaration, usable: taintFunctionUsable(declaration.File, node)}
+		function.parameters = taintParameterSymbols(declaration.File, node)
 		analyzer.functions[key] = function
 		analyzer.enqueue(key)
 	}
@@ -153,16 +154,17 @@ func newTaintAnalyzer(ctx *lint.Context, unit *project.Unit) *taintAnalyzer {
 		if _, included := members[call.File]; !included {
 			continue
 		}
-		callee := analyzer.functions[taintFunctionKey{file: call.Callee.File, node: call.Callee.Node}]
+		callee := analyzer.functions[taintFunctionKey{file: call.Callee.File, node: call.Callee.PointerNode()}]
 		if callee != nil {
+			node := call.PointerNode()
 			if call.Kind == project.CallDynamic {
-				key := taintCallKey{file: call.File, node: call.Node}
+				key := taintCallKey{file: call.File, node: node}
 				analyzer.dynamicCalls[key] = append(analyzer.dynamicCalls[key], taintAsyncCall{callee: callee, offset: call.ArgumentOffset})
 				continue
 			}
-			callKey := taintCallKey{file: call.File, node: call.Node}
+			callKey := taintCallKey{file: call.File, node: node}
 			analyzer.calls[callKey] = append(analyzer.calls[callKey], callee)
-			callerNode := call.File.Walk.EnclosingFunction(call.Node)
+			callerNode := call.File.Walk.EnclosingFunction(node)
 			callerKey := taintFunctionKey{file: call.File, node: callerNode}
 			if analyzer.functions[callerKey] != nil {
 				if analyzer.callers[callee.key] == nil {
@@ -176,9 +178,9 @@ func newTaintAnalyzer(ctx *lint.Context, unit *project.Unit) *taintAnalyzer {
 		if _, included := members[call.File]; !included || call.ArgumentOffset < 0 {
 			continue
 		}
-		callee := analyzer.functions[taintFunctionKey{file: call.Callee.File, node: call.Callee.Node}]
+		callee := analyzer.functions[taintFunctionKey{file: call.Callee.File, node: call.Callee.PointerNode()}]
 		if callee != nil {
-			key := taintCallKey{file: call.File, node: call.Node}
+			key := taintCallKey{file: call.File, node: call.PointerNode()}
 			analyzer.asyncCalls[key] = append(analyzer.asyncCalls[key], taintAsyncCall{callee: callee, offset: call.ArgumentOffset})
 		}
 	}
@@ -471,7 +473,7 @@ func (analyzer *taintAnalyzer) callable(file *project.File, call *parser.Node) t
 		return callable
 	}
 	if declaration, resolved := analyzer.ctx.Project.Resolve(file, calleeNode); resolved {
-		if declaration.Node == nil || !walk.HasChildToken(declaration.Node, token.KwNative) {
+		if !declaration.Valid() || !declaration.HasToken(token.KwNative) {
 			return taintCallable{}
 		}
 	}

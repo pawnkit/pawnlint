@@ -125,7 +125,7 @@ func projectUnitHasErrors(model *project.Model, file *project.File) bool {
 			continue
 		}
 		for _, candidate := range unit.Files {
-			if candidate.Parsed == nil || candidate.Parsed.Root == nil || candidate.Parsed.Broken || candidate.Parsed.Root.HasError {
+			if candidate.HasParseErrors() {
 				return true
 			}
 		}

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
+	"github.com/pawnkit/pawnlint/pkg/project"
 )
 
 type RecursiveCall struct{}
@@ -35,15 +35,15 @@ func (RecursiveCall) Run(ctx *lint.Context) {
 		return
 	}
 	for _, component := range ctx.Project.CallGraph.RecursiveComponents() {
-		members := make(map[*parser.Node]bool, len(component))
+		members := make(map[project.NodeKey]bool, len(component))
 		names := make([]string, 0, len(component))
 		for _, function := range component {
-			members[function.Node] = true
+			members[function.Key()] = true
 			names = append(names, function.Name)
 		}
 		cycle := strings.Join(names, " -> ")
 		for _, function := range component {
-			if function.File != file || function.Symbol == nil {
+			if function.File != file || !function.Valid() {
 				continue
 			}
 			message := fmt.Sprintf("function %q participates in recursive call cycle %s", function.Name, cycle)
@@ -53,14 +53,14 @@ func (RecursiveCall) Run(ctx *lint.Context) {
 			diagnosticValue := diagnostic.Diagnostic{
 				Message:  message,
 				Filename: ctx.File.Path,
-				Range:    file.Walk.Range(function.Symbol.NameNode),
+				Range:    function.NameRange(),
 			}
 			for _, call := range ctx.Project.CallGraph.Outgoing(function) {
-				if call.File != file || !members[call.Callee.Node] {
+				if call.File != file || !members[call.Callee.Key()] {
 					continue
 				}
 				diagnosticValue.Notes = append(diagnosticValue.Notes, diagnostic.RelatedLocation{
-					Range:   file.Walk.Range(call.Node.Field("function")),
+					Range:   call.FieldRange("function"),
 					Message: fmt.Sprintf("recursive call to %q is here", call.Callee.Name),
 				})
 				break

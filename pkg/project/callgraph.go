@@ -60,6 +60,7 @@ type runtimeCallFact struct {
 	node           *parser.Node
 	kind           CallKind
 	argumentOffset int
+	syntax         cst.Node
 }
 
 type expansionOriginFact struct {
@@ -209,8 +210,8 @@ func (m *Model) captureCompactRuntimeCalls(file *File, parsed *parser.CompactFil
 		if caller == "" {
 			continue
 		}
-		node := compactRuntimeCallNodeFromTree(file, parsed, tree, call, callee)
-		fact := runtimeCallFact{caller: caller, target: target, node: node, kind: CallTimer, argumentOffset: -1}
+		node, physical := compactRuntimeCallNodeFromTree(file, parsed, tree, call, callee)
+		fact := runtimeCallFact{caller: caller, target: target, node: node, kind: CallTimer, argumentOffset: -1, syntax: physical}
 		if name == "SetTimerEx" {
 			fact.argumentOffset = 4
 		} else if name == "CallLocalFunction" || name == "CallRemoteFunction" {
@@ -251,26 +252,26 @@ func compactRuntimeCallbackName(tree *walk.CompactModel, node syntax.NodeID) (st
 	return value, true
 }
 
-func compactRuntimeCallNodeFromTree(file *File, parsed *parser.CompactFile, tree *walk.CompactModel, call, callee syntax.NodeID) *parser.Node {
+func compactRuntimeCallNodeFromTree(file *File, parsed *parser.CompactFile, tree *walk.CompactModel, call, callee syntax.NodeID) (*parser.Node, cst.Node) {
 	origin := compactNodeOrigin(parsed, tree, callee)
 	var location *parser.CompactOrigin
 	for origin != 0 && int(origin) < len(parsed.Origins) {
 		current := &parsed.Origins[origin]
 		if current.File == file.sourceID {
 			location = current
-			for _, original := range file.Walk.OfKind(parser.KindCallExpression) {
+			for _, original := range file.Syntax.OfKind(parser.KindCallExpression) {
 				function := original.Field("function")
-				if function != nil && function.Start == int(current.Start.Offset) {
-					return original
+				if function.Valid() && function.Start() == int(current.Start.Offset) {
+					return original.Pointer(), original
 				}
 			}
 		}
 		origin = current.Parent
 	}
 	if location == nil {
-		return &parser.Node{Kind: parser.KindCallExpression, Start: tree.Tree.Start(call), End: tree.Tree.End(call)}
+		return &parser.Node{Kind: parser.KindCallExpression, Start: tree.Tree.Start(call), End: tree.Tree.End(call)}, cst.Node{}
 	}
-	return &parser.Node{Kind: parser.KindCallExpression, Start: int(location.Start.Offset), End: int(location.End.Offset)}
+	return &parser.Node{Kind: parser.KindCallExpression, Start: int(location.Start.Offset), End: int(location.End.Offset)}, cst.Node{}
 }
 
 func compactNodeOrigin(parsed *parser.CompactFile, tree *walk.CompactModel, node syntax.NodeID) uint32 {
@@ -362,7 +363,7 @@ func (g *CallGraph) buildRuntimeEdges(model *Model) {
 				continue
 			}
 			for _, targetFunction := range model.runtimeDefinitions(file, fact.target) {
-				resolved := Call{Caller: caller, Callee: targetFunction, File: file, Node: fact.node, Kind: fact.kind, ArgumentOffset: fact.argumentOffset}
+				resolved := Call{Caller: caller, Callee: targetFunction, File: file, Node: fact.node, Kind: fact.kind, ArgumentOffset: fact.argumentOffset, syntax: fact.syntax}
 				if fact.kind == CallDynamic {
 					g.Calls = append(g.Calls, resolved)
 				} else {

@@ -219,25 +219,25 @@ func reportRestrictedRecursion(ctx *lint.Context, file *project.File) {
 		return
 	}
 	for _, component := range ctx.Project.CallGraph.RecursiveComponents() {
-		members := make(map[*parser.Node]bool, len(component))
+		members := make(map[project.NodeKey]bool, len(component))
 		names := make([]string, 0, len(component))
 		for _, function := range component {
-			members[function.Node] = true
+			members[function.Key()] = true
 			names = append(names, function.Name)
 		}
 		for _, function := range component {
-			if function.File != file || function.Symbol == nil {
+			if function.File != file || !function.Valid() {
 				continue
 			}
 			message := fmt.Sprintf("function %q participates in restricted recursion cycle %s", function.Name, strings.Join(names, " -> "))
 			if len(component) == 1 {
 				message = fmt.Sprintf("function %q uses restricted direct recursion", function.Name)
 			}
-			diagnosticValue := diagnostic.Diagnostic{Message: message, Range: file.Walk.Range(function.Symbol.NameNode)}
+			diagnosticValue := diagnostic.Diagnostic{Message: message, Range: function.NameRange()}
 			for _, call := range ctx.Project.CallGraph.Outgoing(function) {
-				if call.File == file && members[call.Callee.Node] {
+				if call.File == file && members[call.Callee.Key()] {
 					diagnosticValue.Notes = append(diagnosticValue.Notes, diagnostic.RelatedLocation{
-						Range:   file.Walk.Range(call.Node.Field("function")),
+						Range:   call.FieldRange("function"),
 						Message: fmt.Sprintf("recursive call to %q is here", call.Callee.Name),
 					})
 					break

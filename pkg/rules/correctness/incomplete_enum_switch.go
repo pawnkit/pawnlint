@@ -6,6 +6,7 @@ import (
 
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
+	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 	"github.com/pawnkit/pawnlint/pkg/project"
@@ -93,7 +94,7 @@ func enumSwitchHasDefault(statement *parser.Node) bool {
 }
 
 func resolvedEnumSwitchDefinition(model *project.Model, from *project.File, tag string) (enumSwitchDefinition, bool) {
-	seen := make(map[*parser.Node]enumSwitchDefinition)
+	seen := make(map[project.NodeKey]enumSwitchDefinition)
 	for _, unit := range model.Units {
 		contains := false
 		for _, file := range unit.Files {
@@ -102,14 +103,22 @@ func resolvedEnumSwitchDefinition(model *project.Model, from *project.File, tag 
 		if !contains {
 			continue
 		}
-		for _, file := range unit.Files {
-			for _, declaration := range file.Walk.OfKind(parser.KindEnumDeclaration) {
-				if enumSwitchTypeName(file, declaration) != tag || declaration.HasError || file.Walk.Inactive(declaration) || file.Walk.Uncertain(declaration) {
+		for _, declarations := range model.Declarations {
+			for _, declaration := range declarations {
+				if declaration.Kind != semantic.SymbolEnumRoot {
 					continue
 				}
-				definition, ok := buildEnumSwitchDefinition(model, file, declaration, tag)
+				included := false
+				for _, file := range unit.Files {
+					included = included || file == declaration.File
+				}
+				node := declaration.PointerNode()
+				if !included || node == nil || enumSwitchTypeName(declaration.File, node) != tag || declaration.HasError() {
+					continue
+				}
+				definition, ok := buildEnumSwitchDefinition(model, declaration.File, node, tag)
 				if ok {
-					seen[declaration] = definition
+					seen[declaration.Key()] = definition
 				}
 			}
 		}
@@ -241,7 +250,7 @@ func enumSwitchCaseValue(ctx *lint.Context, file *project.File, node *parser.Nod
 		if !ok {
 			return 0, false
 		}
-		value, ok := entries[declaration.Node]
+		value, ok := entries[declaration.PointerNode()]
 		return value, ok
 	default:
 		return 0, false

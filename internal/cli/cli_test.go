@@ -568,6 +568,23 @@ func TestCLIHonorsSuppressionInLoadedInclude(t *testing.T) {
 	}
 }
 
+func TestCLIAnalyzesRecursiveCycleThroughCompactInclude(t *testing.T) {
+	dir := t.TempDir()
+	includePath := filepath.Join(dir, "shared.inc")
+	if err := os.WriteFile(includePath, []byte("B() { A(); }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	mainPath := filepath.Join(dir, "main.pwn")
+	source := []byte("#include \"shared.inc\"\nA() { B(); }\nmain() { A(); }\n")
+	if err := os.WriteFile(mainPath, source, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, stderr, code := runCLI(t, []string{"--format", "compact", mainPath}, "")
+	if code != 0 || !strings.Contains(out, "unconditional-recursion") {
+		t.Fatalf("recursive include cycle was not analyzed: code=%d output=%q stderr=%q", code, out, stderr)
+	}
+}
+
 func TestCLICrossFileReferencesPreventUnusedFindings(t *testing.T) {
 	dir := t.TempDir()
 	includePath := filepath.Join(dir, "shared.inc")
