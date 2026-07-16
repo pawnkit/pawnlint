@@ -5,7 +5,7 @@ go 1.26.4
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/alecthomas/kong v1.16.0
-	github.com/pawnkit/pawn-parser v1.0.1-0.20260715112251-987c47d30a6f
+	github.com/pawnkit/pawn-parser v1.0.1-0.20260716032244-734f5cdc4037
 )
 
 require golang.org/x/sync v0.22.0
