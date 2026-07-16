@@ -338,6 +338,15 @@ func (n Node) Same(other Node) bool {
 	return n.id == other.id
 }
 
+func (n Node) HasChildToken(kind token.Kind) bool {
+	for index := 0; index < n.ChildCount(); index++ {
+		if n.Child(index).TokenKind() == kind {
+			return true
+		}
+	}
+	return false
+}
+
 func (t Token) Valid() bool {
 	return t.model != nil && t.index >= 0 && t.index < t.model.TokenCount()
 }

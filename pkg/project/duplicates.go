@@ -7,6 +7,7 @@ import (
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/semantic"
+	"github.com/pawnkit/pawnlint/internal/source/cst"
 )
 
 func (m *Model) DuplicateFunctions() []DuplicateFunction {
@@ -23,23 +24,23 @@ func (m *Model) buildDuplicateFunctions() []DuplicateFunction {
 		macroQualifiers := functionMacroQualifiers(unit)
 		byName := make(map[string][]Declaration)
 		for _, file := range unit.Files {
-			for _, node := range file.Walk.OfKind(parser.KindFunctionDefinition) {
-				if file.Walk.Uncertain(node) || node.Field("state") != nil || node.Field("generic") != nil || insideErroredDeclaration(file, node) || insideFunction(file, node) {
+			for _, node := range file.Syntax.OfKind(parser.KindFunctionDefinition) {
+				if file.Syntax.Uncertain(node) || node.Field("state").Valid() || node.Field("generic").Valid() || insideErroredDeclaration(file, node) || insideFunction(file, node) {
 					continue
 				}
-				storage := file.Walk.Text(node.Field("storage"))
+				storage := node.Field("storage").Text()
 				if storage == "hook" {
 					continue
 				}
 				if storage != "" && storage != "stock" && storage != "static" && storage != "public" {
 					continue
 				}
-				tag := strings.TrimSuffix(file.Walk.Text(node.Field("tag")), ":")
+				tag := strings.TrimSuffix(node.Field("tag").Text(), ":")
 				if _, exists := macroQualifiers[tag]; exists {
 					continue
 				}
 				nameNode := node.Field("name")
-				name := file.Walk.Text(nameNode)
+				name := nameNode.Text()
 				if name == "" || strings.HasPrefix(name, "operator") {
 					continue
 				}
@@ -47,7 +48,7 @@ func (m *Model) buildDuplicateFunctions() []DuplicateFunction {
 				if storage == "public" {
 					key = file.canonical + "\x00" + name
 				}
-				byName[key] = append(byName[key], Declaration{Name: name, Kind: semantic.SymbolFunction, File: file, Node: node})
+				byName[key] = append(byName[key], Declaration{Name: name, Kind: semantic.SymbolFunction, File: file, Node: node.Pointer(), syntax: node})
 			}
 		}
 		for _, declarations := range byName {
@@ -57,7 +58,7 @@ func (m *Model) buildDuplicateFunctions() []DuplicateFunction {
 			name := declarations[0].Name
 			for _, duplicate := range declarations[1:] {
 				first := declarations[0]
-				if first.File.canonical == duplicate.File.canonical && first.Node.Start == duplicate.Node.Start {
+				if first.File.canonical == duplicate.File.canonical && declarationSyntaxOffset(first) == declarationSyntaxOffset(duplicate) {
 					continue
 				}
 				key := declarationPair{first: declarationKey(first), second: declarationKey(duplicate)}
@@ -77,8 +78,8 @@ func (m *Model) buildDuplicateFunctions() []DuplicateFunction {
 		if result[i].Second.File.canonical != result[j].Second.File.canonical {
 			return result[i].Second.File.canonical < result[j].Second.File.canonical
 		}
-		if result[i].Second.Node.Start != result[j].Second.Node.Start {
-			return result[i].Second.Node.Start < result[j].Second.Node.Start
+		if declarationSyntaxOffset(result[i].Second) != declarationSyntaxOffset(result[j].Second) {
+			return declarationSyntaxOffset(result[i].Second) < declarationSyntaxOffset(result[j].Second)
 		}
 		if result[i].Name != result[j].Name {
 			return result[i].Name < result[j].Name
@@ -101,28 +102,27 @@ func (m *Model) buildDuplicateGlobals() []DuplicateGlobal {
 	for _, unit := range m.Units {
 		byName := make(map[string][]Declaration)
 		for _, file := range unit.Files {
-			for _, symbol := range file.Semantic.Symbols {
-				if symbol.Kind != semantic.SymbolGlobal {
+			for _, declaration := range declarationsForFile(file) {
+				if declaration.File != file || declaration.Kind != semantic.SymbolGlobal {
 					continue
 				}
-				if numericSeparatorArtifact(file, symbol) {
+				if numericSeparatorArtifact(declaration) {
 					continue
 				}
-				parent := file.Walk.Parent(symbol.Decl)
-				if symbol.Decl.Field("state") != nil || parent != nil && (parent.Field("state") != nil || parent.HasError || file.Walk.Uncertain(parent)) {
+				node := declarationSyntax(declaration)
+				parent := file.Syntax.Parent(node)
+				if node.Field("state").Valid() || parent.Valid() && (parent.Field("state").Valid() || parent.HasError() || file.Syntax.Uncertain(parent)) {
 					continue
 				}
-				storage := file.Walk.Text(parent.Field("storage"))
+				storage := parent.Field("storage").Text()
 				if storage != "new" && storage != "static" && storage != "const" {
 					continue
 				}
-				key := symbol.Name
+				key := declaration.Name
 				if storage == "static" {
-					key = file.canonical + "\x00" + symbol.Name
+					key = file.canonical + "\x00" + declaration.Name
 				}
-				byName[key] = append(byName[key], Declaration{
-					Name: symbol.Name, Kind: symbol.Kind, File: file, Node: symbol.Decl, Symbol: symbol,
-				})
+				byName[key] = append(byName[key], declaration)
 			}
 		}
 		for _, declarations := range byName {
@@ -132,7 +132,7 @@ func (m *Model) buildDuplicateGlobals() []DuplicateGlobal {
 			name := declarations[0].Name
 			for _, duplicate := range declarations[1:] {
 				first := declarations[0]
-				if first.File.canonical == duplicate.File.canonical && first.Node.Start == duplicate.Node.Start {
+				if first.File.canonical == duplicate.File.canonical && declarationSyntaxOffset(first) == declarationSyntaxOffset(duplicate) {
 					continue
 				}
 				key := declarationPair{first: declarationKey(first), second: declarationKey(duplicate)}
@@ -152,26 +152,26 @@ func (m *Model) buildDuplicateGlobals() []DuplicateGlobal {
 		if result[i].Second.File.canonical != result[j].Second.File.canonical {
 			return result[i].Second.File.canonical < result[j].Second.File.canonical
 		}
-		if result[i].Second.Node.Start != result[j].Second.Node.Start {
-			return result[i].Second.Node.Start < result[j].Second.Node.Start
+		if declarationSyntaxOffset(result[i].Second) != declarationSyntaxOffset(result[j].Second) {
+			return declarationSyntaxOffset(result[i].Second) < declarationSyntaxOffset(result[j].Second)
 		}
 		return result[i].Name < result[j].Name
 	})
 	return result
 }
 
-func insideErroredDeclaration(file *File, node *parser.Node) bool {
-	for parent := file.Walk.Parent(node); parent != nil && parent.Kind != parser.KindSourceFile; parent = file.Walk.Parent(parent) {
-		if parent.Kind == parser.KindVariableDeclaration && parent.HasError {
+func insideErroredDeclaration(file *File, node cst.Node) bool {
+	for parent := file.Syntax.Parent(node); parent.Valid() && parent.Kind() != parser.KindSourceFile; parent = file.Syntax.Parent(parent) {
+		if parent.Kind() == parser.KindVariableDeclaration && parent.HasError() {
 			return true
 		}
 	}
 	return false
 }
 
-func insideFunction(file *File, node *parser.Node) bool {
-	for parent := file.Walk.Parent(node); parent != nil; parent = file.Walk.Parent(parent) {
-		if parent.Kind == parser.KindFunctionDefinition {
+func insideFunction(file *File, node cst.Node) bool {
+	for parent := file.Syntax.Parent(node); parent.Valid(); parent = file.Syntax.Parent(parent) {
+		if parent.Kind() == parser.KindFunctionDefinition {
 			return true
 		}
 	}
@@ -181,30 +181,32 @@ func insideFunction(file *File, node *parser.Node) bool {
 func functionMacroQualifiers(unit *Unit) map[string]struct{} {
 	qualifiers := make(map[string]struct{})
 	for _, file := range unit.Files {
-		for index := 0; index+3 < len(file.Parsed.Tokens); index++ {
-			hash := file.Parsed.Tokens[index]
-			directive := file.Parsed.Tokens[index+1]
-			name := file.Parsed.Tokens[index+2]
-			colon := file.Parsed.Tokens[index+3]
-			if hash.Kind == token.Hash && directive.Kind == token.Identifier && directive.Text(file.Source) == "define" && name.Kind == token.Identifier && colon.Kind == token.Colon {
-				qualifiers[name.Text(file.Source)] = struct{}{}
+		for index := 0; index+3 < file.Syntax.TokenCount(); index++ {
+			hash := file.Syntax.Token(index)
+			directive := file.Syntax.Token(index + 1)
+			name := file.Syntax.Token(index + 2)
+			colon := file.Syntax.Token(index + 3)
+			if hash.Kind() == token.Hash && directive.Kind() == token.Identifier && directive.Text() == "define" && name.Kind() == token.Identifier && colon.Kind() == token.Colon {
+				qualifiers[name.Text()] = struct{}{}
 			}
 		}
 	}
 	return qualifiers
 }
 
-func numericSeparatorArtifact(file *File, symbol *semantic.Symbol) bool {
-	if symbol == nil || symbol.NameNode == nil || file == nil || file.Parsed == nil {
+func numericSeparatorArtifact(declaration Declaration) bool {
+	file := declaration.File
+	name := declarationNameSyntax(declaration)
+	if file == nil || !name.Valid() {
 		return false
 	}
-	for index := range file.Parsed.Tokens {
-		current := &file.Parsed.Tokens[index]
-		if current.Start.Offset != symbol.NameNode.Start || index == 0 {
+	for index := 0; index < file.Syntax.TokenCount(); index++ {
+		current := file.Syntax.Token(index)
+		if current.Start() != name.Start() || index == 0 {
 			continue
 		}
-		previous := &file.Parsed.Tokens[index-1]
-		return current.Kind == token.Identifier && strings.HasPrefix(symbol.Name, "_") && previous.Kind == token.IntLiteral && previous.End.Offset == current.Start.Offset
+		previous := file.Syntax.Token(index - 1)
+		return current.Kind() == token.Identifier && strings.HasPrefix(declaration.Name, "_") && previous.Kind() == token.IntLiteral && previous.End() == current.Start()
 	}
 	return false
 }

@@ -4,7 +4,7 @@ import (
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/semantic"
-	"github.com/pawnkit/pawnlint/internal/source/walk"
+	"github.com/pawnkit/pawnlint/internal/syntax"
 )
 
 func (m *Model) UnusedIncludes() []IncludeIssue {
@@ -78,26 +78,64 @@ func includeClosure(root *File) map[*File]struct{} {
 
 func safeUnusedIncludeFiles(files map[*File]struct{}) bool {
 	for file := range files {
-		if file == nil || !file.complete || file.Parsed == nil || file.Parsed.Root == nil || file.Parsed.Broken || file.Parsed.Root.HasError {
+		if file == nil || !file.complete || fileHasParseErrors(file) {
 			return false
 		}
-		if len(file.Semantic.UnresolvedReferences()) != 0 || hasActiveIncludeEffects(file) {
+		if fileUnresolvedReferenceCount(file) != 0 || hasActiveIncludeEffects(file) {
 			return false
 		}
-		for _, symbol := range file.Semantic.Symbols {
-			switch symbol.Kind {
+		for _, declaration := range declarationsForFile(file) {
+			switch declaration.Kind {
 			case semantic.SymbolFunction:
-				if symbol.Decl.Kind != parser.KindFunctionDefinition || !walk.HasChildToken(symbol.Decl, token.KwStock) && file.Walk.Text(symbol.Decl.Field("storage")) != "static" {
+				node := declarationSyntax(declaration)
+				if node.Kind() != parser.KindFunctionDefinition || !node.HasChildToken(token.KwStock) && node.Field("storage").Text() != "static" {
 					return false
 				}
 			case semantic.SymbolGlobal:
-				if !symbol.Constant {
+				if !declarationSymbolConstant(declaration) {
 					return false
 				}
 			}
 		}
 	}
 	return true
+}
+
+func declarationsForFile(file *File) []Declaration {
+	var result []Declaration
+	if file.Semantic != nil {
+		for _, symbol := range file.Semantic.Symbols {
+			if symbol.Function != nil && symbol.Kind != semantic.SymbolFunction {
+				continue
+			}
+			result = append(result, Declaration{Name: symbol.Name, Kind: symbol.Kind, File: file, Node: symbol.Decl, Symbol: symbol, syntax: file.Syntax.PointerNode(symbol.Decl)})
+		}
+		return result
+	}
+	for _, symbol := range file.CompactSemantic.Symbols {
+		if symbol.Function != syntax.NoNode && symbol.Kind != semantic.SymbolFunction {
+			continue
+		}
+		result = append(result, Declaration{Name: symbol.Name, Kind: symbol.Kind, File: file, compactSymbol: symbol, syntax: file.Syntax.CompactNode(symbol.Decl)})
+	}
+	return result
+}
+
+func fileHasParseErrors(file *File) bool {
+	if file.Parsed != nil {
+		return file.Parsed.HasParseErrors()
+	}
+	return file.CompactParsed == nil || file.CompactParsed.HasParseErrors()
+}
+
+func fileUnresolvedReferenceCount(file *File) int {
+	if file.Semantic != nil {
+		return len(file.Semantic.UnresolvedReferences())
+	}
+	if file.CompactSemantic != nil {
+		return len(file.CompactSemantic.UnresolvedReferences())
+	}
+	return 0
 }
 
 func hasActiveIncludeEffects(file *File) bool {
@@ -115,8 +153,8 @@ func hasActiveIncludeEffects(file *File) bool {
 		parser.KindDirectiveRaw,
 	}
 	for _, kind := range kinds {
-		for _, node := range file.Walk.OfKind(kind) {
-			if !file.Walk.Inactive(node) {
+		for _, node := range file.Syntax.OfKind(kind) {
+			if !file.Syntax.Inactive(node) {
 				return true
 			}
 		}

@@ -300,6 +300,23 @@ func declarationSymbolStates(declaration Declaration) []string {
 	return nil
 }
 
+func declarationNameSyntax(declaration Declaration) cst.Node {
+	if declaration.Symbol != nil {
+		return declaration.File.Syntax.PointerNode(declaration.Symbol.NameNode)
+	}
+	if declaration.compactSymbol != nil {
+		return declaration.File.Syntax.CompactNode(declaration.compactSymbol.NameNode)
+	}
+	return cst.Node{}
+}
+
+func declarationSymbolConstant(declaration Declaration) bool {
+	if declaration.Symbol != nil {
+		return declaration.Symbol.Constant
+	}
+	return declaration.compactSymbol != nil && declaration.compactSymbol.Constant
+}
+
 func sortDeclarations(declarations []Declaration) {
 	sort.SliceStable(declarations, func(i, j int) bool {
 		return declarationLess(declarations[i], declarations[j])

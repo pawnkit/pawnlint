@@ -63,8 +63,8 @@ func (m *Model) buildConflictingIncludeSymbols() []SymbolConflict {
 		if result[i].Second.File.canonical != result[j].Second.File.canonical {
 			return result[i].Second.File.canonical < result[j].Second.File.canonical
 		}
-		if result[i].Second.Node.Start != result[j].Second.Node.Start {
-			return result[i].Second.Node.Start < result[j].Second.Node.Start
+		if declarationSyntaxOffset(result[i].Second) != declarationSyntaxOffset(result[j].Second) {
+			return declarationSyntaxOffset(result[i].Second) < declarationSyntaxOffset(result[j].Second)
 		}
 		return result[i].Name < result[j].Name
 	})
@@ -73,34 +73,34 @@ func (m *Model) buildConflictingIncludeSymbols() []SymbolConflict {
 
 func conflictEligible(declaration Declaration, qualifiers map[string]struct{}) bool {
 	file := declaration.File
-	symbol := declaration.Symbol
-	if file == nil || symbol == nil || symbol.Ambiguous || declaration.Node == nil || declaration.Node.HasError {
+	node := declarationSyntax(declaration)
+	if file == nil || declarationSymbolAmbiguous(declaration) || !node.Valid() || node.HasError() {
 		return false
 	}
 	switch declaration.Kind {
 	case semantic.SymbolFunction:
-		if declaration.Node.Kind != parser.KindFunctionDefinition || declaration.Node.Field("state") != nil || declaration.Node.Field("generic") != nil || insideErroredDeclaration(file, declaration.Node) || insideFunction(file, declaration.Node) {
+		if node.Kind() != parser.KindFunctionDefinition || node.Field("state").Valid() || node.Field("generic").Valid() || insideErroredDeclaration(file, node) || insideFunction(file, node) {
 			return false
 		}
-		storage := file.Walk.Text(declaration.Node.Field("storage"))
+		storage := node.Field("storage").Text()
 		if storage == "hook" || storage == "public" || storage != "" && storage != "stock" && storage != "static" {
 			return false
 		}
-		tag := strings.TrimSuffix(file.Walk.Text(declaration.Node.Field("tag")), ":")
+		tag := strings.TrimSuffix(node.Field("tag").Text(), ":")
 		_, macroQualified := qualifiers[tag]
 		return !macroQualified
 	case semantic.SymbolGlobal:
-		if numericSeparatorArtifact(file, symbol) {
+		if numericSeparatorArtifact(declaration) {
 			return false
 		}
-		parent := file.Walk.Parent(symbol.Decl)
-		if parent == nil || symbol.Decl.Field("state") != nil || parent.Field("state") != nil || parent.HasError || file.Walk.Uncertain(parent) {
+		parent := file.Syntax.Parent(node)
+		if !parent.Valid() || node.Field("state").Valid() || parent.Field("state").Valid() || parent.HasError() || file.Syntax.Uncertain(parent) {
 			return false
 		}
-		storage := file.Walk.Text(parent.Field("storage"))
+		storage := parent.Field("storage").Text()
 		return storage == "new" || storage == "const"
 	case semantic.SymbolEnumRoot, semantic.SymbolEnumEntry:
-		return !file.Walk.Uncertain(symbol.Decl)
+		return !file.Syntax.Uncertain(node)
 	default:
 		return false
 	}
