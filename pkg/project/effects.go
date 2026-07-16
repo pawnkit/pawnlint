@@ -54,26 +54,32 @@ func (m *Model) buildFunctionEffects() {
 	states := make(map[declarationID]*functionEffectState, len(m.CallGraph.Functions))
 	references := make(map[*File]map[cst.Node]semantic.ReferenceKind)
 	symbols := make(map[cst.Node][]cst.Node)
+	symbolKinds := make(map[*File]map[cst.Node]semantic.SymbolKind)
 	for _, file := range m.Files {
 		references[file] = effectReferenceKinds(file)
+		symbolKinds[file] = make(map[cst.Node]semantic.SymbolKind)
 		if file.Semantic != nil {
 			for _, symbol := range file.Semantic.Symbols {
+				declaration := file.Syntax.PointerNode(symbol.Decl)
+				symbolKinds[file][declaration] = symbol.Kind
 				if symbol.Function != nil {
 					function := file.Syntax.PointerNode(symbol.Function)
-					symbols[function] = append(symbols[function], file.Syntax.PointerNode(symbol.Decl))
+					symbols[function] = append(symbols[function], declaration)
 				}
 			}
 			continue
 		}
 		for _, symbol := range file.CompactSemantic.Symbols {
+			declaration := file.Syntax.CompactNode(symbol.Decl)
+			symbolKinds[file][declaration] = symbol.Kind
 			if symbol.Function != syntax.NoNode {
 				function := file.Syntax.CompactNode(symbol.Function)
-				symbols[function] = append(symbols[function], file.Syntax.CompactNode(symbol.Decl))
+				symbols[function] = append(symbols[function], declaration)
 			}
 		}
 	}
 	for _, function := range m.CallGraph.Functions {
-		states[declarationKey(function)] = m.directFunctionEffects(function, references[function.File], symbols[declarationSyntax(function)])
+		states[declarationKey(function)] = m.directFunctionEffects(function, references[function.File], symbols[declarationSyntax(function)], symbolKinds[function.File])
 	}
 	for iteration := 0; iteration <= len(states); iteration++ {
 		changed := false
@@ -93,7 +99,7 @@ func (m *Model) buildFunctionEffects() {
 	}
 }
 
-func (m *Model) directFunctionEffects(function Declaration, referenceKinds map[cst.Node]semantic.ReferenceKind, symbols []cst.Node) *functionEffectState {
+func (m *Model) directFunctionEffects(function Declaration, referenceKinds map[cst.Node]semantic.ReferenceKind, symbols []cst.Node, symbolKinds map[cst.Node]semantic.SymbolKind) *functionEffectState {
 	state := &functionEffectState{
 		complete:            true,
 		pure:                true,
@@ -111,9 +117,9 @@ func (m *Model) directFunctionEffects(function Declaration, referenceKinds map[c
 		state.pure = false
 		return state
 	}
-	m.indexEffectParameters(file, node, state)
+	m.indexEffectParameters(file, node, state, symbolKinds)
 	for _, symbol := range symbols {
-		kind, known := effectSymbolKind(file, symbol)
+		kind, known := symbolKinds[symbol]
 		if !known || kind != semantic.SymbolLocal || !file.Syntax.Parent(symbol).HasChildToken(token.KwStatic) {
 			continue
 		}
@@ -163,8 +169,7 @@ func (m *Model) applyDirectReferenceEffect(state *functionEffectState, file *Fil
 	if !reference {
 		return
 	}
-	symbol := effectResolvedSymbol(file, identifier)
-	symbolKind, symbolKnown := effectSymbolKind(file, symbol)
+	symbol, symbolKind, symbolKnown := effectResolvedSymbol(file, identifier)
 	if symbol.Valid() && symbolKnown && symbolKind == semantic.SymbolParameter && state.referenceParameters[symbol] && kind != semantic.ReferenceRead {
 		state.mutated[state.parameterIndexes[symbol]] = true
 	}
@@ -183,7 +188,7 @@ func (m *Model) applyDirectReferenceEffect(state *functionEffectState, file *Fil
 	}
 }
 
-func (m *Model) indexEffectParameters(file *File, function cst.Node, state *functionEffectState) {
+func (m *Model) indexEffectParameters(file *File, function cst.Node, state *functionEffectState, symbolKinds map[cst.Node]semantic.SymbolKind) {
 	list := function.Field("parameters")
 	if !list.Valid() {
 		return
@@ -195,7 +200,7 @@ func (m *Model) indexEffectParameters(file *File, function cst.Node, state *func
 			continue
 		}
 		symbol := parameter
-		symbolKind, symbolKnown := effectSymbolKind(file, symbol)
+		symbolKind, symbolKnown := symbolKinds[symbol]
 		if symbol.Valid() && symbolKnown && symbolKind == semantic.SymbolParameter {
 			state.parameterIndexes[symbol] = index
 			state.referenceParameters[symbol] = effectReferencesByAmpersand(file, parameter) || effectHasDimension(parameter)
@@ -251,7 +256,7 @@ func (m *Model) mapMutatedArguments(state *functionEffectState, call Call, calle
 			complete = false
 			continue
 		}
-		if symbol := effectResolvedSymbol(call.File, identifier); symbol.Valid() {
+		if symbol, _, _ := effectResolvedSymbol(call.File, identifier); symbol.Valid() {
 			if parameterIndex, ok := state.parameterIndexes[symbol]; ok && state.referenceParameters[symbol] {
 				mutated[parameterIndex] = true
 			}
@@ -345,42 +350,22 @@ func effectInside(node, container cst.Node) bool {
 	return node.Valid() && container.Valid() && node.Start() >= container.Start() && node.End() <= container.End()
 }
 
-func effectResolvedSymbol(file *File, node cst.Node) cst.Node {
+func effectResolvedSymbol(file *File, node cst.Node) (cst.Node, semantic.SymbolKind, bool) {
 	if file == nil || !node.Valid() {
-		return cst.Node{}
+		return cst.Node{}, 0, false
 	}
 	if file.Semantic != nil {
 		symbol := file.Semantic.Resolve(node.Pointer())
 		if symbol == nil || symbol.Ambiguous {
-			return cst.Node{}
+			return cst.Node{}, 0, false
 		}
-		return file.Syntax.PointerNode(symbol.Decl)
+		return file.Syntax.PointerNode(symbol.Decl), symbol.Kind, true
 	}
 	symbol := file.CompactSemantic.Resolve(node.ID())
 	if symbol == nil || symbol.Ambiguous {
-		return cst.Node{}
+		return cst.Node{}, 0, false
 	}
-	return file.Syntax.CompactNode(symbol.Decl)
-}
-
-func effectSymbolKind(file *File, node cst.Node) (semantic.SymbolKind, bool) {
-	if file == nil || !node.Valid() {
-		return 0, false
-	}
-	if file.Semantic != nil {
-		for _, symbol := range file.Semantic.Symbols {
-			if symbol.Decl == node.Pointer() {
-				return symbol.Kind, true
-			}
-		}
-		return 0, false
-	}
-	for _, symbol := range file.CompactSemantic.Symbols {
-		if symbol.Decl == node.ID() {
-			return symbol.Kind, true
-		}
-	}
-	return 0, false
+	return file.Syntax.CompactNode(symbol.Decl), symbol.Kind, true
 }
 
 func effectReferencesByAmpersand(file *File, parameter cst.Node) bool {
