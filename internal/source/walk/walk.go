@@ -68,7 +68,17 @@ func NewWithDefineContext(path string, pf *parser.File, defines []string, snapsh
 }
 
 func NewDefineContext(defines []string) *DefineContext {
-	return &DefineContext{names: append([]string(nil), defines...)}
+	names := make([]string, 0, len(compilerDefines)+len(defines))
+	names = append(names, compilerDefines...)
+	names = append(names, defines...)
+	sort.Strings(names)
+	unique := names[:0]
+	for _, name := range names {
+		if name != "" && (len(unique) == 0 || unique[len(unique)-1] != name) {
+			unique = append(unique, name)
+		}
+	}
+	return &DefineContext{names: unique}
 }
 
 func NewWithContext(path string, pf *parser.File, defines *DefineContext, snapshots []DefineSnapshot, complete bool, lineTable *source.LineTable, index *Index) *Model {

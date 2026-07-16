@@ -1,7 +1,6 @@
 package walk
 
 import (
-	"sort"
 	"strconv"
 	"strings"
 
@@ -141,9 +140,7 @@ type CompactDefineCursor struct {
 	offset         int
 	directiveIndex int
 	snapshotIndex  int
-	known          []string
-	set            map[string]struct{}
-	dirty          bool
+	values         defineValues
 }
 
 func (m *CompactModel) NewCompactDefineCursor() *CompactDefineCursor {
@@ -156,46 +153,17 @@ func (c *CompactDefineCursor) reset() {
 	c.offset = -1
 	c.directiveIndex = 0
 	c.snapshotIndex = 0
-	c.clearKnown(len(compilerDefines) + len(c.model.defines.names))
-	for _, name := range compilerDefines {
-		c.add(name)
-	}
-	for _, name := range c.model.defines.names {
-		c.add(name)
-	}
-}
-
-func (c *CompactDefineCursor) clearKnown(capacity int) {
-	if c.set == nil {
-		c.set = make(map[string]struct{}, capacity)
-	} else {
-		clear(c.set)
-	}
-	if cap(c.known) < capacity {
-		c.known = make([]string, 0, capacity)
-	} else {
-		c.known = c.known[:0]
-	}
-	c.dirty = false
+	c.values.reset(c.model.defines.names)
 }
 
 func (c *CompactDefineCursor) definesAt(offset int) []string {
 	c.advance(offset)
-	if c.dirty {
-		c.known = c.known[:0]
-		for name := range c.set {
-			c.known = append(c.known, name)
-		}
-		sort.Strings(c.known)
-		c.dirty = false
-	}
-	return c.known
+	return c.values.names
 }
 
 func (c *CompactDefineCursor) containsAt(offset int, name string) bool {
 	c.advance(offset)
-	_, ok := c.set[name]
-	return ok
+	return c.values.contains(name)
 }
 
 func (c *CompactDefineCursor) advance(offset int) {
@@ -211,10 +179,7 @@ func (c *CompactDefineCursor) advance(offset int) {
 		}
 		if snapshotReady && (!directiveReady || model.snapshots[c.snapshotIndex].Offset <= model.Tree.Start(model.directives[c.directiveIndex])) {
 			snapshot := model.snapshots[c.snapshotIndex]
-			c.clearKnown(len(snapshot.Defines))
-			for _, name := range snapshot.Defines {
-				c.add(name)
-			}
+			c.values.reset(snapshot.Defines)
 			c.snapshotIndex++
 			continue
 		}
@@ -237,22 +202,11 @@ func (c *CompactDefineCursor) advance(offset int) {
 }
 
 func (c *CompactDefineCursor) add(name string) {
-	if name == "" {
-		return
-	}
-	if _, exists := c.set[name]; exists {
-		return
-	}
-	c.set[name] = struct{}{}
-	c.dirty = true
+	c.values.add(name)
 }
 
 func (c *CompactDefineCursor) remove(name string) {
-	if _, exists := c.set[name]; !exists {
-		return
-	}
-	delete(c.set, name)
-	c.dirty = true
+	c.values.remove(name)
 }
 
 func (m *CompactModel) KnownDefinesAt(offset int) []string {

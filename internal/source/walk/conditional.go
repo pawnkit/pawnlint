@@ -138,9 +138,12 @@ type DefineCursor struct {
 	offset         int
 	directiveIndex int
 	snapshotIndex  int
-	known          []string
-	set            map[string]struct{}
-	dirty          bool
+	values         defineValues
+}
+
+type defineValues struct {
+	names  []string
+	shared bool
 }
 
 func (m *Model) NewDefineCursor() *DefineCursor {
@@ -153,46 +156,22 @@ func (c *DefineCursor) reset() {
 	c.offset = -1
 	c.directiveIndex = 0
 	c.snapshotIndex = 0
-	c.clearKnown(len(compilerDefines) + len(c.model.defines.names))
-	for _, name := range compilerDefines {
-		c.add(name)
-	}
-	for _, name := range c.model.defines.names {
-		c.add(name)
-	}
+	c.values.reset(c.model.defines.names)
 }
 
-func (c *DefineCursor) clearKnown(capacity int) {
-	if c.set == nil {
-		c.set = make(map[string]struct{}, capacity)
-	} else {
-		clear(c.set)
-	}
-	if cap(c.known) < capacity {
-		c.known = make([]string, 0, capacity)
-	} else {
-		c.known = c.known[:0]
-	}
-	c.dirty = false
+func (v *defineValues) reset(names []string) {
+	v.names = names
+	v.shared = true
 }
 
 func (c *DefineCursor) definesAt(offset int) []string {
 	c.advance(offset)
-	if c.dirty {
-		c.known = c.known[:0]
-		for name := range c.set {
-			c.known = append(c.known, name)
-		}
-		sort.Strings(c.known)
-		c.dirty = false
-	}
-	return c.known
+	return c.values.names
 }
 
 func (c *DefineCursor) containsAt(offset int, name string) bool {
 	c.advance(offset)
-	_, ok := c.set[name]
-	return ok
+	return c.values.contains(name)
 }
 
 func (c *DefineCursor) advance(offset int) {
@@ -208,10 +187,7 @@ func (c *DefineCursor) advance(offset int) {
 		}
 		if snapshotReady && (!directiveReady || m.snapshots[c.snapshotIndex].Offset <= m.index.directives[c.directiveIndex].Start) {
 			snapshot := m.snapshots[c.snapshotIndex]
-			c.clearKnown(len(snapshot.Defines))
-			for _, name := range snapshot.Defines {
-				c.add(name)
-			}
+			c.values.reset(snapshot.Defines)
 			c.snapshotIndex++
 			continue
 		}
@@ -234,22 +210,50 @@ func (c *DefineCursor) advance(offset int) {
 }
 
 func (c *DefineCursor) add(name string) {
-	if name == "" {
-		return
-	}
-	if _, exists := c.set[name]; exists {
-		return
-	}
-	c.set[name] = struct{}{}
-	c.dirty = true
+	c.values.add(name)
 }
 
 func (c *DefineCursor) remove(name string) {
-	if _, exists := c.set[name]; !exists {
+	c.values.remove(name)
+}
+
+func (v *defineValues) contains(name string) bool {
+	index := sort.SearchStrings(v.names, name)
+	return index < len(v.names) && v.names[index] == name
+}
+
+func (v *defineValues) add(name string) {
+	if name == "" {
 		return
 	}
-	delete(c.set, name)
-	c.dirty = true
+	index := sort.SearchStrings(v.names, name)
+	if index < len(v.names) && v.names[index] == name {
+		return
+	}
+	v.own(len(v.names) + 1)
+	v.names = append(v.names, "")
+	copy(v.names[index+1:], v.names[index:])
+	v.names[index] = name
+}
+
+func (v *defineValues) remove(name string) {
+	index := sort.SearchStrings(v.names, name)
+	if index >= len(v.names) || v.names[index] != name {
+		return
+	}
+	v.own(len(v.names))
+	copy(v.names[index:], v.names[index+1:])
+	v.names = v.names[:len(v.names)-1]
+}
+
+func (v *defineValues) own(capacity int) {
+	if !v.shared && cap(v.names) >= capacity {
+		return
+	}
+	names := make([]string, len(v.names), capacity)
+	copy(names, v.names)
+	v.names = names
+	v.shared = false
 }
 
 func (m *Model) KnownDefinesAt(offset int) []string {
