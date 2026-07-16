@@ -138,6 +138,35 @@ func (m *Model) resolveFileIncludes(file *File) error {
 			imports[include.Node.Start] = include.Resolved.expansionState
 		}
 	}
+	if m.options.ReleaseExpanded {
+		expanded, expansionState := preprocess.ExpandCompactWithState(file.Parsed, file.Walk, file.sourceID, nil, imports)
+		file.expansionState = expansionState
+		file.ExpansionComplete = expanded.Complete
+		for _, include := range file.Includes {
+			if include.Uncertain || include.Resolved != nil && !include.Resolved.ExpansionComplete {
+				file.ExpansionComplete = false
+			}
+		}
+		if !expanded.Changed {
+			file.ExpandedSource = file.Source
+			file.ExpandedParsed = file.Parsed
+			file.ExpandedWalk = file.Walk
+			file.ExpandedSemantic = file.Semantic
+			m.captureRuntimeCalls(file)
+		} else {
+			tree := walk.NewCompactWithDefineContext(file.Path, expanded.Parsed, file.defines.names, nil, file.complete)
+			m.captureCompactRuntimeCalls(file, expanded.Parsed, tree)
+		}
+		file.ExpandedSource = nil
+		file.ExpandedParsed = nil
+		file.ExpandedWalk = nil
+		file.ExpandedSemantic = nil
+		if m.options.ObserveTiming != nil {
+			m.observe(TimingEvent{Stage: TimingPreprocess, Duration: time.Since(started)})
+		}
+		file.resolved = true
+		return nil
+	}
 	expanded, expansionState := preprocess.ExpandWithState(file.Parsed, file.Walk, file.sourceID, nil, imports)
 	file.expansionState = expansionState
 	file.ExpansionComplete = expanded.Complete
@@ -160,12 +189,6 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		}
 	}
 	m.captureRuntimeCalls(file)
-	if m.options.ReleaseExpanded {
-		file.ExpandedSource = nil
-		file.ExpandedParsed = nil
-		file.ExpandedWalk = nil
-		file.ExpandedSemantic = nil
-	}
 	if m.options.ObserveTiming != nil {
 		m.observe(TimingEvent{Stage: TimingPreprocess, Duration: time.Since(started)})
 	}

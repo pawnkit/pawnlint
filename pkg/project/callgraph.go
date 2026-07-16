@@ -9,6 +9,7 @@ import (
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
+	"github.com/pawnkit/pawnlint/internal/syntax"
 )
 
 type CallKind uint8
@@ -171,6 +172,138 @@ func (m *Model) captureRuntimeCalls(file *File) {
 		}
 		file.runtimeCalls = append(file.runtimeCalls, fact)
 		file.captureExpansionOrigins(parsed, call, node)
+	}
+}
+
+func (m *Model) captureCompactRuntimeCalls(file *File, parsed *parser.CompactFile, tree *walk.CompactModel) {
+	if !file.ExpansionComplete || tree == nil || parsed == nil {
+		return
+	}
+	for _, call := range tree.OfKind(parser.KindCallExpression) {
+		if tree.Inactive(call) || tree.Uncertain(call) {
+			continue
+		}
+		callee := tree.Tree.Field(call, "function")
+		if callee == syntax.NoNode || tree.Tree.Kind(callee) != parser.KindIdentifier {
+			continue
+		}
+		name := tree.Text(callee)
+		if name != "SetTimer" && name != "SetTimerEx" && name != "__settimer" && name != "CallLocalFunction" && name != "CallRemoteFunction" {
+			continue
+		}
+		arguments := tree.Tree.Field(call, "arguments")
+		if arguments == syntax.NoNode || tree.Tree.ChildCount(arguments) == 0 {
+			continue
+		}
+		target, ok := compactRuntimeCallbackName(tree, tree.Tree.Child(arguments, 0))
+		if !ok {
+			continue
+		}
+		function := tree.EnclosingFunction(call)
+		if function == syntax.NoNode {
+			continue
+		}
+		caller := tree.Text(tree.Tree.Field(function, "name"))
+		if caller == "" {
+			continue
+		}
+		node := compactRuntimeCallNodeFromTree(file, parsed, tree, call, callee)
+		fact := runtimeCallFact{caller: caller, target: target, node: node, kind: CallTimer, argumentOffset: -1}
+		if name == "SetTimerEx" {
+			fact.argumentOffset = 4
+		} else if name == "CallLocalFunction" || name == "CallRemoteFunction" {
+			fact.kind = CallDynamic
+			fact.argumentOffset = 2
+		}
+		file.runtimeCalls = append(file.runtimeCalls, fact)
+		file.captureCompactExpansionOrigins(parsed, tree, call, node)
+	}
+}
+
+func compactRuntimeCallbackName(tree *walk.CompactModel, node syntax.NodeID) (string, bool) {
+	for tree.Tree.Valid(node) && tree.Tree.Kind(node) == parser.KindParenthesizedExpression {
+		node = tree.Tree.Field(node, "expression")
+	}
+	if !tree.Tree.Valid(node) || tree.Tree.HasError(node) {
+		return "", false
+	}
+	if tree.Tree.Kind(node) == parser.KindStringConcat {
+		var result strings.Builder
+		for index := 0; index < tree.Tree.ChildCount(node); index++ {
+			part, ok := compactRuntimeCallbackName(tree, tree.Tree.Child(node, index))
+			if !ok {
+				return "", false
+			}
+			result.WriteString(part)
+		}
+		return result.String(), true
+	}
+	if tree.Tree.Kind(node) != parser.KindLiteral || tree.Tree.TokenKind(node) != token.StringLiteral && tree.Tree.TokenKind(node) != token.PackedString {
+		return "", false
+	}
+	raw := strings.TrimPrefix(tree.Tree.TokenText(node), "!")
+	value, err := strconv.Unquote(raw)
+	if err != nil || value == "" {
+		return "", false
+	}
+	return value, true
+}
+
+func compactRuntimeCallNodeFromTree(file *File, parsed *parser.CompactFile, tree *walk.CompactModel, call, callee syntax.NodeID) *parser.Node {
+	origin := compactNodeOrigin(parsed, tree, callee)
+	var location *parser.CompactOrigin
+	for origin != 0 && int(origin) < len(parsed.Origins) {
+		current := &parsed.Origins[origin]
+		if current.File == file.sourceID {
+			location = current
+			for _, original := range file.Walk.OfKind(parser.KindCallExpression) {
+				function := original.Field("function")
+				if function != nil && function.Start == int(current.Start.Offset) {
+					return original
+				}
+			}
+		}
+		origin = current.Parent
+	}
+	if location == nil {
+		return &parser.Node{Kind: parser.KindCallExpression, Start: tree.Tree.Start(call), End: tree.Tree.End(call)}
+	}
+	return &parser.Node{Kind: parser.KindCallExpression, Start: int(location.Start.Offset), End: int(location.End.Offset)}
+}
+
+func compactNodeOrigin(parsed *parser.CompactFile, tree *walk.CompactModel, node syntax.NodeID) uint32 {
+	start, end := tree.Tree.TokenStart(node), tree.Tree.TokenEnd(node)
+	for _, current := range parsed.Tokens {
+		if int(current.Start.Offset) == start && int(current.End.Offset) == end && current.Kind == tree.Tree.TokenKind(node) {
+			return current.Origin
+		}
+	}
+	return 0
+}
+
+func (f *File) captureCompactExpansionOrigins(parsed *parser.CompactFile, tree *walk.CompactModel, expanded syntax.NodeID, compact *parser.Node) {
+	start, end := tree.Tree.Start(expanded), tree.Tree.End(expanded)
+	for _, current := range parsed.Tokens {
+		if current.Kind == token.EOF || int(current.End.Offset) <= start || int(current.Start.Offset) >= end || current.Origin == 0 {
+			continue
+		}
+		if f.expansionOrigins == nil {
+			f.expansionOrigins = make(map[*parser.Node][]expansionOriginFact)
+		}
+		for origin := current.Origin; origin != 0 && int(origin) < len(parsed.Origins); origin = parsed.Origins[origin].Parent {
+			value := parsed.Origins[origin]
+			macro := ""
+			if int(value.Macro) < len(parsed.MacroNames) {
+				macro = parsed.MacroNames[value.Macro]
+			}
+			span := token.Span{
+				File:  value.File,
+				Start: token.Position{Offset: int(value.Start.Offset), Line: int(value.Start.Line), Col: int(value.Start.Col)},
+				End:   token.Position{Offset: int(value.End.Offset), Line: int(value.End.Line), Col: int(value.End.Col)},
+			}
+			f.expansionOrigins[compact] = append(f.expansionOrigins[compact], expansionOriginFact{span: span, macro: macro})
+		}
+		return
 	}
 }
 

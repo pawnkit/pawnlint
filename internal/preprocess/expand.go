@@ -19,6 +19,20 @@ type Result struct {
 	Changed  bool
 }
 
+type CompactResult struct {
+	Source   []byte
+	Parsed   *parser.CompactFile
+	Complete bool
+	Changed  bool
+}
+
+type renderedExpansion struct {
+	source   []byte
+	tokens   []token.Token
+	complete bool
+	changed  bool
+}
+
 type State struct {
 	definitions map[string]definition
 	undefined   map[string]struct{}
@@ -58,8 +72,31 @@ func Expand(parsed *parser.File, tree *walk.Model, fileID uint32) Result {
 }
 
 func ExpandWithState(parsed *parser.File, tree *walk.Model, fileID uint32, initial *State, imports map[int]*State) (Result, *State) {
+	expanded, state := expandTokensWithState(parsed, tree, fileID, initial, imports)
+	if !expanded.changed {
+		return Result{Source: parsed.Source, Parsed: parsed, Complete: expanded.complete}, state
+	}
+	return Result{
+		Source: expanded.source, Parsed: parser.ParseTokens(expanded.source, expanded.tokens),
+		Complete: expanded.complete, Changed: true,
+	}, state
+}
+
+func ExpandCompactWithState(parsed *parser.File, tree *walk.Model, fileID uint32, initial *State, imports map[int]*State) (CompactResult, *State) {
+	expanded, state := expandTokensWithState(parsed, tree, fileID, initial, imports)
+	if !expanded.changed {
+		return CompactResult{Source: parsed.Source, Complete: expanded.complete}, state
+	}
+	return CompactResult{
+		Source:   expanded.source,
+		Parsed:   parser.ParseTokensCompact(expanded.source, expanded.tokens, parser.ParseOptions{DiscardTrivia: true}),
+		Complete: expanded.complete, Changed: true,
+	}, state
+}
+
+func expandTokensWithState(parsed *parser.File, tree *walk.Model, fileID uint32, initial *State, imports map[int]*State) (renderedExpansion, *State) {
 	if parsed == nil || tree == nil {
-		return Result{Complete: false}, nil
+		return renderedExpansion{}, nil
 	}
 	directives := expansionDirectives(parsed, tree)
 	current := &expander{definitions: make(map[string]definition), undefined: make(map[string]struct{}), complete: true}
@@ -99,10 +136,10 @@ func ExpandWithState(parsed *parser.File, tree *walk.Model, fileID uint32, initi
 		index += consumed
 	}
 	if !current.changed {
-		return Result{Source: parsed.Source, Parsed: parsed, Complete: current.complete}, current.state()
+		return renderedExpansion{source: parsed.Source, complete: current.complete}, current.state()
 	}
 	source, tokens := render(output)
-	return Result{Source: source, Parsed: parser.ParseTokens(source, tokens), Complete: current.complete, Changed: current.changed}, current.state()
+	return renderedExpansion{source: source, tokens: tokens, complete: current.complete, changed: true}, current.state()
 }
 
 func (e *expander) merge(state *State) {
