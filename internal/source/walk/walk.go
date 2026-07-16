@@ -23,7 +23,7 @@ type Model struct {
 
 type Index struct {
 	parents    map[*parser.Node]*parser.Node
-	byKind     map[parser.Kind][]*parser.Node
+	byKind     [parser.KindMacroInvocation + 1][]*parser.Node
 	directives []*parser.Node
 }
 
@@ -122,12 +122,34 @@ func NewWithContext(path string, pf *parser.File, defines *DefineContext, snapsh
 func NewIndex(pf *parser.File) *Index {
 	index := &Index{
 		parents: make(map[*parser.Node]*parser.Node),
-		byKind:  make(map[parser.Kind][]*parser.Node),
 	}
 	if pf != nil && pf.Root != nil {
+		var counts [parser.KindMacroInvocation + 1]int
+		directives := countIndexNodes(pf.Root, &counts)
+		for kind, count := range counts {
+			if count != 0 {
+				index.byKind[kind] = make([]*parser.Node, 0, count)
+			}
+		}
+		index.directives = make([]*parser.Node, 0, directives)
 		index.add(pf.Root, nil)
 	}
 	return index
+}
+
+func countIndexNodes(node *parser.Node, counts *[parser.KindMacroInvocation + 1]int) int {
+	if node == nil {
+		return 0
+	}
+	counts[node.Kind]++
+	directives := 0
+	if node.Kind == parser.KindDirectiveDefine || node.Kind == parser.KindDirectiveUndef {
+		directives++
+	}
+	for _, child := range node.Children {
+		directives += countIndexNodes(child, counts)
+	}
+	return directives
 }
 
 func cloneDefineSnapshots(snapshots []DefineSnapshot) []DefineSnapshot {
