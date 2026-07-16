@@ -3,20 +3,21 @@ package project
 import (
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
-	"github.com/pawnkit/pawnlint/internal/source/walk"
+	"github.com/pawnkit/pawnlint/internal/source/cst"
+	"github.com/pawnkit/pawnlint/internal/syntax"
 )
 
 func (m *Model) Eval(file *File, node *parser.Node) (int64, bool) {
 	if m == nil || file == nil || file.Semantic == nil || node == nil {
 		return 0, false
 	}
-	return m.eval(file, node, make(map[declarationID]bool))
+	return m.evalSyntax(file, file.Syntax.PointerNode(node), make(map[declarationID]bool))
 }
 
-func (m *Model) eval(file *File, node *parser.Node, visiting map[declarationID]bool) (int64, bool) {
-	return file.Semantic.EvalWithResolver(node, func(identifier *parser.Node) (int64, bool) {
-		declaration, ok := m.Resolve(file, identifier)
-		if !ok || declaration.Symbol == nil || !declaration.Symbol.Constant || declaration.Symbol.Ambiguous {
+func (m *Model) evalSyntax(file *File, node cst.Node, visiting map[declarationID]bool) (int64, bool) {
+	resolve := func(identifier cst.Node) (int64, bool) {
+		declaration, ok := m.resolveSyntax(file, identifier)
+		if !ok || !declarationSymbolConstant(declaration) || declarationSymbolAmbiguous(declaration) {
 			return 0, false
 		}
 		key := declarationKey(declaration)
@@ -27,93 +28,111 @@ func (m *Model) eval(file *File, node *parser.Node, visiting map[declarationID]b
 		value, known := m.declarationValue(declaration, visiting)
 		delete(visiting, key)
 		return value, known
+	}
+	if file.Semantic != nil {
+		return file.Semantic.EvalWithResolver(node.Pointer(), func(identifier *parser.Node) (int64, bool) {
+			return resolve(file.Syntax.PointerNode(identifier))
+		})
+	}
+	return file.CompactSemantic.EvalWithResolver(node.ID(), func(identifier syntax.NodeID) (int64, bool) {
+		return resolve(file.Syntax.CompactNode(identifier))
 	})
 }
 
 func (m *Model) declarationValue(declaration Declaration, visiting map[declarationID]bool) (int64, bool) {
-	if value, ok := declaration.File.Semantic.ConstantValue(declaration.Symbol); ok {
-		return value, true
+	if declaration.Symbol != nil {
+		if value, ok := declaration.File.Semantic.ConstantValue(declaration.Symbol); ok {
+			return value, true
+		}
+		if declaration.Symbol.Value != nil {
+			return m.evalSyntax(declaration.File, declaration.File.Syntax.PointerNode(declaration.Symbol.Value), visiting)
+		}
+	} else if declaration.compactSymbol != nil {
+		if value, ok := declaration.File.CompactSemantic.ConstantValue(declaration.compactSymbol); ok {
+			return value, true
+		}
+		if declaration.compactSymbol.Value != syntax.NoNode {
+			return m.evalSyntax(declaration.File, declaration.File.Syntax.CompactNode(declaration.compactSymbol.Value), visiting)
+		}
 	}
-	if declaration.Symbol.Value != nil {
-		return m.eval(declaration.File, declaration.Symbol.Value, visiting)
-	}
-	if declaration.Node.Kind == parser.KindEnumEntry {
+	if declarationSyntax(declaration).Kind() == parser.KindEnumEntry {
 		return m.enumEntryValue(declaration, visiting)
 	}
 	return 0, false
 }
 
-func enclosingEnumBody(w *walk.Model, entry *parser.Node) (body, declaration *parser.Node) {
+func enclosingEnumBody(file *File, entry cst.Node) (body, declaration cst.Node) {
 	node := entry
 	for {
-		parent := w.Parent(node)
-		if parent == nil {
-			return nil, nil
+		parent := file.Syntax.Parent(node)
+		if !parent.Valid() {
+			return cst.Node{}, cst.Node{}
 		}
-		switch parent.Kind {
+		switch parent.Kind() {
 		case parser.KindConditionalRegion, parser.KindConditionalBranch:
 			node = parent
 			continue
 		case parser.KindBlock:
-			enum := w.Parent(parent)
-			if enum != nil && enum.Kind == parser.KindEnumDeclaration {
+			enum := file.Syntax.Parent(parent)
+			if enum.Valid() && enum.Kind() == parser.KindEnumDeclaration {
 				return parent, enum
 			}
-			return nil, nil
+			return cst.Node{}, cst.Node{}
 		default:
-			return nil, nil
+			return cst.Node{}, cst.Node{}
 		}
 	}
 }
 
-func enumEntryList(body *parser.Node) []*parser.Node {
-	var entries []*parser.Node
-	var collect func(*parser.Node)
-	collect = func(node *parser.Node) {
-		switch node.Kind {
+func enumEntryList(body cst.Node) []cst.Node {
+	var entries []cst.Node
+	var collect func(cst.Node)
+	collect = func(node cst.Node) {
+		switch node.Kind() {
 		case parser.KindConditionalRegion, parser.KindConditionalBranch:
-			for _, child := range node.Children {
-				collect(child)
+			for index := 0; index < node.ChildCount(); index++ {
+				collect(node.Child(index))
 			}
 		case parser.KindEnumEntry:
 			entries = append(entries, node)
 		}
 	}
-	for _, child := range body.Children {
-		collect(child)
+	for index := 0; index < body.ChildCount(); index++ {
+		collect(body.Child(index))
 	}
 	return entries
 }
 
 func (m *Model) enumEntryValue(target Declaration, visiting map[declarationID]bool) (int64, bool) {
-	body, declaration := enclosingEnumBody(target.File.Walk, target.Node)
-	if body == nil || declaration == nil || declaration.Field("increment") != nil || target.File.Walk.Uncertain(declaration) {
+	body, declaration := enclosingEnumBody(target.File, declarationSyntax(target))
+	if !body.Valid() || !declaration.Valid() || declaration.Field("increment").Valid() || target.File.Syntax.Uncertain(declaration) {
 		return 0, false
 	}
 	current := int64(0)
 	for _, entry := range enumEntryList(body) {
-		if target.File.Walk.Inactive(entry) {
+		if target.File.Syntax.Inactive(entry) {
 			continue
 		}
-		if entry.HasError || target.File.Walk.Uncertain(entry) {
+		if entry.HasError() || target.File.Syntax.Uncertain(entry) {
 			return 0, false
 		}
-		if explicit := entry.Field("value"); explicit != nil {
-			value, ok := m.eval(target.File, explicit, visiting)
+		if explicit := entry.Field("value"); explicit.Valid() {
+			value, ok := m.evalSyntax(target.File, explicit, visiting)
 			if !ok {
 				return 0, false
 			}
 			current = value
 		}
-		if entry == target.Node {
+		if entry.Same(declarationSyntax(target)) {
 			return current, true
 		}
 		width := int64(1)
-		for _, child := range entry.Children {
-			if child.Kind != parser.KindDimension {
+		for index := 0; index < entry.ChildCount(); index++ {
+			child := entry.Child(index)
+			if child.Kind() != parser.KindDimension {
 				continue
 			}
-			size, ok := m.eval(target.File, child.Field("size"), visiting)
+			size, ok := m.evalSyntax(target.File, child.Field("size"), visiting)
 			if !ok || size <= 0 {
 				return 0, false
 			}
@@ -190,16 +209,16 @@ func (m *Model) ExpressionTag(file *File, node *parser.Node) (string, bool) {
 
 func (m *Model) resolvedTags(file *File, node *parser.Node) []string {
 	declaration, ok := m.Resolve(file, node)
-	if ok && declaration.Symbol != nil && !declaration.Symbol.Ambiguous && len(declaration.Symbol.Tags) != 0 {
-		return append([]string(nil), declaration.Symbol.Tags...)
+	if ok && !declarationSymbolAmbiguous(declaration) && len(declarationSymbolTags(declaration)) != 0 {
+		return append([]string(nil), declarationSymbolTags(declaration)...)
 	}
 	variants := m.FunctionVariants(file, node)
-	if len(variants) == 0 || variants[0].Symbol == nil || len(variants[0].Symbol.Tags) == 0 {
+	if len(variants) == 0 || len(declarationSymbolTags(variants[0])) == 0 {
 		return nil
 	}
-	tags := variants[0].Symbol.Tags
+	tags := declarationSymbolTags(variants[0])
 	for _, variant := range variants[1:] {
-		if variant.Symbol == nil || !sameProjectTags(tags, variant.Symbol.Tags) {
+		if !sameProjectTags(tags, declarationSymbolTags(variant)) {
 			return nil
 		}
 	}

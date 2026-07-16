@@ -317,6 +317,16 @@ func declarationSymbolConstant(declaration Declaration) bool {
 	return declaration.compactSymbol != nil && declaration.compactSymbol.Constant
 }
 
+func declarationSymbolTags(declaration Declaration) []string {
+	if declaration.Symbol != nil {
+		return declaration.Symbol.Tags
+	}
+	if declaration.compactSymbol != nil {
+		return declaration.compactSymbol.Tags
+	}
+	return nil
+}
+
 func sortDeclarations(declarations []Declaration) {
 	sort.SliceStable(declarations, func(i, j int) bool {
 		return declarationLess(declarations[i], declarations[j])
