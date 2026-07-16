@@ -153,6 +153,8 @@ type Model struct {
 	effects            map[declarationID]FunctionEffects
 	functionVariantMap map[functionVariantKey][]Declaration
 	functionVariantsMu sync.RWMutex
+	functionEffects    bool
+	effectsOnce        sync.Once
 	definedNames       map[string]struct{}
 	sourceFiles        map[uint32]*File
 	options            Options
@@ -218,6 +220,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 		definedNames:       make(map[string]struct{}),
 		sourceFiles:        make(map[uint32]*File),
 		options:            options,
+		functionEffects:    features.Has(FeatureFunctionEffects),
 	}
 	rootEnvironment := model.internDefines(options.Defines)
 	for _, source := range sources {
@@ -276,9 +279,6 @@ func Build(sources []Source, options Options) (*Model, error) {
 	}
 	if features.Has(FeatureCallGraph) {
 		model.CallGraph = model.buildCallGraph()
-	}
-	if features.Has(FeatureFunctionEffects) {
-		model.buildFunctionEffects()
 	}
 	if options.ReleaseIncludes {
 		model.ReleaseIncludeTokens(nil)

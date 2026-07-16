@@ -33,9 +33,10 @@ type functionEffectState struct {
 }
 
 func (m *Model) FunctionEffects(function Declaration) (FunctionEffects, bool) {
-	if m == nil {
+	if m == nil || !m.functionEffects {
 		return FunctionEffects{}, false
 	}
+	m.effectsOnce.Do(m.buildFunctionEffects)
 	effects, ok := m.effects[declarationKey(function)]
 	if !ok {
 		return FunctionEffects{}, false

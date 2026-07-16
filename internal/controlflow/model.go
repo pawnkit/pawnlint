@@ -128,6 +128,9 @@ func (m *Model) Eval(node *parser.Node) (int64, bool) {
 	if m == nil || m.semantics == nil {
 		return 0, false
 	}
+	if value, ok := m.semantics.Eval(node); ok {
+		return value, true
+	}
 	function := m.byNode[m.tree.EnclosingFunction(node)]
 	if function == nil {
 		return m.semantics.Eval(node)

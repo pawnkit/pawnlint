@@ -6,7 +6,7 @@ import (
 	"github.com/pawnkit/pawnlint/pkg/project"
 )
 
-func (r *Resolved) ProjectFeatures(reg *lint.Registrar) project.Features {
+func (r *Resolved) ProjectFeatures(_ *lint.Registrar) project.Features {
 	if r == nil || len(r.Source.ExternalRules) != 0 {
 		return project.AllFeatures()
 	}
@@ -30,10 +30,6 @@ func (r *Resolved) ProjectFeatures(reg *lint.Registrar) project.Features {
 	}
 	var features project.Features
 	for id := range enabled {
-		metadata, ok := reg.Lookup(id)
-		if ok && metadata.AnalysisLevel >= lint.ControlFlowAnalysis {
-			features |= project.NewFeatures(project.FeatureFunctionEffects)
-		}
 		features |= ruleProjectFeatures(id)
 	}
 	return project.NewFeaturesFromSet(features)
@@ -53,8 +49,12 @@ func ruleProjectFeatures(id string) project.Features {
 		return project.NewFeatures(project.FeatureUnusedIncludes)
 	case "unconditional-recursion", "recursive-call", "unused-function", "unused-global", "tainted-data-to-sink":
 		return project.NewFeatures(project.FeatureCallGraph)
-	case "argument-tag-mismatch", "incomplete-enum-switch", "possibly-uninitialized", "unsafe-string-termination", "restricted-syntax", "target-native-availability", "overwritten-copy", "repeated-format-work", "repeated-strlen", "string-concatenation-loop":
+	case "argument-tag-mismatch", "incomplete-enum-switch", "unsafe-string-termination", "restricted-syntax", "target-native-availability", "overwritten-copy", "repeated-format-work", "repeated-strlen", "string-concatenation-loop":
 		return project.NewFeatures(project.FeatureReferences)
+	case "possibly-uninitialized":
+		return project.NewFeatures(project.FeatureReferences, project.FeatureFunctionEffects)
+	case "redundant-initialization", "duplicate-condition", "resource-shared":
+		return project.NewFeatures(project.FeatureFunctionEffects)
 	case "deprecated-function", "unimplemented-function":
 		return project.NewFeatures(project.FeatureReferences, project.FeatureDefinedNames)
 	case "format-argument-count", "deprecated-native", "discarded-repeating-timer", "format-argument-tag", "required-call-order", "native-argument-count", "argument-value-range", "settimerex-format-argument-count", "swapped-arguments", "buffer-size", "ignored-return-value":

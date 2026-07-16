@@ -80,21 +80,27 @@ func buildValueFlow(function *Function, tree *walk.Model, semantics *semantic.Mo
 		if arguments == nil {
 			continue
 		}
+		candidates := make(map[int]*semantic.Symbol)
+		for index, argument := range arguments.Children {
+			symbol := callArgumentSymbol(argument, semantics)
+			if _, tracked := tracked[symbol]; tracked {
+				candidates[index] = symbol
+			}
+		}
+		if len(candidates) == 0 {
+			continue
+		}
 		effects, known := callEffects(node, semantics, options)
 		indexes := effects.MutatedArguments
 		if !known || !effects.Complete {
-			indexes = make([]int, len(arguments.Children))
-			for index := range arguments.Children {
-				indexes[index] = index
+			indexes = make([]int, 0, len(candidates))
+			for index := range candidates {
+				indexes = append(indexes, index)
 			}
 		}
 		seen := make(map[*semantic.Symbol]struct{})
 		for _, index := range indexes {
-			if index < 0 || index >= len(arguments.Children) {
-				continue
-			}
-			symbol := callArgumentSymbol(arguments.Children[index], semantics)
-			if _, tracked := tracked[symbol]; tracked {
+			if symbol := candidates[index]; symbol != nil {
 				seen[symbol] = struct{}{}
 			}
 		}

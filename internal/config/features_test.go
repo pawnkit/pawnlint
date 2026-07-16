@@ -15,12 +15,26 @@ func TestRecommendedProjectFeatures(t *testing.T) {
 		t.Fatal(err)
 	}
 	features := resolved.ProjectFeatures(registry)
-	for _, feature := range []project.Feature{project.FeatureDefinedNames, project.FeatureDuplicates, project.FeatureConflicts, project.FeatureIncludeCycles, project.FeatureIncludeIssues, project.FeatureReferences, project.FeatureCallGraph, project.FeatureFunctionEffects} {
+	for _, feature := range []project.Feature{project.FeatureDefinedNames, project.FeatureDuplicates, project.FeatureConflicts, project.FeatureIncludeCycles, project.FeatureIncludeIssues, project.FeatureReferences, project.FeatureCallGraph} {
 		if !features.Has(feature) {
 			t.Fatalf("feature %d is missing", feature)
 		}
 	}
 	if features.Has(project.FeatureUnusedIncludes) {
 		t.Fatal("unused include analysis is enabled")
+	}
+	if features.Has(project.FeatureFunctionEffects) {
+		t.Fatal("function effect analysis is enabled")
+	}
+}
+
+func TestAllProjectFeatures(t *testing.T) {
+	registry := rules.Default()
+	resolved, err := config.Resolve(config.File{Profile: "all"}, "", registry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if features := resolved.ProjectFeatures(registry); !features.Has(project.FeatureFunctionEffects) {
+		t.Fatal("function effect analysis is disabled")
 	}
 }

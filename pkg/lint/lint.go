@@ -83,7 +83,7 @@ func (ctx *Context) Eval(node *parser.Node) (int64, bool) {
 	if ctx == nil {
 		return 0, false
 	}
-	if ctx.Flow != nil {
+	if ctx.Flow != nil && ctx.Level >= ControlFlowAnalysis {
 		if value, ok := ctx.Flow.Eval(node); ok {
 			return value, true
 		}
