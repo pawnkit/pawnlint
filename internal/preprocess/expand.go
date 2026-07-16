@@ -3,7 +3,6 @@ package preprocess
 import (
 	"sort"
 	"strconv"
-	"strings"
 
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
@@ -327,7 +326,7 @@ func sourcePieces(parsed *parser.File, start, count int, fileID uint32) []piece 
 }
 
 func sourcePiecesOriginal(parsed *parser.File, start, count int, fileID uint32) []piece {
-	result := make([]piece, 0, count)
+	result := make([]piece, 0, max(count, len(parsed.Tokens)-1))
 	for index := start; index < start+count && index < len(parsed.Tokens); index++ {
 		if parsed.Tokens[index].Kind != token.EOF {
 			result = append(result, sourcePiece(parsed.Source, parsed.Tokens[index], fileID, true))
@@ -455,31 +454,37 @@ func pieceArguments(input []piece, index int) ([][]piece, int, bool) {
 }
 
 func render(pieces []piece) ([]byte, []token.Token) {
-	var source strings.Builder
-	tokens := make([]token.Token, 0, len(pieces)+1)
-	line, column := 1, 1
+	sourceLength := len(pieces)
 	for _, current := range pieces {
-		start := token.Position{Offset: source.Len(), Line: line, Col: column}
-		source.WriteString(current.text)
+		sourceLength += len(current.text)
+	}
+	source := make([]byte, 0, sourceLength)
+	tokens := make([]token.Token, 0, len(pieces)+1)
+	trivia := make([]token.Trivia, len(pieces))
+	line, column := 1, 1
+	for index, current := range pieces {
+		start := token.Position{Offset: len(source), Line: line, Col: column}
+		source = append(source, current.text...)
 		column += len(current.text)
-		end := token.Position{Offset: source.Len(), Line: line, Col: column}
+		end := token.Position{Offset: len(source), Line: line, Col: column}
 		output := token.Token{Kind: current.kind, Start: start, End: end, Origin: current.origin}
 		separatorStart := end
 		if current.newline {
-			source.WriteByte('\n')
+			source = append(source, '\n')
 			line++
 			column = 1
-			separatorEnd := token.Position{Offset: source.Len(), Line: line, Col: column}
-			output.TrailingTrivia = []token.Trivia{{Kind: token.Newline, Start: separatorStart, End: separatorEnd}}
+			separatorEnd := token.Position{Offset: len(source), Line: line, Col: column}
+			trivia[index] = token.Trivia{Kind: token.Newline, Start: separatorStart, End: separatorEnd}
 		} else {
-			source.WriteByte(' ')
+			source = append(source, ' ')
 			column++
-			separatorEnd := token.Position{Offset: source.Len(), Line: line, Col: column}
-			output.TrailingTrivia = []token.Trivia{{Kind: token.Whitespace, Start: separatorStart, End: separatorEnd}}
+			separatorEnd := token.Position{Offset: len(source), Line: line, Col: column}
+			trivia[index] = token.Trivia{Kind: token.Whitespace, Start: separatorStart, End: separatorEnd}
 		}
+		output.TrailingTrivia = trivia[index : index+1 : index+1]
 		tokens = append(tokens, output)
 	}
-	end := token.Position{Offset: source.Len(), Line: line, Col: column}
+	end := token.Position{Offset: len(source), Line: line, Col: column}
 	tokens = append(tokens, token.Token{Kind: token.EOF, Start: end, End: end})
-	return []byte(source.String()), tokens
+	return source, tokens
 }
