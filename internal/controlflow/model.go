@@ -31,24 +31,25 @@ type Block struct {
 }
 
 type Function struct {
-	Node             *parser.Node
-	Entry            *Block
-	Exit             *Block
-	Blocks           []*Block
-	Uncertain        bool
-	nodes            map[*parser.Node]*Block
-	locations        map[*parser.Node]*Block
-	reachable        map[*Block]bool
-	fallthroughExits []*Block
-	valueIn          map[*Block]map[*semantic.Symbol]int64
-	valueEvents      map[*Block][]valueEvent
-	valueOnce        sync.Once
-	aliasIn          map[*Block]aliasState
-	aliasEvents      map[*Block][]aliasEvent
-	aliasIndexes     map[*semantic.Symbol]int
-	aliasOnce        sync.Once
-	flowNodes        *functionNodes
-	flowSymbols      []*semantic.Symbol
+	Node              *parser.Node
+	Entry             *Block
+	Exit              *Block
+	Blocks            []*Block
+	Uncertain         bool
+	nodes             map[*parser.Node]*Block
+	locationOverrides map[*parser.Node]*Block
+	reachable         map[*Block]bool
+	fallthroughExits  []*Block
+	valueIn           map[*Block]map[*semantic.Symbol]int64
+	valueEvents       map[*Block][]valueEvent
+	valueOnce         sync.Once
+	aliasIn           map[*Block]aliasState
+	aliasEvents       map[*Block][]aliasEvent
+	aliasIndexes      map[*semantic.Symbol]int
+	aliasOnce         sync.Once
+	flowNodes         *functionNodes
+	flowSymbols       []*semantic.Symbol
+	tree              *walk.Model
 }
 
 type Model struct {
@@ -163,10 +164,18 @@ func (f *Function) Reachable(node *parser.Node) bool {
 }
 
 func (f *Function) Block(node *parser.Node) *Block {
-	if f == nil {
+	if f == nil || f.tree == nil {
 		return nil
 	}
-	return f.locations[node]
+	for current := node; current != nil; current = f.tree.Parent(current) {
+		if block := f.locationOverrides[current]; block != nil {
+			return block
+		}
+		if block := f.nodes[current]; block != nil {
+			return block
+		}
+	}
+	return nil
 }
 
 func (f *Function) ReachableBlock(block *Block) bool {
@@ -208,7 +217,7 @@ type builder struct {
 }
 
 func newBuilder(tree *walk.Model, semantics *semantic.Model, node *parser.Node) *builder {
-	function := &Function{Node: node, nodes: make(map[*parser.Node]*Block), locations: make(map[*parser.Node]*Block), reachable: make(map[*Block]bool)}
+	function := &Function{Node: node, nodes: make(map[*parser.Node]*Block), reachable: make(map[*Block]bool), tree: tree}
 	b := &builder{tree: tree, semantics: semantics, function: function, labels: make(map[string]*Block)}
 	function.Entry = b.block(nil)
 	function.Exit = b.block(nil)
@@ -235,7 +244,6 @@ func (b *builder) build() *Function {
 		b.connect(jump.from, target, EdgeJump)
 	}
 	b.markReachable()
-	b.indexLocations(body, nil)
 	return b.function
 }
 
@@ -247,22 +255,6 @@ func (b *builder) block(node *parser.Node) *Block {
 		b.function.nodes[node] = block
 	}
 	return block
-}
-
-func (b *builder) indexLocations(node *parser.Node, block *Block) {
-	if node == nil {
-		return
-	}
-	if current := b.function.nodes[node]; current != nil {
-		block = current
-	}
-	if current := b.function.locations[node]; current != nil {
-		block = current
-	}
-	b.function.locations[node] = block
-	for _, child := range node.Children {
-		b.indexLocations(child, block)
-	}
 }
 
 func (b *builder) connect(from, to *Block, kind EdgeKind) {
@@ -334,7 +326,10 @@ func (b *builder) buildNode(node *parser.Node, incoming []*Block, target targets
 		bodyNode := node.Field("body")
 		bodyExits := b.buildNode(bodyNode, []*Block{block}, targets{breakTo: after, continueTo: conditionBlock})
 		b.connectAll(bodyExits, conditionBlock, EdgeJump)
-		b.function.locations[node.Field("condition")] = conditionBlock
+		if b.function.locationOverrides == nil {
+			b.function.locationOverrides = make(map[*parser.Node]*Block)
+		}
+		b.function.locationOverrides[node.Field("condition")] = conditionBlock
 		condition, known := b.condition(node.Field("condition"))
 		if !known || condition {
 			b.connect(conditionBlock, b.function.nodes[bodyNode], EdgeBranch)
