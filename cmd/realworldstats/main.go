@@ -83,15 +83,19 @@ func main() {
 	output.Files = len(model.Files)
 	for _, file := range model.Files {
 		output.Bytes += len(file.Source)
-		output.Tokens += len(file.Parsed.Tokens)
+		if file.Parsed != nil {
+			output.Tokens += len(file.Parsed.Tokens)
+		} else if file.CompactParsed != nil {
+			output.Tokens += len(file.CompactParsed.Tokens)
+		}
 		output.Includes += len(file.Includes)
-		if file.ExpandedParsed != file.Parsed {
+		if file.Parsed != nil && file.ExpandedParsed != file.Parsed {
 			output.ExpandedFiles++
 		}
-		if file.Parsed.Broken {
+		if file.Parsed != nil && file.Parsed.Broken || file.CompactParsed != nil && file.CompactParsed.Broken {
 			output.BrokenFiles++
 		}
-		if file.Parsed.Root != nil && file.Parsed.Root.HasError {
+		if file.Parsed != nil && file.Parsed.Root != nil && file.Parsed.Root.HasError || file.CompactParsed != nil && file.CompactParsed.Tree.Nodes[file.CompactParsed.Tree.Root].HasError {
 			output.ErroneousRoots++
 		}
 		for _, include := range file.Includes {

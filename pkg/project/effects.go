@@ -53,11 +53,10 @@ func (m *Model) buildFunctionEffects() {
 		return
 	}
 	states := make(map[declarationID]*functionEffectState, len(m.CallGraph.Functions))
-	references := make(map[*File]map[cst.Node]semantic.ReferenceKind)
-	symbols := make(map[cst.Node][]cst.Node)
-	symbolKinds := make(map[*File]map[cst.Node]semantic.SymbolKind)
 	pointerReferences := make(map[*File]map[*parser.Node]semantic.ReferenceKind)
 	pointerSymbols := make(map[*parser.Node][]*semantic.Symbol)
+	compactReferences := make(map[*File]map[syntax.NodeID]semantic.ReferenceKind)
+	compactSymbols := make(map[syntax.NodeID][]*semantic.CompactSymbol)
 	for _, file := range m.Files {
 		if file.Semantic != nil {
 			pointerReferences[file] = pointerEffectReferenceKinds(file)
@@ -68,14 +67,10 @@ func (m *Model) buildFunctionEffects() {
 			}
 			continue
 		}
-		references[file] = effectReferenceKinds(file)
-		symbolKinds[file] = make(map[cst.Node]semantic.SymbolKind)
+		compactReferences[file] = compactEffectReferenceKinds(file)
 		for _, symbol := range file.CompactSemantic.Symbols {
-			declaration := file.Syntax.CompactNode(symbol.Decl)
-			symbolKinds[file][declaration] = symbol.Kind
 			if symbol.Function != syntax.NoNode {
-				function := file.Syntax.CompactNode(symbol.Function)
-				symbols[function] = append(symbols[function], declaration)
+				compactSymbols[symbol.Function] = append(compactSymbols[symbol.Function], symbol)
 			}
 		}
 	}
@@ -83,7 +78,7 @@ func (m *Model) buildFunctionEffects() {
 		if function.Node != nil {
 			states[declarationKey(function)] = m.directPointerFunctionEffects(function, pointerReferences[function.File], pointerSymbols[function.Node])
 		} else {
-			states[declarationKey(function)] = m.directFunctionEffects(function, references[function.File], symbols[declarationSyntax(function)], symbolKinds[function.File])
+			states[declarationKey(function)] = m.directCompactFunctionEffects(function, compactReferences[function.File], compactSymbols[declarationSyntax(function).ID()])
 		}
 	}
 	for iteration := 0; iteration <= len(states); iteration++ {
@@ -218,7 +213,7 @@ func (m *Model) indexPointerEffectParameters(file *File, function *parser.Node, 
 	}
 }
 
-func (m *Model) directFunctionEffects(function Declaration, referenceKinds map[cst.Node]semantic.ReferenceKind, symbols []cst.Node, symbolKinds map[cst.Node]semantic.SymbolKind) *functionEffectState {
+func (m *Model) directCompactFunctionEffects(function Declaration, referenceKinds map[syntax.NodeID]semantic.ReferenceKind, symbols []*semantic.CompactSymbol) *functionEffectState {
 	state := &functionEffectState{
 		complete:            true,
 		pure:                true,
@@ -229,40 +224,46 @@ func (m *Model) directFunctionEffects(function Declaration, referenceKinds map[c
 		referenceParameters: make(map[cst.Node]bool),
 	}
 	file := function.File
-	node := declarationSyntax(function)
-	if file == nil || !node.Valid() || node.HasError() || file.Syntax.Inactive(node) || file.Syntax.Uncertain(node) {
+	if file == nil {
 		state.complete = false
 		state.intrinsicImpure = true
 		state.pure = false
 		return state
 	}
-	m.indexEffectParameters(file, node, state, symbolKinds)
+	node := declarationSyntax(function).ID()
+	tree := file.CompactWalk
+	if tree == nil || !tree.Tree.Valid(node) || tree.Tree.HasError(node) || tree.Inactive(node) || tree.Uncertain(node) {
+		state.complete = false
+		state.intrinsicImpure = true
+		state.pure = false
+		return state
+	}
+	m.indexCompactEffectParameters(file, node, state)
 	for _, symbol := range symbols {
-		kind, known := symbolKinds[symbol]
-		if !known || kind != semantic.SymbolLocal || !file.Syntax.Parent(symbol).HasChildToken(token.KwStatic) {
+		if symbol.Kind != semantic.SymbolLocal || !compactHasChildToken(tree, tree.Parent(symbol.Decl), token.KwStatic) {
 			continue
 		}
 		state.intrinsicImpure = true
 	}
 	state.calls = append([]Call(nil), m.CallGraph.Outgoing(function)...)
-	knownCalls := make(map[cst.Node]bool)
+	knownCalls := make(map[syntax.NodeID]bool)
 	for _, call := range state.calls {
-		knownCalls[callSyntax(call)] = true
+		knownCalls[callSyntax(call).ID()] = true
 	}
-	var visit func(cst.Node)
-	visit = func(current cst.Node) {
-		if !current.Valid() || file.Syntax.Inactive(current) {
+	var visit func(syntax.NodeID)
+	visit = func(current syntax.NodeID) {
+		if !tree.Tree.Valid(current) || tree.Inactive(current) {
 			return
 		}
-		if !current.Same(node) && current.Kind() == parser.KindFunctionDefinition {
+		if current != node && tree.Tree.Kind(current) == parser.KindFunctionDefinition {
 			state.complete = false
 			return
 		}
-		if file.Syntax.Uncertain(current) {
+		if tree.Uncertain(current) {
 			state.complete = false
 			return
 		}
-		switch current.Kind() {
+		switch tree.Tree.Kind(current) {
 		case parser.KindMacroInvocation, parser.KindMacroInvocationBlock, parser.KindConditionalSplice:
 			state.complete = false
 		case parser.KindStateStatement:
@@ -272,10 +273,10 @@ func (m *Model) directFunctionEffects(function Declaration, referenceKinds map[c
 				state.complete = false
 			}
 		case parser.KindIdentifier:
-			m.applyDirectReferenceEffect(state, file, current, referenceKinds)
+			m.applyDirectCompactReferenceEffect(state, file, current, referenceKinds)
 		}
-		for index := 0; index < current.ChildCount(); index++ {
-			visit(current.Child(index))
+		for index := 0; index < tree.Tree.ChildCount(current); index++ {
+			visit(tree.Tree.Child(current, index))
 		}
 	}
 	visit(node)
@@ -283,16 +284,19 @@ func (m *Model) directFunctionEffects(function Declaration, referenceKinds map[c
 	return state
 }
 
-func (m *Model) applyDirectReferenceEffect(state *functionEffectState, file *File, identifier cst.Node, referenceKinds map[cst.Node]semantic.ReferenceKind) {
+func (m *Model) applyDirectCompactReferenceEffect(state *functionEffectState, file *File, identifier syntax.NodeID, referenceKinds map[syntax.NodeID]semantic.ReferenceKind) {
 	kind, reference := referenceKinds[identifier]
 	if !reference {
 		return
 	}
-	symbol, symbolKind, symbolKnown := effectResolvedSymbol(file, identifier)
-	if symbol.Valid() && symbolKnown && symbolKind == semantic.SymbolParameter && state.referenceParameters[symbol] && kind != semantic.ReferenceRead {
-		state.mutated[state.parameterIndexes[symbol]] = true
+	symbol := file.CompactSemantic.Resolve(identifier)
+	if symbol != nil && symbol.Kind == semantic.SymbolParameter {
+		key := file.Syntax.CompactNode(symbol.Decl)
+		if state.referenceParameters[key] && kind != semantic.ReferenceRead {
+			state.mutated[state.parameterIndexes[key]] = true
+		}
 	}
-	declaration, ok := m.resolveSyntax(file, identifier)
+	declaration, ok := m.resolveSyntax(file, file.Syntax.CompactNode(identifier))
 	if !ok || declaration.Kind != semantic.SymbolGlobal {
 		return
 	}
@@ -307,22 +311,26 @@ func (m *Model) applyDirectReferenceEffect(state *functionEffectState, file *Fil
 	}
 }
 
-func (m *Model) indexEffectParameters(file *File, function cst.Node, state *functionEffectState, symbolKinds map[cst.Node]semantic.SymbolKind) {
-	list := function.Field("parameters")
-	if !list.Valid() {
+func (m *Model) indexCompactEffectParameters(file *File, function syntax.NodeID, state *functionEffectState) {
+	tree := file.CompactWalk.Tree
+	list := tree.Field(function, "parameters")
+	if !tree.Valid(list) {
 		return
 	}
 	index := 0
-	for child := 0; child < list.ChildCount(); child++ {
-		parameter := list.Child(child)
-		if parameter.Kind() != parser.KindParameter {
+	for child := 0; child < tree.ChildCount(list); child++ {
+		parameter := tree.Child(list, child)
+		if tree.Kind(parameter) != parser.KindParameter {
 			continue
 		}
-		symbol := parameter
-		symbolKind, symbolKnown := symbolKinds[symbol]
-		if symbol.Valid() && symbolKnown && symbolKind == semantic.SymbolParameter {
-			state.parameterIndexes[symbol] = index
-			state.referenceParameters[symbol] = effectReferencesByAmpersand(file, parameter) || effectHasDimension(parameter)
+		for _, symbol := range file.CompactSemantic.Symbols {
+			if symbol.Kind != semantic.SymbolParameter || symbol.Decl != parameter || symbol.Ambiguous {
+				continue
+			}
+			key := file.Syntax.CompactNode(symbol.Decl)
+			state.parameterIndexes[key] = index
+			state.referenceParameters[key] = effectReferencesByAmpersand(file, file.Syntax.CompactNode(parameter)) || compactEffectHasDimension(tree, parameter)
+			break
 		}
 		index++
 	}
@@ -390,34 +398,6 @@ func (m *Model) mapMutatedArguments(state *functionEffectState, call Call, calle
 	return complete
 }
 
-func effectReferenceKinds(file *File) map[cst.Node]semantic.ReferenceKind {
-	result := make(map[cst.Node]semantic.ReferenceKind)
-	if file.Semantic != nil {
-		for _, symbol := range file.Semantic.Symbols {
-			for _, reference := range file.Semantic.References(symbol) {
-				node := file.Syntax.PointerNode(reference.Node)
-				result[node] = effectReferenceKind(file, node, reference.Kind)
-			}
-		}
-		for _, reference := range file.Semantic.UnresolvedReferences() {
-			node := file.Syntax.PointerNode(reference.Node)
-			result[node] = effectReferenceKind(file, node, reference.Kind)
-		}
-		return result
-	}
-	for _, symbol := range file.CompactSemantic.Symbols {
-		for _, reference := range file.CompactSemantic.References(symbol) {
-			node := file.Syntax.CompactNode(reference.Node)
-			result[node] = effectReferenceKind(file, node, reference.Kind)
-		}
-	}
-	for _, reference := range file.CompactSemantic.UnresolvedReferences() {
-		node := file.Syntax.CompactNode(reference.Node)
-		result[node] = effectReferenceKind(file, node, reference.Kind)
-	}
-	return result
-}
-
 func pointerEffectReferenceKinds(file *File) map[*parser.Node]semantic.ReferenceKind {
 	result := make(map[*parser.Node]semantic.ReferenceKind)
 	for _, symbol := range file.Semantic.Symbols {
@@ -429,6 +409,67 @@ func pointerEffectReferenceKinds(file *File) map[*parser.Node]semantic.Reference
 		result[reference.Node] = pointerEffectReferenceKind(file, reference.Node, reference.Kind)
 	}
 	return result
+}
+
+func compactEffectReferenceKinds(file *File) map[syntax.NodeID]semantic.ReferenceKind {
+	result := make(map[syntax.NodeID]semantic.ReferenceKind)
+	for _, symbol := range file.CompactSemantic.Symbols {
+		for _, reference := range file.CompactSemantic.References(symbol) {
+			result[reference.Node] = compactEffectReferenceKind(file, reference.Node, reference.Kind)
+		}
+	}
+	for _, reference := range file.CompactSemantic.UnresolvedReferences() {
+		result[reference.Node] = compactEffectReferenceKind(file, reference.Node, reference.Kind)
+	}
+	return result
+}
+
+func compactEffectReferenceKind(file *File, node syntax.NodeID, kind semantic.ReferenceKind) semantic.ReferenceKind {
+	tree := file.CompactWalk
+	for current := node; tree.Tree.Valid(current); current = tree.Parent(current) {
+		parent := tree.Parent(current)
+		if !tree.Tree.Valid(parent) {
+			break
+		}
+		if tree.Tree.Kind(parent) == parser.KindAssignmentExpression && compactEffectInside(tree, current, tree.Tree.Field(parent, "left")) {
+			if tree.Tree.TokenKind(parent) == token.Assign {
+				return semantic.ReferenceWrite
+			}
+			return semantic.ReferenceReadWrite
+		}
+		if tree.Tree.Kind(parent) == parser.KindUpdateExpression {
+			return semantic.ReferenceReadWrite
+		}
+		if tree.Tree.Kind(parent) != parser.KindSubscriptExpression && tree.Tree.Kind(parent) != parser.KindParenthesizedExpression && tree.Tree.Kind(parent) != parser.KindTaggedExpression {
+			break
+		}
+	}
+	return kind
+}
+
+func compactHasChildToken(tree *walk.CompactModel, node syntax.NodeID, kind token.Kind) bool {
+	if tree == nil || !tree.Tree.Valid(node) {
+		return false
+	}
+	for index := 0; index < tree.Tree.ChildCount(node); index++ {
+		if tree.Tree.TokenKind(tree.Tree.Child(node, index)) == kind {
+			return true
+		}
+	}
+	return false
+}
+
+func compactEffectHasDimension(tree *syntax.CompactTree, node syntax.NodeID) bool {
+	for index := 0; index < tree.ChildCount(node); index++ {
+		if tree.Kind(tree.Child(node, index)) == parser.KindDimension {
+			return true
+		}
+	}
+	return false
+}
+
+func compactEffectInside(tree *walk.CompactModel, node, container syntax.NodeID) bool {
+	return tree.Tree.Valid(node) && tree.Tree.Valid(container) && tree.Tree.Start(node) >= tree.Tree.Start(container) && tree.Tree.End(node) <= tree.Tree.End(container)
 }
 
 func pointerEffectReferenceKind(file *File, node *parser.Node, kind semantic.ReferenceKind) semantic.ReferenceKind {
@@ -466,28 +507,6 @@ func pointerEffectInside(node, container *parser.Node) bool {
 	return node != nil && container != nil && node.Start >= container.Start && node.End <= container.End
 }
 
-func effectReferenceKind(file *File, node cst.Node, kind semantic.ReferenceKind) semantic.ReferenceKind {
-	for current := node; current.Valid(); current = file.Syntax.Parent(current) {
-		parent := file.Syntax.Parent(current)
-		if !parent.Valid() {
-			break
-		}
-		if parent.Kind() == parser.KindAssignmentExpression && effectInside(current, parent.Field("left")) {
-			if parent.TokenKind() == token.Assign {
-				return semantic.ReferenceWrite
-			}
-			return semantic.ReferenceReadWrite
-		}
-		if parent.Kind() == parser.KindUpdateExpression {
-			return semantic.ReferenceReadWrite
-		}
-		if parent.Kind() != parser.KindSubscriptExpression && parent.Kind() != parser.KindParenthesizedExpression && parent.Kind() != parser.KindTaggedExpression {
-			break
-		}
-	}
-	return kind
-}
-
 func effectBaseIdentifier(node cst.Node) cst.Node {
 	for node.Valid() {
 		switch node.Kind() {
@@ -502,15 +521,6 @@ func effectBaseIdentifier(node cst.Node) cst.Node {
 		}
 	}
 	return cst.Node{}
-}
-
-func effectHasDimension(node cst.Node) bool {
-	for index := 0; index < node.ChildCount(); index++ {
-		if node.Child(index).Kind() == parser.KindDimension {
-			return true
-		}
-	}
-	return false
 }
 
 func effectInside(node, container cst.Node) bool {
