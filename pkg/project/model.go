@@ -148,8 +148,9 @@ type Model struct {
 	nextEnvironmentID  uint32
 	physical           map[string]*physicalFile
 	references         map[declarationID][]Reference
-	resolved           map[*File]map[cst.Node]Declaration
-	ambiguous          map[*File]map[cst.Node]bool
+	resolved           map[*File]map[fileNodeID]declarationID
+	ambiguous          map[*File]map[fileNodeID]bool
+	declarationsByID   map[declarationID]Declaration
 	effects            map[declarationID]FunctionEffects
 	functionVariantMap map[functionVariantKey][]Declaration
 	functionVariantsMu sync.RWMutex
@@ -214,8 +215,9 @@ func Build(sources []Source, options Options) (*Model, error) {
 		defineEnvironments: make(map[uint64][]*defineEnvironment),
 		physical:           make(map[string]*physicalFile),
 		references:         make(map[declarationID][]Reference),
-		resolved:           make(map[*File]map[cst.Node]Declaration),
-		ambiguous:          make(map[*File]map[cst.Node]bool),
+		resolved:           make(map[*File]map[fileNodeID]declarationID),
+		ambiguous:          make(map[*File]map[fileNodeID]bool),
+		declarationsByID:   make(map[declarationID]Declaration),
 		functionVariantMap: make(map[functionVariantKey][]Declaration),
 		definedNames:       make(map[string]struct{}),
 		sourceFiles:        make(map[uint32]*File),

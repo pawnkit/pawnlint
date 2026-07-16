@@ -22,6 +22,11 @@ type referenceID struct {
 	compact     syntax.NodeID
 }
 
+type fileNodeID struct {
+	pointer *parser.Node
+	compact syntax.NodeID
+}
+
 type declarationPair struct {
 	first  declarationID
 	second declarationID
@@ -50,8 +55,9 @@ func (m *Model) resolveSyntax(file *File, node cst.Node) (Declaration, bool) {
 	if m == nil || file == nil || !node.Valid() {
 		return Declaration{}, false
 	}
-	declaration, ok := m.resolved[file][node]
-	if m.ambiguous[file][node] {
+	key := fileNodeKey(node)
+	declaration, ok := m.declarationsByID[m.resolved[file][key]]
+	if m.ambiguous[file][key] {
 		return Declaration{}, false
 	}
 	return declaration, ok
@@ -167,6 +173,9 @@ func (m *Model) buildDeclarations() {
 	}
 	for name := range m.Declarations {
 		sortDeclarations(m.Declarations[name])
+		for _, declaration := range m.Declarations[name] {
+			m.declarationsByID[declarationKey(declaration)] = declaration
+		}
 	}
 }
 
@@ -285,20 +294,21 @@ func (m *Model) addReference(declaration Declaration, reference Reference, seen 
 	seen[referenceKey] = struct{}{}
 	m.references[key] = append(m.references[key], reference)
 	if m.resolved[reference.File] == nil {
-		m.resolved[reference.File] = make(map[cst.Node]Declaration)
+		m.resolved[reference.File] = make(map[fileNodeID]declarationID)
 	}
-	if existing, exists := m.resolved[reference.File][node]; exists && declarationKey(existing) != key {
-		delete(m.resolved[reference.File], node)
+	nodeKey := fileNodeKey(node)
+	if existing, exists := m.resolved[reference.File][nodeKey]; exists && existing != key {
+		delete(m.resolved[reference.File], nodeKey)
 		if m.ambiguous[reference.File] == nil {
-			m.ambiguous[reference.File] = make(map[cst.Node]bool)
+			m.ambiguous[reference.File] = make(map[fileNodeID]bool)
 		}
-		m.ambiguous[reference.File][node] = true
+		m.ambiguous[reference.File][nodeKey] = true
 		return
 	}
-	if m.ambiguous[reference.File][node] {
+	if m.ambiguous[reference.File][nodeKey] {
 		return
 	}
-	m.resolved[reference.File][node] = declaration
+	m.resolved[reference.File][nodeKey] = key
 }
 
 func declarationSymbolAmbiguous(declaration Declaration) bool {
@@ -364,6 +374,10 @@ func declarationKey(declaration Declaration) declarationID {
 	}
 	node := declarationSyntax(declaration)
 	return declarationID{pointer: node.Pointer(), source: declaration.File.sourceID, compact: node.ID()}
+}
+
+func fileNodeKey(node cst.Node) fileNodeID {
+	return fileNodeID{pointer: node.Pointer(), compact: node.ID()}
 }
 
 func declarationSyntax(declaration Declaration) cst.Node {
