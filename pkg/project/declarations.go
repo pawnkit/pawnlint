@@ -60,7 +60,10 @@ func (m *Model) resolveSyntax(file *File, node cst.Node) (Declaration, bool) {
 	if m.ambiguous[file][key] {
 		return Declaration{}, false
 	}
-	return declaration, ok
+	if !ok {
+		return Declaration{}, false
+	}
+	return *declaration, true
 }
 
 func (m *Model) FunctionVariants(file *File, node *parser.Node) []Declaration {
@@ -173,8 +176,9 @@ func (m *Model) buildDeclarations() {
 	}
 	for name := range m.Declarations {
 		sortDeclarations(m.Declarations[name])
-		for _, declaration := range m.Declarations[name] {
-			m.declarationsByID[declarationKey(declaration)] = declaration
+		for index := range m.Declarations[name] {
+			declaration := &m.Declarations[name][index]
+			m.declarationsByID[declarationKey(*declaration)] = declaration
 		}
 	}
 }

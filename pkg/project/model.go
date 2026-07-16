@@ -150,7 +150,7 @@ type Model struct {
 	references         map[declarationID][]Reference
 	resolved           map[*File]map[fileNodeID]declarationID
 	ambiguous          map[*File]map[fileNodeID]bool
-	declarationsByID   map[declarationID]Declaration
+	declarationsByID   map[declarationID]*Declaration
 	effects            map[declarationID]FunctionEffects
 	functionVariantMap map[functionVariantKey][]Declaration
 	functionVariantsMu sync.RWMutex
@@ -217,7 +217,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 		references:         make(map[declarationID][]Reference),
 		resolved:           make(map[*File]map[fileNodeID]declarationID),
 		ambiguous:          make(map[*File]map[fileNodeID]bool),
-		declarationsByID:   make(map[declarationID]Declaration),
+		declarationsByID:   make(map[declarationID]*Declaration),
 		functionVariantMap: make(map[functionVariantKey][]Declaration),
 		definedNames:       make(map[string]struct{}),
 		sourceFiles:        make(map[uint32]*File),
