@@ -84,7 +84,7 @@ func safeUnusedIncludeFiles(files map[*File]struct{}) bool {
 		if fileUnresolvedReferenceCount(file) != 0 || hasActiveIncludeEffects(file) {
 			return false
 		}
-		for _, declaration := range declarationsForFile(file) {
+		if !visitDeclarationsForFile(file, func(declaration Declaration) bool {
 			switch declaration.Kind {
 			case semantic.SymbolFunction:
 				node := declarationSyntax(declaration)
@@ -96,29 +96,35 @@ func safeUnusedIncludeFiles(files map[*File]struct{}) bool {
 					return false
 				}
 			}
+			return true
+		}) {
+			return false
 		}
 	}
 	return true
 }
 
-func declarationsForFile(file *File) []Declaration {
-	var result []Declaration
+func visitDeclarationsForFile(file *File, visit func(Declaration) bool) bool {
 	if file.Semantic != nil {
 		for _, symbol := range file.Semantic.Symbols {
 			if symbol.Function != nil && symbol.Kind != semantic.SymbolFunction {
 				continue
 			}
-			result = append(result, Declaration{Name: symbol.Name, Kind: symbol.Kind, File: file, Node: symbol.Decl, Symbol: symbol, syntax: file.Syntax.PointerNode(symbol.Decl)})
+			if !visit(Declaration{Name: symbol.Name, Kind: symbol.Kind, File: file, Node: symbol.Decl, Symbol: symbol, syntax: file.Syntax.PointerNode(symbol.Decl)}) {
+				return false
+			}
 		}
-		return result
+		return true
 	}
 	for _, symbol := range file.CompactSemantic.Symbols {
 		if symbol.Function != syntax.NoNode && symbol.Kind != semantic.SymbolFunction {
 			continue
 		}
-		result = append(result, Declaration{Name: symbol.Name, Kind: symbol.Kind, File: file, compactSymbol: symbol, syntax: file.Syntax.CompactNode(symbol.Decl)})
+		if !visit(Declaration{Name: symbol.Name, Kind: symbol.Kind, File: file, compactSymbol: symbol, syntax: file.Syntax.CompactNode(symbol.Decl)}) {
+			return false
+		}
 	}
-	return result
+	return true
 }
 
 func fileHasParseErrors(file *File) bool {

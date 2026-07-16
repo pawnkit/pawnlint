@@ -104,28 +104,29 @@ func (m *Model) buildDuplicateGlobals() []DuplicateGlobal {
 	for _, unit := range m.Units {
 		byName := make(map[string][]Declaration)
 		for _, file := range unit.Files {
-			for _, declaration := range declarationsForFile(file) {
+			visitDeclarationsForFile(file, func(declaration Declaration) bool {
 				if declaration.File != file || declaration.Kind != semantic.SymbolGlobal {
-					continue
+					return true
 				}
 				if numericSeparatorArtifact(declaration) {
-					continue
+					return true
 				}
 				node := declarationSyntax(declaration)
 				parent := file.Syntax.Parent(node)
 				if node.Field("state").Valid() || parent.Valid() && (parent.Field("state").Valid() || parent.HasError() || file.Syntax.Uncertain(parent)) {
-					continue
+					return true
 				}
 				storage := parent.Field("storage").Text()
 				if storage != "new" && storage != "static" && storage != "const" {
-					continue
+					return true
 				}
 				key := declaration.Name
 				if storage == "static" {
 					key = file.canonical + "\x00" + declaration.Name
 				}
 				byName[key] = append(byName[key], declaration)
-			}
+				return true
+			})
 		}
 		for _, declarations := range byName {
 			if len(declarations) < 2 {
