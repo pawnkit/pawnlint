@@ -123,7 +123,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		if path == "" || include.Uncertain {
 			continue
 		}
-		defines := m.internDefines(defineCursor.KnownDefinesAt(node.Start()))
+		defines := m.internDefines(defineCursor.KnownDefinesViewAt(node.Start()))
 		resolved, candidates, err := m.resolveInclude(file, path, defines)
 		if err != nil {
 			return err
@@ -145,7 +145,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		file.rebuildWalk(snapshots)
 		defineCursor = file.Syntax.NewDefineCursor()
 	}
-	file.final = m.internDefines(defineCursor.KnownDefinesAt(len(file.Source) + 1))
+	file.final = m.internDefines(defineCursor.KnownDefinesViewAt(len(file.Source) + 1))
 	if m.options.ObserveTiming == nil {
 		if file.Parsed != nil {
 			file.Semantic = semantic.Build(file.Parsed, file.Walk)

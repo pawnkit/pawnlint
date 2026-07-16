@@ -142,9 +142,10 @@ type DefineCursor struct {
 }
 
 type defineValues struct {
-	base    []string
-	added   []string
-	removed []string
+	base         []string
+	added        []string
+	removed      []string
+	materialized []string
 }
 
 func (m *Model) NewDefineCursor() *DefineCursor {
@@ -164,6 +165,7 @@ func (v *defineValues) reset(names []string) {
 	v.base = names
 	v.added = v.added[:0]
 	v.removed = v.removed[:0]
+	v.materialized = nil
 }
 
 func (c *DefineCursor) containsAt(offset int, name string) bool {
@@ -225,23 +227,36 @@ func (v *defineValues) add(name string) {
 	if name == "" {
 		return
 	}
-	if removeSorted(&v.removed, name) || containsSorted(v.base, name) || containsSorted(v.added, name) {
+	if removeSorted(&v.removed, name) {
+		v.materialized = nil
+		return
+	}
+	if containsSorted(v.base, name) || containsSorted(v.added, name) {
 		return
 	}
 	insertSorted(&v.added, name)
+	v.materialized = nil
 }
 
 func (v *defineValues) remove(name string) {
 	if removeSorted(&v.added, name) {
+		v.materialized = nil
 		return
 	}
 	if !containsSorted(v.base, name) || containsSorted(v.removed, name) {
 		return
 	}
 	insertSorted(&v.removed, name)
+	v.materialized = nil
 }
 
-func (v *defineValues) known() []string {
+func (v *defineValues) view() []string {
+	if len(v.added) == 0 && len(v.removed) == 0 {
+		return v.base
+	}
+	if v.materialized != nil {
+		return v.materialized
+	}
 	known := make([]string, 0, len(v.base)+len(v.added)-len(v.removed))
 	baseIndex := 0
 	addedIndex := 0
@@ -264,7 +279,8 @@ func (v *defineValues) known() []string {
 			addedIndex++
 		}
 	}
-	return known
+	v.materialized = known
+	return v.materialized
 }
 
 func containsSorted(values []string, name string) bool {
@@ -295,7 +311,12 @@ func (m *Model) KnownDefinesAt(offset int) []string {
 
 func (c *DefineCursor) KnownDefinesAt(offset int) []string {
 	c.advance(offset)
-	return c.values.known()
+	return append([]string(nil), c.values.view()...)
+}
+
+func (c *DefineCursor) KnownDefinesViewAt(offset int) []string {
+	c.advance(offset)
+	return c.values.view()
 }
 
 func (m *Model) directiveActive(node *parser.Node) bool {

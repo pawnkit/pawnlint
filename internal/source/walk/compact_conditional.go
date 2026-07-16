@@ -210,7 +210,12 @@ func (m *CompactModel) KnownDefinesAt(offset int) []string {
 
 func (c *CompactDefineCursor) KnownDefinesAt(offset int) []string {
 	c.advance(offset)
-	return c.values.known()
+	return append([]string(nil), c.values.view()...)
+}
+
+func (c *CompactDefineCursor) KnownDefinesViewAt(offset int) []string {
+	c.advance(offset)
+	return c.values.view()
 }
 
 func (m *CompactModel) compactDirectiveActive(node syntax.NodeID) bool {

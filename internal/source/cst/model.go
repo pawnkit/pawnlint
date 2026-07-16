@@ -124,6 +124,19 @@ func (c *DefineCursor) KnownDefinesAt(offset int) []string {
 	return nil
 }
 
+func (c *DefineCursor) KnownDefinesViewAt(offset int) []string {
+	if c == nil {
+		return nil
+	}
+	if c.pointer != nil {
+		return c.pointer.KnownDefinesViewAt(offset)
+	}
+	if c.compact != nil {
+		return c.compact.KnownDefinesViewAt(offset)
+	}
+	return nil
+}
+
 func (m *Model) OfKind(kind parser.Kind) []Node {
 	if m == nil {
 		return nil
