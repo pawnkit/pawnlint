@@ -40,11 +40,11 @@ func (DuplicateFunctionDefinition) Run(ctx *lint.Context) {
 		finding := diagnostic.Diagnostic{
 			Message:  message,
 			Filename: duplicate.Second.File.Path,
-			Range:    duplicate.Second.File.Walk.Range(duplicate.Second.Node.Field("name")),
+			Range:    duplicate.Second.NameRange(),
 		}
 		if duplicate.First.File == duplicate.Second.File {
 			finding.Notes = []diagnostic.RelatedLocation{{
-				Range:   duplicate.First.File.Walk.Range(duplicate.First.Node.Field("name")),
+				Range:   duplicate.First.NameRange(),
 				Message: "first definition is here",
 			}}
 		} else {

@@ -37,7 +37,7 @@ func (MissingInclude) Run(ctx *lint.Context) {
 		ctx.Report(diagnostic.Diagnostic{
 			Message:  fmt.Sprintf("include %q could not be resolved", issue.Include.Path),
 			Filename: issue.File.Path,
-			Range:    issue.File.Walk.Range(issue.Include.Node.Field("path")),
+			Range:    issue.Include.PathRange(),
 		})
 	}
 }
@@ -88,7 +88,7 @@ func (DuplicateInclude) Run(ctx *lint.Context) {
 		ctx.Report(diagnostic.Diagnostic{
 			Message:  fmt.Sprintf("include %q resolves to a file already included here", issue.Include.Path),
 			Filename: issue.File.Path,
-			Range:    issue.File.Walk.Range(issue.Include.Node.Field("path")),
+			Range:    issue.Include.PathRange(),
 		})
 	}
 }
@@ -107,7 +107,7 @@ func (AmbiguousInclude) Run(ctx *lint.Context) {
 		ctx.Report(diagnostic.Diagnostic{
 			Message:  fmt.Sprintf("include %q selects %q but also matches %q", issue.Include.Path, selected, shadowed),
 			Filename: issue.File.Path,
-			Range:    issue.File.Walk.Range(issue.Include.Node.Field("path")),
+			Range:    issue.Include.PathRange(),
 		})
 	}
 }

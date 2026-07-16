@@ -188,10 +188,10 @@ func (ctx *Context) PureCall(call *parser.Node) (string, bool) {
 		if len(variants) != 0 {
 			projectFunction := false
 			for _, declaration := range variants {
-				if declaration.Kind != semantic.SymbolFunction || declaration.Node == nil {
+				if declaration.Kind != semantic.SymbolFunction || !declaration.Valid() {
 					return "", false
 				}
-				if walk.HasChildToken(declaration.Node, token.KwNative) {
+				if declaration.HasToken(token.KwNative) {
 					continue
 				}
 				projectFunction = true

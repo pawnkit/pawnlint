@@ -127,7 +127,7 @@ func stringOption(values map[string]any, name string) []string {
 
 func reportRestrictedIncludes(ctx *lint.Context, file *project.File, patterns []string) {
 	for _, include := range file.Includes {
-		if include == nil || include.Node == nil || include.Uncertain || include.Path == "" {
+		if !include.Valid() || include.Uncertain || include.Path == "" {
 			continue
 		}
 		path := strings.ReplaceAll(include.Path, "\\", "/")
@@ -137,7 +137,7 @@ func reportRestrictedIncludes(ctx *lint.Context, file *project.File, patterns []
 			}
 			ctx.Report(diagnostic.Diagnostic{
 				Message: fmt.Sprintf("include %q is restricted by pattern %q", include.Path, pattern),
-				Range:   file.Walk.Range(include.Node.Field("path")),
+				Range:   include.PathRange(),
 			})
 			break
 		}
@@ -172,8 +172,8 @@ func reportRestrictedCalls(ctx *lint.Context, file *project.File, functions, nat
 }
 
 func restrictedCallKind(ctx *lint.Context, file *project.File, callee *parser.Node) (string, bool) {
-	if declaration, ok := ctx.Project.Resolve(file, callee); ok && declaration.Kind == semantic.SymbolFunction && declaration.Node != nil {
-		if walk.HasChildToken(declaration.Node, token.KwNative) {
+	if declaration, ok := ctx.Project.Resolve(file, callee); ok && declaration.Kind == semantic.SymbolFunction && declaration.Valid() {
+		if declaration.HasToken(token.KwNative) {
 			return "native", true
 		}
 		return "function", true

@@ -82,6 +82,7 @@ type Include struct {
 	Candidates []string
 	Optional   bool
 	Uncertain  bool
+	syntax     cst.Node
 }
 
 type Unit struct {

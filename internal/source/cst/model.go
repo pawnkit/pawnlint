@@ -347,6 +347,13 @@ func (n Node) HasChildToken(kind token.Kind) bool {
 	return false
 }
 
+func (n Node) Range() source.Range {
+	if !n.Valid() {
+		return source.Range{}
+	}
+	return n.model.Range(n)
+}
+
 func (t Token) Valid() bool {
 	return t.model != nil && t.index >= 0 && t.index < t.model.TokenCount()
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/api"
 	"github.com/pawnkit/pawnlint/internal/semantic"
-	"github.com/pawnkit/pawnlint/internal/source/walk"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 )
@@ -61,7 +60,7 @@ func projectImplementsFunction(ctx *lint.Context, name string) bool {
 		return false
 	}
 	for _, declaration := range ctx.Project.Declarations[name] {
-		if declaration.Kind == semantic.SymbolFunction && !walk.HasChildToken(declaration.Node, token.KwForward) {
+		if declaration.Kind == semantic.SymbolFunction && !declaration.HasToken(token.KwForward) {
 			return true
 		}
 	}

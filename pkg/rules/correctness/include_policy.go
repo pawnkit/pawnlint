@@ -61,7 +61,7 @@ func (UnusedInclude) Run(ctx *lint.Context) {
 		ctx.Report(diagnostic.Diagnostic{
 			Message:  fmt.Sprintf("include %q contributes no used declarations", issue.Include.Path),
 			Filename: issue.File.Path,
-			Range:    issue.File.Walk.Range(issue.Include.Node.Field("path")),
+			Range:    issue.Include.PathRange(),
 		})
 	}
 }
@@ -87,7 +87,7 @@ func (ForbiddenInclude) Run(ctx *lint.Context) {
 		ctx.Report(diagnostic.Diagnostic{
 			Message:  fmt.Sprintf("include %q is forbidden by pattern %q", issue.Include.Path, pattern),
 			Filename: issue.File.Path,
-			Range:    issue.File.Walk.Range(issue.Include.Node.Field("path")),
+			Range:    issue.Include.PathRange(),
 		})
 	}
 }
@@ -151,7 +151,7 @@ func (IncludeLayering) Run(ctx *lint.Context) {
 		}
 		ctx.Report(diagnostic.Diagnostic{
 			Message: fmt.Sprintf("include %q is outside this layer's allowed dependencies", include.Path),
-			Range:   file.Walk.Range(include.Node.Field("path")),
+			Range:   include.PathRange(),
 		})
 	}
 }

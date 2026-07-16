@@ -78,7 +78,7 @@ func isBuiltinStrlen(ctx *lint.Context, call *parser.Node) bool {
 	}
 	if ctx.Project != nil {
 		for _, declaration := range ctx.Project.Declarations["strlen"] {
-			if declaration.Node.Kind == parser.KindFunctionDefinition {
+			if declaration.NodeKind() == parser.KindFunctionDefinition {
 				return false
 			}
 		}

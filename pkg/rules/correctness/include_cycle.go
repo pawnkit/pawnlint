@@ -42,7 +42,7 @@ func (IncludeCycle) Run(ctx *lint.Context) {
 		ctx.Report(diagnostic.Diagnostic{
 			Message:  "include cycle: " + includeCyclePath(cycle),
 			Filename: closing.From.Path,
-			Range:    closing.From.Walk.Range(closing.Include.Node.Field("path")),
+			Range:    closing.Include.PathRange(),
 		})
 	}
 }

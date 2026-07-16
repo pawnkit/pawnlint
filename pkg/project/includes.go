@@ -93,7 +93,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 			continue
 		}
 		path := includePath(node.Field("path").Text())
-		include := &Include{Node: node.Pointer(), Path: path, Optional: node.Kind() == parser.KindDirectiveTryInclude, Uncertain: file.Syntax.Uncertain(node)}
+		include := &Include{Node: node.Pointer(), Path: path, Optional: node.Kind() == parser.KindDirectiveTryInclude, Uncertain: file.Syntax.Uncertain(node), syntax: node}
 		file.Includes = append(file.Includes, include)
 		if path == "" || include.Uncertain {
 			continue
@@ -136,7 +136,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	imports := make(map[int]*preprocess.State)
 	for _, include := range file.Includes {
 		if include.Resolved != nil && !include.Uncertain && include.Resolved.expansionState != nil {
-			imports[include.Node.Start] = include.Resolved.expansionState
+			imports[include.Start()] = include.Resolved.expansionState
 		}
 	}
 	if m.options.ReleaseExpanded {

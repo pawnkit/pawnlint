@@ -39,7 +39,7 @@ func (ConflictingIncludeSymbol) Run(ctx *lint.Context) {
 		ctx.Report(diagnostic.Diagnostic{
 			Message:  fmt.Sprintf("%s %q conflicts with %s from %q", symbolKind(conflict.Second), conflict.Name, symbolKind(conflict.First), filepath.Base(conflict.First.File.Path)),
 			Filename: conflict.Second.File.Path,
-			Range:    conflict.Second.File.Walk.Range(conflict.Second.Symbol.NameNode),
+			Range:    conflict.Second.NameRange(),
 		})
 	}
 }
@@ -49,7 +49,7 @@ func symbolKind(declaration project.Declaration) string {
 	case semantic.SymbolFunction:
 		return "function"
 	case semantic.SymbolGlobal:
-		if declaration.Symbol.Constant {
+		if declaration.Constant() {
 			return "global constant"
 		}
 		return "global variable"

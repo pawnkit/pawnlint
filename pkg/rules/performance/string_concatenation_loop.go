@@ -88,7 +88,7 @@ func stringConcatenationNative(ctx *lint.Context, call *parser.Node) bool {
 	}
 	if ctx.Project != nil && ctx.ProjectFile != nil {
 		if declaration, ok := ctx.Project.Resolve(ctx.ProjectFile, callee); ok {
-			return declaration.Kind == semantic.SymbolFunction && declaration.Node != nil && walk.HasChildToken(declaration.Node, token.KwNative)
+			return declaration.Kind == semantic.SymbolFunction && declaration.Valid() && declaration.HasToken(token.KwNative)
 		}
 		if len(ctx.Project.Declarations["strcat"]) != 0 {
 			return false

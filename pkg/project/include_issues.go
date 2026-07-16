@@ -68,7 +68,7 @@ func (m *Model) buildIncludeIssues() {
 		}
 		resolved := make(map[string]struct{})
 		for _, include := range file.Includes {
-			if include == nil || include.Node == nil || include.Path == "" || include.Uncertain {
+			if !include.Valid() || include.Path == "" || include.Uncertain {
 				continue
 			}
 			key := file.canonical + ":" + offsetText(include)
@@ -109,6 +109,6 @@ func sortIncludeIssues(issues []IncludeIssue) {
 		if issues[i].File.canonical != issues[j].File.canonical {
 			return issues[i].File.canonical < issues[j].File.canonical
 		}
-		return issues[i].Include.Node.Start < issues[j].Include.Node.Start
+		return issues[i].Include.Start() < issues[j].Include.Start()
 	})
 }

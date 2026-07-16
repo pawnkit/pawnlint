@@ -92,8 +92,8 @@ func includeCycleKey(edges []IncludeEdge) string {
 }
 
 func offsetText(include *Include) string {
-	if include == nil || include.Node == nil {
+	if !include.Valid() {
 		return "0"
 	}
-	return filepath.ToSlash(include.Path) + ":" + strconv.Itoa(include.Node.Start)
+	return filepath.ToSlash(include.Path) + ":" + strconv.Itoa(include.Start())
 }

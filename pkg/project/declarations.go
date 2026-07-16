@@ -307,7 +307,7 @@ func declarationNameSyntax(declaration Declaration) cst.Node {
 	if declaration.compactSymbol != nil {
 		return declaration.File.Syntax.CompactNode(declaration.compactSymbol.NameNode)
 	}
-	return cst.Node{}
+	return declarationSyntax(declaration).Field("name")
 }
 
 func declarationSymbolConstant(declaration Declaration) bool {
