@@ -123,7 +123,13 @@ func (m *Model) collect(node *parser.Node, scope *Scope, function *parser.Node) 
 	if node == nil {
 		return
 	}
-	m.nodeScopes[node] = scope
+	if node.Kind == parser.KindIdentifier {
+		if _, declared := m.declNames[node]; !declared {
+			if _, reference := m.referenceFilter(node); reference {
+				m.nodeScopes[node] = scope
+			}
+		}
+	}
 	switch node.Kind {
 	case parser.KindFunctionDefinition, parser.KindFunctionDeclaration:
 		m.declare(node, node.Field("name"), SymbolFunction, scope, node)
