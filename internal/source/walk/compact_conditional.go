@@ -156,11 +156,6 @@ func (c *CompactDefineCursor) reset() {
 	c.values.reset(c.model.defines.names)
 }
 
-func (c *CompactDefineCursor) definesAt(offset int) []string {
-	c.advance(offset)
-	return c.values.names
-}
-
 func (c *CompactDefineCursor) containsAt(offset int, name string) bool {
 	c.advance(offset)
 	return c.values.contains(name)
@@ -214,8 +209,8 @@ func (m *CompactModel) KnownDefinesAt(offset int) []string {
 }
 
 func (c *CompactDefineCursor) KnownDefinesAt(offset int) []string {
-	known := c.definesAt(offset)
-	return append([]string(nil), known...)
+	c.advance(offset)
+	return c.values.known()
 }
 
 func (m *CompactModel) compactDirectiveActive(node syntax.NodeID) bool {

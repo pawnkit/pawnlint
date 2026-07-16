@@ -142,8 +142,9 @@ type DefineCursor struct {
 }
 
 type defineValues struct {
-	names  []string
-	shared bool
+	base    []string
+	added   []string
+	removed []string
 }
 
 func (m *Model) NewDefineCursor() *DefineCursor {
@@ -160,13 +161,9 @@ func (c *DefineCursor) reset() {
 }
 
 func (v *defineValues) reset(names []string) {
-	v.names = names
-	v.shared = true
-}
-
-func (c *DefineCursor) definesAt(offset int) []string {
-	c.advance(offset)
-	return c.values.names
+	v.base = names
+	v.added = v.added[:0]
+	v.removed = v.removed[:0]
 }
 
 func (c *DefineCursor) containsAt(offset int, name string) bool {
@@ -218,42 +215,78 @@ func (c *DefineCursor) remove(name string) {
 }
 
 func (v *defineValues) contains(name string) bool {
-	index := sort.SearchStrings(v.names, name)
-	return index < len(v.names) && v.names[index] == name
+	if containsSorted(v.removed, name) {
+		return false
+	}
+	return containsSorted(v.added, name) || containsSorted(v.base, name)
 }
 
 func (v *defineValues) add(name string) {
 	if name == "" {
 		return
 	}
-	index := sort.SearchStrings(v.names, name)
-	if index < len(v.names) && v.names[index] == name {
+	if removeSorted(&v.removed, name) || containsSorted(v.base, name) || containsSorted(v.added, name) {
 		return
 	}
-	v.own(len(v.names) + 1)
-	v.names = append(v.names, "")
-	copy(v.names[index+1:], v.names[index:])
-	v.names[index] = name
+	insertSorted(&v.added, name)
 }
 
 func (v *defineValues) remove(name string) {
-	index := sort.SearchStrings(v.names, name)
-	if index >= len(v.names) || v.names[index] != name {
+	if removeSorted(&v.added, name) {
 		return
 	}
-	v.own(len(v.names))
-	copy(v.names[index:], v.names[index+1:])
-	v.names = v.names[:len(v.names)-1]
+	if !containsSorted(v.base, name) || containsSorted(v.removed, name) {
+		return
+	}
+	insertSorted(&v.removed, name)
 }
 
-func (v *defineValues) own(capacity int) {
-	if !v.shared && cap(v.names) >= capacity {
-		return
+func (v *defineValues) known() []string {
+	known := make([]string, 0, len(v.base)+len(v.added)-len(v.removed))
+	baseIndex := 0
+	addedIndex := 0
+	removedIndex := 0
+	for baseIndex < len(v.base) || addedIndex < len(v.added) {
+		for baseIndex < len(v.base) {
+			for removedIndex < len(v.removed) && v.removed[removedIndex] < v.base[baseIndex] {
+				removedIndex++
+			}
+			if removedIndex >= len(v.removed) || v.removed[removedIndex] != v.base[baseIndex] {
+				break
+			}
+			baseIndex++
+		}
+		if baseIndex < len(v.base) && (addedIndex >= len(v.added) || v.base[baseIndex] < v.added[addedIndex]) {
+			known = append(known, v.base[baseIndex])
+			baseIndex++
+		} else if addedIndex < len(v.added) {
+			known = append(known, v.added[addedIndex])
+			addedIndex++
+		}
 	}
-	names := make([]string, len(v.names), capacity)
-	copy(names, v.names)
-	v.names = names
-	v.shared = false
+	return known
+}
+
+func containsSorted(values []string, name string) bool {
+	index := sort.SearchStrings(values, name)
+	return index < len(values) && values[index] == name
+}
+
+func insertSorted(values *[]string, name string) {
+	index := sort.SearchStrings(*values, name)
+	*values = append(*values, "")
+	copy((*values)[index+1:], (*values)[index:])
+	(*values)[index] = name
+}
+
+func removeSorted(values *[]string, name string) bool {
+	index := sort.SearchStrings(*values, name)
+	if index >= len(*values) || (*values)[index] != name {
+		return false
+	}
+	copy((*values)[index:], (*values)[index+1:])
+	*values = (*values)[:len(*values)-1]
+	return true
 }
 
 func (m *Model) KnownDefinesAt(offset int) []string {
@@ -261,8 +294,8 @@ func (m *Model) KnownDefinesAt(offset int) []string {
 }
 
 func (c *DefineCursor) KnownDefinesAt(offset int) []string {
-	known := c.definesAt(offset)
-	return append([]string(nil), known...)
+	c.advance(offset)
+	return c.values.known()
 }
 
 func (m *Model) directiveActive(node *parser.Node) bool {

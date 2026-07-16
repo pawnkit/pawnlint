@@ -1,6 +1,7 @@
 package walk_test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/pawnkit/pawn-parser"
@@ -16,6 +17,18 @@ func mustParse(t *testing.T, src string) *parser.File {
 		t.Fatalf("nil root for %q", src)
 	}
 	return f
+}
+
+func TestDefineCursorTracksDeltasAndResets(t *testing.T) {
+	source := []byte("#define B\n#undef C\n#define A\n")
+	model := walk.NewWithDefines("test.pwn", parser.Parse(source), []string{"A", "C"})
+	cursor := model.NewDefineCursor()
+	if got := cursor.KnownDefinesAt(len(source) + 1); !slices.IsSorted(got) || !slices.Contains(got, "A") || !slices.Contains(got, "B") || slices.Contains(got, "C") {
+		t.Fatalf("known defines after directives: %v", got)
+	}
+	if got := cursor.KnownDefinesAt(0); !slices.Contains(got, "C") || slices.Contains(got, "B") {
+		t.Fatalf("known defines after reset: %v", got)
+	}
 }
 
 func TestModelIndexAndParent(t *testing.T) {
