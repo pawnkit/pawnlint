@@ -1,6 +1,7 @@
 package syntax_test
 
 import (
+	"reflect"
 	"testing"
 
 	parser "github.com/pawnkit/pawn-parser"
@@ -20,6 +21,20 @@ func TestCompactTreeMatchesPointerTree(t *testing.T) {
 	name := compact.Field(functions[0], "name")
 	if compact.Text(name) != "Value" || compact.TokenKind(name) != token.Identifier || compact.Parent(name) != functions[0] {
 		t.Fatalf("name = %q kind=%v parent=%v", compact.Text(name), compact.TokenKind(name), compact.Parent(name))
+	}
+}
+
+func TestCompactDiagnosticsMatchPointerParser(t *testing.T) {
+	for _, source := range [][]byte{
+		[]byte("main( { return 1; }"),
+		[]byte("main() { if (value > 0)) return value; }"),
+		[]byte("#if defined FEATURE\nmain() {\n#endif\n"),
+	} {
+		pointer := parser.Parse(source)
+		compact := parser.ParseForLinter(source)
+		if pointer.Broken != compact.Broken || !reflect.DeepEqual(pointer.Diagnostics, compact.Diagnostics) {
+			t.Fatalf("diagnostics differ for %q\npointer: %#v\ncompact: %#v", source, pointer.Diagnostics, compact.Diagnostics)
+		}
 	}
 }
 

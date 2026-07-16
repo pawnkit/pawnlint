@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	parser "github.com/pawnkit/pawn-parser"
+	"github.com/pawnkit/pawn-parser/lexer"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/syntax"
 )
@@ -261,23 +262,16 @@ func (m *CompactModel) compactDirectiveName(node syntax.NodeID) string {
 	if m.Tree.Kind(node) == parser.KindDirectiveDefine {
 		return m.Text(m.Tree.Field(node, "name"))
 	}
-	if m.Tree.Kind(node) != parser.KindDirectiveUndef || m.Tree.File() == nil {
+	if m.Tree.Kind(node) != parser.KindDirectiveUndef {
 		return ""
 	}
 	seenDirective := false
-	tokens := m.Tree.File().Tokens
-	start := sort.Search(len(tokens), func(index int) bool {
-		return tokens[index].End.Offset > m.Tree.Start(node)
-	})
-	for index := start; index < len(tokens); index++ {
-		tok := tokens[index]
-		if tok.Start.Offset >= m.Tree.End(node) {
-			break
-		}
-		if tok.Start.Offset < m.Tree.Start(node) || tok.End.Offset > m.Tree.End(node) || tok.Kind != token.Identifier {
+	source := []byte(m.Text(node))
+	for _, tok := range lexer.Tokenize(source) {
+		if tok.Kind != token.Identifier {
 			continue
 		}
-		text := tok.Text(m.Source())
+		text := tok.Text(source)
 		if !seenDirective {
 			seenDirective = text == "undef"
 			continue

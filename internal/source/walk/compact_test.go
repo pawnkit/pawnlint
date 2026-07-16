@@ -12,7 +12,10 @@ import (
 func TestCompactModelMatchesPointerModel(t *testing.T) {
 	source := []byte("#define LOCAL\n#if defined LOCAL\nstock run() { new active; return active; }\n#else\nstock run() { new inactive; return inactive; }\n#endif\n#undef LOCAL\n#if defined EXPORTED\nnew exported;\n#endif\n")
 	pointerFile := parser.Parse(source)
-	compactFile := parser.ParseCompact(source, parser.ParseOptions{})
+	compactFile := parser.ParseForLinter(source)
+	if compactFile.Tokens != nil || compactFile.Trivia != nil {
+		t.Fatal("linter parse retained tokens or trivia")
+	}
 	snapshotOffset := len(source) - len("#if defined EXPORTED\nnew exported;\n#endif\n")
 	snapshots := []walk.DefineSnapshot{{Offset: snapshotOffset, Defines: []string{"EXPORTED"}}}
 	pointer := walk.NewWithDefineContext("x.pwn", pointerFile, []string{"CONFIGURED"}, snapshots, true)

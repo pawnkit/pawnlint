@@ -53,6 +53,38 @@ func BenchmarkParse(b *testing.B) {
 	}
 }
 
+func BenchmarkCompactParse(b *testing.B) {
+	source := []byte(benchSrc)
+	b.ReportAllocs()
+	for range b.N {
+		_ = parser.ParseForLinter(source)
+	}
+}
+
+func BenchmarkParseLarge(b *testing.B) {
+	source := make([]byte, 0, len(benchSrc)*200)
+	for range 200 {
+		source = append(source, benchSrc...)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		_ = parser.Parse(source)
+	}
+}
+
+func BenchmarkCompactParseLarge(b *testing.B) {
+	source := make([]byte, 0, len(benchSrc)*200)
+	for range 200 {
+		source = append(source, benchSrc...)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		_ = parser.ParseForLinter(source)
+	}
+}
+
 func BenchmarkWalkIndex(b *testing.B) {
 	pf := parser.Parse([]byte(benchSrc))
 	b.ReportAllocs()

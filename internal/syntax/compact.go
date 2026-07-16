@@ -27,7 +27,7 @@ func NewCompactTree(file *parser.CompactFile) *CompactTree {
 	for index, node := range file.Tree.Nodes {
 		id := NodeID(index)
 		tree.byKind[node.Kind] = append(tree.byKind[node.Kind], id)
-		for _, child := range file.Tree.ChildIndices(index) {
+		for _, child := range file.Tree.ChildIndices(uint32(index)) {
 			tree.parents[child] = id
 		}
 	}
@@ -77,14 +77,14 @@ func (t *CompactTree) Start(node NodeID) int {
 	if !t.Valid(node) {
 		return 0
 	}
-	return t.file.Tree.Nodes[node].Start
+	return int(t.file.Tree.Nodes[node].Start)
 }
 
 func (t *CompactTree) End(node NodeID) int {
 	if !t.Valid(node) {
 		return 0
 	}
-	return t.file.Tree.Nodes[node].End
+	return int(t.file.Tree.Nodes[node].End)
 }
 
 func (t *CompactTree) HasError(node NodeID) bool {
@@ -106,14 +106,14 @@ func (t *CompactTree) TokenStart(node NodeID) int {
 	if !t.Valid(node) {
 		return 0
 	}
-	return t.file.Tree.Nodes[node].TokenStart
+	return int(t.file.Tree.Nodes[node].TokenStart)
 }
 
 func (t *CompactTree) TokenEnd(node NodeID) int {
 	if !t.Valid(node) {
 		return 0
 	}
-	return t.file.Tree.Nodes[node].TokenEnd
+	return int(t.file.Tree.Nodes[node].TokenEnd)
 }
 
 func (t *CompactTree) Parent(node NodeID) NodeID {
@@ -127,7 +127,7 @@ func (t *CompactTree) ChildCount(node NodeID) int {
 	if !t.Valid(node) {
 		return 0
 	}
-	return t.file.Tree.Nodes[node].ChildCount
+	return int(t.file.Tree.Nodes[node].ChildCount)
 }
 
 func (t *CompactTree) Child(node NodeID, index int) NodeID {
@@ -135,14 +135,14 @@ func (t *CompactTree) Child(node NodeID, index int) NodeID {
 		return NoNode
 	}
 	record := t.file.Tree.Nodes[node]
-	return NodeID(t.file.Tree.Children[record.ChildStart+index])
+	return NodeID(t.file.Tree.Children[record.ChildStart+uint32(index)])
 }
 
 func (t *CompactTree) Field(node NodeID, name string) NodeID {
 	if !t.Valid(node) {
 		return NoNode
 	}
-	field, ok := t.file.Tree.Field(int(node), name)
+	field, ok := t.file.Tree.Field(uint32(node), name)
 	if !ok {
 		return NoNode
 	}
@@ -161,7 +161,7 @@ func (t *CompactTree) TokenText(node NodeID) string {
 		return ""
 	}
 	record := t.file.Tree.Nodes[node]
-	if record.TokenStart < 0 || record.TokenEnd > len(t.file.Source) || record.TokenStart > record.TokenEnd {
+	if record.TokenEnd > uint32(len(t.file.Source)) || record.TokenStart > record.TokenEnd {
 		return ""
 	}
 	return string(t.file.Source[record.TokenStart:record.TokenEnd])
