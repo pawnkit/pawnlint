@@ -20,6 +20,7 @@ type CompactSymbol struct {
 	StateRaw  bool
 	Constant  bool
 	Value     syntax.NodeID
+	id        uint32
 }
 
 type CompactReference struct {
@@ -37,11 +38,12 @@ type CompactScope struct {
 	Parent  *CompactScope
 	Node    syntax.NodeID
 	symbols map[string][]*CompactSymbol
+	id      uint32
 }
 
 type compactNodeFacts struct {
-	resolved *CompactSymbol
-	scope    *CompactScope
+	resolved uint32
+	scope    uint32
 }
 
 type CompactModel struct {
@@ -49,6 +51,7 @@ type CompactModel struct {
 	Walk        *walk.CompactModel
 	Root        *CompactScope
 	Symbols     []*CompactSymbol
+	scopes      []*CompactScope
 	facts       []compactNodeFacts
 	references  map[*CompactSymbol][]CompactReference
 	unresolved  []CompactUnresolvedReference
@@ -68,7 +71,8 @@ func BuildCompact(file *parser.CompactFile, tree *walk.CompactModel) *CompactMod
 		declSymbols: make(map[syntax.NodeID]*CompactSymbol),
 		constants:   make(map[*CompactSymbol]int64),
 	}
-	model.Root = &CompactScope{Node: tree.Root()}
+	model.Root = &CompactScope{Node: tree.Root(), id: 1}
+	model.scopes = append(model.scopes, model.Root)
 	model.collectCompact(tree.Root(), model.Root, syntax.NoNode, nil)
 	for _, node := range tree.OfKind(parser.KindIdentifier) {
 		if tree.Inactive(node) || model.compactDeclarationName(node) {
@@ -81,7 +85,7 @@ func BuildCompact(file *parser.CompactFile, tree *walk.CompactModel) *CompactMod
 			}
 			continue
 		}
-		model.facts[node].resolved = symbol
+		model.facts[node].resolved = symbol.id
 		model.references[symbol] = append(model.references[symbol], CompactReference{Node: node, Kind: model.compactReferenceKind(node)})
 	}
 	model.evaluateCompactEnums()
@@ -94,14 +98,14 @@ func (m *CompactModel) collectCompact(node syntax.NodeID, scope *CompactScope, f
 	}
 	if m.Walk.Tree.Kind(node) == parser.KindIdentifier && !m.compactDeclarationName(node) {
 		if _, reference := m.compactReferenceFilter(node); reference {
-			m.facts[node].scope = scope
+			m.facts[node].scope = scope.id
 		}
 	}
 	switch m.Walk.Tree.Kind(node) {
 	case parser.KindFunctionDefinition, parser.KindFunctionDeclaration:
 		m.declareCompact(node, m.Walk.Tree.Field(node, "name"), SymbolFunction, scope, node)
 		function = node
-		scope = newCompactScope(scope, node)
+		scope = m.newCompactScope(scope, node)
 		functionScope = scope
 	case parser.KindParameter:
 		m.declareCompact(node, m.Walk.Tree.Field(node, "name"), SymbolParameter, scope, function)
@@ -122,10 +126,10 @@ func (m *CompactModel) collectCompact(node syntax.NodeID, scope *CompactScope, f
 	case parser.KindBlock:
 		parent := m.Walk.Parent(node)
 		if parent == syntax.NoNode || m.Walk.Tree.Kind(parent) != parser.KindEnumDeclaration {
-			scope = newCompactScope(scope, node)
+			scope = m.newCompactScope(scope, node)
 		}
 	case parser.KindForStatement, parser.KindCaseClause, parser.KindDefaultClause:
-		scope = newCompactScope(scope, node)
+		scope = m.newCompactScope(scope, node)
 	}
 	for index := 0; index < m.Walk.Tree.ChildCount(node); index++ {
 		m.collectCompact(m.Walk.Tree.Child(node, index), scope, function, functionScope)
@@ -151,6 +155,8 @@ func (m *CompactModel) compactDeclarationName(node syntax.NodeID) bool {
 	}
 }
 
-func newCompactScope(parent *CompactScope, node syntax.NodeID) *CompactScope {
-	return &CompactScope{Parent: parent, Node: node}
+func (m *CompactModel) newCompactScope(parent *CompactScope, node syntax.NodeID) *CompactScope {
+	scope := &CompactScope{Parent: parent, Node: node, id: uint32(len(m.scopes) + 1)}
+	m.scopes = append(m.scopes, scope)
+	return scope
 }

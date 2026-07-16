@@ -39,6 +39,7 @@ func (m *CompactModel) declareCompact(decl, nameNode syntax.NodeID, kind SymbolK
 		symbol.Ambiguous = true
 	}
 	m.Symbols = append(m.Symbols, symbol)
+	symbol.id = uint32(len(m.Symbols))
 	if kind == SymbolEnumRoot || kind == SymbolEnumEntry {
 		m.declSymbols[decl] = symbol
 	}

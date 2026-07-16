@@ -10,7 +10,11 @@ func (m *CompactModel) Resolve(node syntax.NodeID) *CompactSymbol {
 	if m == nil || !m.Walk.Tree.Valid(node) {
 		return nil
 	}
-	return m.facts[node].resolved
+	id := m.facts[node].resolved
+	if id == 0 || id > uint32(len(m.Symbols)) {
+		return nil
+	}
+	return m.Symbols[id-1]
 }
 
 func (m *CompactModel) References(symbol *CompactSymbol) []CompactReference {
@@ -67,7 +71,11 @@ func (m *CompactModel) ResolveAsCallTarget(node syntax.NodeID) *CompactSymbol {
 
 func (m *CompactModel) compactResolveInScope(node syntax.NodeID, allowed func(SymbolKind) bool) *CompactSymbol {
 	name := m.Walk.Text(node)
-	for scope := m.facts[node].scope; scope != nil; scope = scope.Parent {
+	scopeID := m.facts[node].scope
+	if scopeID == 0 || scopeID > uint32(len(m.scopes)) {
+		return nil
+	}
+	for scope := m.scopes[scopeID-1]; scope != nil; scope = scope.Parent {
 		var candidates []*CompactSymbol
 		for _, candidate := range scope.symbols[name] {
 			if allowed == nil || allowed(candidate.Kind) {
