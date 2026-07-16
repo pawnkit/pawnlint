@@ -69,7 +69,15 @@ type expansionOriginFact struct {
 }
 
 func (m *Model) buildCallGraph() *CallGraph {
-	graph := &CallGraph{outgoing: make(map[declarationID][]uint32), asyncOutgoing: make(map[declarationID][]uint32), asyncIncoming: make(map[declarationID][]uint32)}
+	callCapacity := 0
+	for _, references := range m.references {
+		for _, reference := range references {
+			if reference.Kind == semantic.ReferenceCall {
+				callCapacity++
+			}
+		}
+	}
+	graph := &CallGraph{Calls: make([]Call, 0, callCapacity), outgoing: make(map[declarationID][]uint32), asyncOutgoing: make(map[declarationID][]uint32), asyncIncoming: make(map[declarationID][]uint32)}
 	byNode := make(map[*File]map[cst.Node]Declaration)
 	for _, declarations := range m.Declarations {
 		for _, declaration := range declarations {
