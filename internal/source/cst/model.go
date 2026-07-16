@@ -25,6 +25,11 @@ type Token struct {
 	index int
 }
 
+type DefineCursor struct {
+	pointer *walk.DefineCursor
+	compact *walk.CompactDefineCursor
+}
+
 func Pointer(model *walk.Model) *Model {
 	return &Model{pointer: model}
 }
@@ -77,6 +82,32 @@ func (m *Model) Token(index int) Token {
 		return Token{}
 	}
 	return Token{model: m, index: index}
+}
+
+func (m *Model) NewDefineCursor() *DefineCursor {
+	if m == nil {
+		return &DefineCursor{}
+	}
+	if m.pointer != nil {
+		return &DefineCursor{pointer: m.pointer.NewDefineCursor()}
+	}
+	if m.compact != nil {
+		return &DefineCursor{compact: m.compact.NewCompactDefineCursor()}
+	}
+	return &DefineCursor{}
+}
+
+func (c *DefineCursor) KnownDefinesAt(offset int) []string {
+	if c == nil {
+		return nil
+	}
+	if c.pointer != nil {
+		return c.pointer.KnownDefinesAt(offset)
+	}
+	if c.compact != nil {
+		return c.compact.KnownDefinesAt(offset)
+	}
+	return nil
 }
 
 func (m *Model) OfKind(kind parser.Kind) []Node {

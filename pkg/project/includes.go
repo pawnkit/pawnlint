@@ -82,11 +82,11 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	sort.SliceStable(nodes, func(i, j int) bool { return nodes[i].Start() < nodes[j].Start() })
 	var snapshots []walk.DefineSnapshot
 	dirty := false
-	defineCursor := file.Walk.NewDefineCursor()
+	defineCursor := file.Syntax.NewDefineCursor()
 	for _, node := range nodes {
 		if dirty {
 			file.rebuildWalk(snapshots)
-			defineCursor = file.Walk.NewDefineCursor()
+			defineCursor = file.Syntax.NewDefineCursor()
 			dirty = false
 		}
 		if file.Syntax.Inactive(node) {
@@ -118,7 +118,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	}
 	if dirty {
 		file.rebuildWalk(snapshots)
-		defineCursor = file.Walk.NewDefineCursor()
+		defineCursor = file.Syntax.NewDefineCursor()
 	}
 	file.final = m.internDefines(defineCursor.KnownDefinesAt(len(file.Source) + 1))
 	if m.options.ObserveTiming == nil {

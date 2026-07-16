@@ -1,6 +1,7 @@
 package cst_test
 
 import (
+	"reflect"
 	"testing"
 
 	parser "github.com/pawnkit/pawn-parser"
@@ -34,6 +35,13 @@ func TestPointerAndCompactModelsMatch(t *testing.T) {
 			if left[index].Text() != right[index].Text() || pointer.Inactive(left[index]) != compact.Inactive(right[index]) || pointer.Uncertain(left[index]) != compact.Uncertain(right[index]) {
 				t.Fatalf("kind %v node %d differs", kind, index)
 			}
+		}
+	}
+	pointerDefines := pointer.NewDefineCursor()
+	compactDefines := compact.NewDefineCursor()
+	for _, offset := range []int{0, len("#define ENABLED\n"), len(source) + 1, 0, len(source) + 1} {
+		if left, right := pointerDefines.KnownDefinesAt(offset), compactDefines.KnownDefinesAt(offset); !reflect.DeepEqual(left, right) {
+			t.Fatalf("defines at %d differ: %v and %v", offset, left, right)
 		}
 	}
 }
