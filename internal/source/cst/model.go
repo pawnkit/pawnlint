@@ -1,6 +1,8 @@
 package cst
 
 import (
+	"bytes"
+
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/source"
@@ -435,20 +437,27 @@ func (t Token) EndsLine() bool {
 				return true
 			}
 		}
-		return false
-	}
-	file := t.model.compact.Tree.File()
-	current := file.Tokens[t.index]
-	end := current.TrailingStart + current.TrailingCount
-	if end < current.TrailingStart || end > uint32(len(file.Trivia)) {
-		return false
-	}
-	for _, trivia := range file.Trivia[current.TrailingStart:end] {
-		if trivia.Kind == token.Newline {
-			return true
+	} else {
+		file := t.model.compact.Tree.File()
+		current := file.Tokens[t.index]
+		end := current.TrailingStart + current.TrailingCount
+		if end >= current.TrailingStart && end <= uint32(len(file.Trivia)) {
+			for _, trivia := range file.Trivia[current.TrailingStart:end] {
+				if trivia.Kind == token.Newline {
+					return true
+				}
+			}
 		}
 	}
-	return false
+	start := t.End()
+	end := len(t.model.Source())
+	if t.index+1 < t.model.TokenCount() {
+		end = t.model.Token(t.index + 1).Start()
+	}
+	if start < 0 || end < start || end > len(t.model.Source()) {
+		return false
+	}
+	return bytes.IndexAny(t.model.Source()[start:end], "\r\n") >= 0
 }
 
 func (t Token) Origin() *token.Origin {

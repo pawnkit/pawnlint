@@ -82,6 +82,7 @@ func TestPointerTriviaFollowsFeatures(t *testing.T) {
 		retained bool
 	}{
 		{features: project.Features(0)},
+		{features: project.NewFeatures(project.FeatureRuntimeCalls)},
 		{features: project.NewFeatures(project.FeatureTrivia), retained: true},
 	} {
 		model, err := project.Build([]project.Source{{Path: path, Content: source}}, project.Options{WorkingDir: dir, Features: &test.features})
@@ -96,6 +97,30 @@ func TestPointerTriviaFollowsFeatures(t *testing.T) {
 		if retained != test.retained {
 			t.Fatalf("retained = %t, want %t", retained, test.retained)
 		}
+	}
+}
+
+func TestCompactRuntimeCallsDiscardTrivia(t *testing.T) {
+	dir := t.TempDir()
+	includePath := filepath.Join(dir, "timer.inc")
+	if err := os.WriteFile(includePath, []byte("// documentation\n#define TIMER_CALLBACK \"Tick\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	entryPath := filepath.Join(dir, "main.pwn")
+	source := []byte("#include \"timer.inc\"\nmain() { SetTimer(TIMER_CALLBACK, 1000, false); }\npublic Tick() {}\n")
+	features := project.NewFeatures(project.FeatureRuntimeCalls)
+	model, err := project.Build([]project.Source{{Path: entryPath, Content: source}}, project.Options{
+		WorkingDir: dir, DefinesComplete: true, ReleaseExpanded: true, ReleaseIncludes: true, Features: &features,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	include := model.File(includePath)
+	if include == nil || include.CompactParsed == nil || len(include.CompactParsed.Trivia) != 0 {
+		t.Fatal("compact runtime syntax retained trivia")
+	}
+	if len(model.CallGraph.AsyncCalls) != 1 || model.CallGraph.AsyncCalls[0].Callee.Name != "Tick" {
+		t.Fatalf("async calls = %#v", model.CallGraph.AsyncCalls)
 	}
 }
 

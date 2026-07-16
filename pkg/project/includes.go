@@ -35,20 +35,25 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	}
 	physical := m.physical[canonical]
 	if physical == nil {
+		retainTrivia := m.options.Features == nil || m.options.Features.Has(FeatureTrivia) || bytes.Contains(source, []byte("pawnlint-"))
 		if m.options.ReleaseIncludes && (!provided || len(source) >= compactTargetThreshold) {
 			started := time.Now()
-			profile := parser.ProfileLossless
-			if m.options.Features != nil && !m.options.Features.Has(FeatureRuntimeCalls) && !bytes.Contains(source, []byte("pawnlint-")) {
-				profile = parser.ProfileAnalysis
+			var compact *parser.CompactFile
+			switch {
+			case retainTrivia:
+				compact = parser.ParseWithProfile(source, parser.ProfileLossless)
+			case m.options.Features.Has(FeatureRuntimeCalls):
+				compact = parser.ParseCompact(source, parser.ParseOptions{DiscardTrivia: true})
+			default:
+				compact = parser.ParseWithProfile(source, parser.ProfileAnalysis)
 			}
-			compact := parser.ParseWithProfile(source, profile)
 			if m.options.ObserveTiming != nil {
 				m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
 			}
 			physical = &physicalFile{source: source, compact: compact, lineTable: sourceinfo.NewLineTable(source)}
 			m.physical[canonical] = physical
 		} else {
-			discardTrivia := m.options.Features != nil && !m.options.Features.Has(FeatureRuntimeCalls) && !m.options.Features.Has(FeatureTrivia) && !bytes.Contains(source, []byte("pawnlint-"))
+			discardTrivia := !retainTrivia
 			var parsed *parser.File
 			if m.options.ParseCache != nil {
 				started := time.Now()
