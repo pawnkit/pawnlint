@@ -72,3 +72,45 @@ func TestCompactIncludeMaterializesPointerSyntaxOnDemand(t *testing.T) {
 		t.Fatal("pointer models were not materialized")
 	}
 }
+
+func TestPointerTriviaFollowsFeatures(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	source := []byte("// documentation\nmain() {}\n")
+	for _, test := range []struct {
+		features project.Features
+		retained bool
+	}{
+		{features: project.Features(0)},
+		{features: project.NewFeatures(project.FeatureTrivia), retained: true},
+	} {
+		model, err := project.Build([]project.Source{{Path: path, Content: source}}, project.Options{WorkingDir: dir, Features: &test.features})
+		if err != nil {
+			t.Fatal(err)
+		}
+		file := model.File(path)
+		retained := false
+		for _, current := range file.Parsed.Tokens {
+			retained = retained || len(current.LeadingTrivia) != 0 || len(current.TrailingTrivia) != 0
+		}
+		if retained != test.retained {
+			t.Fatalf("retained = %t, want %t", retained, test.retained)
+		}
+	}
+}
+
+func TestPointerTriviaRetainsSuppressions(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	features := project.Features(0)
+	model, err := project.Build([]project.Source{{Path: path, Content: []byte("// pawnlint-disable-next-line discarded-expression\nvalue + 1;\n")}}, project.Options{WorkingDir: dir, Features: &features})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, current := range model.File(path).Parsed.Tokens {
+		if len(current.LeadingTrivia) != 0 || len(current.TrailingTrivia) != 0 {
+			return
+		}
+	}
+	t.Fatal("suppression trivia was discarded")
+}

@@ -61,6 +61,8 @@ func ruleProjectFeatures(id string) project.Features {
 		return project.NewFeatures(project.FeatureReferences, project.FeatureDefinedNames)
 	case "format-argument-count", "deprecated-native", "discarded-repeating-timer", "format-argument-tag", "required-call-order", "native-argument-count", "argument-value-range", "settimerex-format-argument-count", "swapped-arguments", "buffer-size", "ignored-return-value":
 		return project.NewFeatures(project.FeatureDefinedNames)
+	case "public-documentation", "todo-policy":
+		return project.NewFeatures(project.FeatureTrivia)
 	default:
 		return 0
 	}

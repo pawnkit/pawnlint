@@ -15,10 +15,11 @@ const (
 	FeatureCallGraph
 	FeatureRuntimeCalls
 	FeatureFunctionEffects
+	FeatureTrivia
 )
 
 func AllFeatures() Features {
-	return Features(FeatureDefinedNames | FeatureDuplicates | FeatureConflicts | FeatureIncludeCycles | FeatureIncludeIssues | FeatureReferences | FeatureUnusedIncludes | FeatureCallGraph | FeatureRuntimeCalls | FeatureFunctionEffects)
+	return Features(FeatureDefinedNames | FeatureDuplicates | FeatureConflicts | FeatureIncludeCycles | FeatureIncludeIssues | FeatureReferences | FeatureUnusedIncludes | FeatureCallGraph | FeatureRuntimeCalls | FeatureFunctionEffects | FeatureTrivia)
 }
 
 func NewFeatures(features ...Feature) Features {

@@ -48,19 +48,20 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 			physical = &physicalFile{source: source, compact: compact, lineTable: sourceinfo.NewLineTable(source)}
 			m.physical[canonical] = physical
 		} else {
+			discardTrivia := m.options.Features != nil && !m.options.Features.Has(FeatureRuntimeCalls) && !m.options.Features.Has(FeatureTrivia) && !bytes.Contains(source, []byte("pawnlint-"))
 			var parsed *parser.File
 			if m.options.ParseCache != nil {
 				started := time.Now()
 				var cached bool
-				parsed, cached = m.options.ParseCache.parse(canonical, source)
+				parsed, cached = m.options.ParseCache.parse(canonical, source, discardTrivia)
 				if !cached && m.options.ObserveTiming != nil {
 					m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
 				}
 			} else if m.options.ObserveTiming == nil {
-				parsed = parser.Parse(source)
+				parsed = parser.ParseWithOptions(source, parser.ParseOptions{DiscardTrivia: discardTrivia})
 			} else {
 				started := time.Now()
-				parsed = parser.Parse(source)
+				parsed = parser.ParseWithOptions(source, parser.ParseOptions{DiscardTrivia: discardTrivia})
 				m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
 			}
 			physical = &physicalFile{source: source, parsed: parsed, lineTable: sourceinfo.NewLineTable(source), syntaxIndex: walk.NewIndex(parsed)}
