@@ -17,6 +17,8 @@ import (
 	"github.com/pawnkit/pawnlint/internal/source/walk"
 )
 
+const compactTargetThreshold = 512 << 10
+
 func (m *Model) addFile(path string, source []byte, provided bool, defines *defineEnvironment) (*File, error) {
 	canonical, err := canonicalPath(path, m.options.WorkingDir)
 	if err != nil {
@@ -32,7 +34,7 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	}
 	physical := m.physical[canonical]
 	if physical == nil {
-		if m.options.ReleaseIncludes {
+		if m.options.ReleaseIncludes && (!provided || len(source) >= compactTargetThreshold) {
 			started := time.Now()
 			compact := parser.ParseCompact(source, parser.ParseOptions{})
 			if m.options.ObserveTiming != nil {

@@ -1,6 +1,7 @@
 package project_test
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -24,11 +25,27 @@ func TestReleaseIncludesDropsOnlyIncludeTokens(t *testing.T) {
 	}
 	entry := model.File(entryPath)
 	include := model.File(includePath)
-	if entry == nil || entry.Parsed != nil || entry.CompactParsed == nil {
-		t.Fatal("entry was not stored compactly")
+	if entry == nil || entry.Parsed == nil || len(entry.Parsed.Tokens) == 0 {
+		t.Fatal("entry tokens were released")
 	}
 	if include == nil || include.Parsed != nil || include.CompactParsed == nil {
 		t.Fatal("include was not stored compactly")
+	}
+}
+
+func TestReleaseIncludesStoresLargeTargetCompactly(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	source := append(bytes.Repeat([]byte{' '}, 600<<10), []byte("\nmain() {}\n")...)
+	model, err := project.Build([]project.Source{{Path: path, Content: source}}, project.Options{
+		WorkingDir: dir, DefinesComplete: true, ReleaseExpanded: true, ReleaseIncludes: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := model.File(path)
+	if file == nil || file.Parsed != nil || file.CompactParsed == nil {
+		t.Fatal("large target was not stored compactly")
 	}
 }
 
