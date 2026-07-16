@@ -11,6 +11,7 @@ import (
 	"github.com/pawnkit/pawnlint/internal/preprocess"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	sourceinfo "github.com/pawnkit/pawnlint/internal/source"
+	"github.com/pawnkit/pawnlint/internal/source/cst"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
 )
 
@@ -49,6 +50,7 @@ type File struct {
 	Source            []byte
 	Parsed            *parser.File
 	Walk              *walk.Model
+	Syntax            *cst.Model
 	Semantic          *semantic.Model
 	ExpandedSource    []byte
 	ExpandedParsed    *parser.File

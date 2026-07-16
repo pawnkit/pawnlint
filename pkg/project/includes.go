@@ -13,6 +13,7 @@ import (
 	"github.com/pawnkit/pawnlint/internal/preprocess"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	sourceinfo "github.com/pawnkit/pawnlint/internal/source"
+	"github.com/pawnkit/pawnlint/internal/source/cst"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
 )
 
@@ -58,7 +59,7 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 		display = canonical
 	}
 	tree := walk.NewWithContext(display, parsed, defines.walk, nil, m.options.DefinesComplete, physical.lineTable, physical.syntaxIndex)
-	file := &File{Path: display, Source: physical.source, Parsed: parsed, Walk: tree, Provided: provided, canonical: canonical, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1), syntaxIndex: physical.syntaxIndex}
+	file := &File{Path: display, Source: physical.source, Parsed: parsed, Walk: tree, Syntax: cst.Pointer(tree), Provided: provided, canonical: canonical, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1), syntaxIndex: physical.syntaxIndex}
 	m.Files = append(m.Files, file)
 	m.sourceFiles[file.sourceID] = file
 	m.byContext[instance] = file
@@ -74,11 +75,11 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	}
 	file.resolving = true
 	defer func() { file.resolving = false }()
-	var nodes []*parser.Node
+	var nodes []cst.Node
 	for _, kind := range []parser.Kind{parser.KindDirectiveInclude, parser.KindDirectiveTryInclude} {
-		nodes = append(nodes, file.Walk.OfKind(kind)...)
+		nodes = append(nodes, file.Syntax.OfKind(kind)...)
 	}
-	sort.SliceStable(nodes, func(i, j int) bool { return nodes[i].Start < nodes[j].Start })
+	sort.SliceStable(nodes, func(i, j int) bool { return nodes[i].Start() < nodes[j].Start() })
 	var snapshots []walk.DefineSnapshot
 	dirty := false
 	defineCursor := file.Walk.NewDefineCursor()
@@ -88,16 +89,16 @@ func (m *Model) resolveFileIncludes(file *File) error {
 			defineCursor = file.Walk.NewDefineCursor()
 			dirty = false
 		}
-		if file.Walk.Inactive(node) {
+		if file.Syntax.Inactive(node) {
 			continue
 		}
-		path := includePath(file.Walk.Text(node.Field("path")))
-		include := &Include{Node: node, Path: path, Optional: node.Kind == parser.KindDirectiveTryInclude, Uncertain: file.Walk.Uncertain(node)}
+		path := includePath(node.Field("path").Text())
+		include := &Include{Node: node.Pointer(), Path: path, Optional: node.Kind() == parser.KindDirectiveTryInclude, Uncertain: file.Syntax.Uncertain(node)}
 		file.Includes = append(file.Includes, include)
 		if path == "" || include.Uncertain {
 			continue
 		}
-		defines := m.internDefines(defineCursor.KnownDefinesAt(node.Start))
+		defines := m.internDefines(defineCursor.KnownDefinesAt(node.Start()))
 		resolved, candidates, err := m.resolveInclude(file, path, defines)
 		if err != nil {
 			return err
@@ -111,7 +112,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 			return err
 		}
 		if resolved.final != nil && len(resolved.final.names) > 0 && defines != resolved.final {
-			snapshots = append(snapshots, walk.DefineSnapshot{Offset: node.End, Defines: resolved.final.names})
+			snapshots = append(snapshots, walk.DefineSnapshot{Offset: node.End(), Defines: resolved.final.names})
 			dirty = true
 		}
 	}
@@ -268,6 +269,7 @@ func (m *Model) resolveInclude(from *File, path string, defines *defineEnvironme
 
 func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot) {
 	f.Walk = walk.NewWithContext(f.Path, f.Parsed, f.defines.walk, snapshots, f.complete, f.Walk.LineTable, f.syntaxIndex)
+	f.Syntax = cst.Pointer(f.Walk)
 }
 
 func (m *Model) internDefines(defines []string) *defineEnvironment {
