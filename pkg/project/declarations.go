@@ -6,6 +6,7 @@ import (
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/internal/source/cst"
+	"github.com/pawnkit/pawnlint/internal/syntax"
 )
 
 type declarationID struct {
@@ -35,6 +36,13 @@ func (m *Model) Resolve(file *File, node *parser.Node) (Declaration, bool) {
 	if m == nil || file == nil || node == nil {
 		return Declaration{}, false
 	}
+	return m.resolveSyntax(file, file.Syntax.PointerNode(node))
+}
+
+func (m *Model) resolveSyntax(file *File, node cst.Node) (Declaration, bool) {
+	if m == nil || file == nil || !node.Valid() {
+		return Declaration{}, false
+	}
 	declaration, ok := m.resolved[file][node]
 	if m.ambiguous[file][node] {
 		return Declaration{}, false
@@ -46,14 +54,21 @@ func (m *Model) FunctionVariants(file *File, node *parser.Node) []Declaration {
 	if m == nil || file == nil || node == nil || node.Kind != parser.KindIdentifier {
 		return nil
 	}
-	name := file.Walk.Text(node)
+	return m.functionVariants(file, file.Syntax.PointerNode(node))
+}
+
+func (m *Model) functionVariants(file *File, node cst.Node) []Declaration {
+	if m == nil || file == nil || !node.Valid() || node.Kind() != parser.KindIdentifier {
+		return nil
+	}
+	name := node.Text()
 	seen := make(map[declarationID]Declaration)
 	for _, unit := range m.Units {
 		if _, contains := unit.members[file]; !contains {
 			continue
 		}
 		for _, declaration := range m.Declarations[name] {
-			if _, included := unit.members[declaration.File]; !included || declaration.Kind != semantic.SymbolFunction || declaration.Symbol == nil || declaration.Symbol.Ambiguous {
+			if _, included := unit.members[declaration.File]; !included || declaration.Kind != semantic.SymbolFunction || declarationSymbolAmbiguous(declaration) {
 				continue
 			}
 			seen[declarationKey(declaration)] = declaration
@@ -62,9 +77,9 @@ func (m *Model) FunctionVariants(file *File, node *parser.Node) []Declaration {
 	var definitions []Declaration
 	var declarations []Declaration
 	for _, declaration := range seen {
-		if declaration.Node.Kind == parser.KindFunctionDefinition {
+		if declarationSyntax(declaration).Kind() == parser.KindFunctionDefinition {
 			definitions = append(definitions, declaration)
-		} else if declaration.Node.Kind == parser.KindFunctionDeclaration {
+		} else if declarationSyntax(declaration).Kind() == parser.KindFunctionDeclaration {
 			declarations = append(declarations, declaration)
 		}
 	}
@@ -75,7 +90,7 @@ func (m *Model) FunctionVariants(file *File, node *parser.Node) []Declaration {
 	sortDeclarations(candidates)
 	for left := range candidates {
 		for right := left + 1; right < len(candidates); right++ {
-			if !projectStateVariantsCoexist(candidates[left].Symbol, candidates[right].Symbol) {
+			if !projectStateVariantsCoexist(candidates[left], candidates[right]) {
 				return nil
 			}
 		}
@@ -83,20 +98,20 @@ func (m *Model) FunctionVariants(file *File, node *parser.Node) []Declaration {
 	return candidates
 }
 
-func projectStateVariantsCoexist(left, right *semantic.Symbol) bool {
-	leftState := left.Decl.Field("state") != nil
-	rightState := right.Decl.Field("state") != nil
+func projectStateVariantsCoexist(left, right Declaration) bool {
+	leftState := declarationSyntax(left).Field("state").Valid()
+	rightState := declarationSyntax(right).Field("state").Valid()
 	if !leftState && !rightState {
 		return false
 	}
 	if leftState != rightState {
 		return true
 	}
-	if left.StateRaw || right.StateRaw {
+	if declarationSymbolStateRaw(left) || declarationSymbolStateRaw(right) {
 		return false
 	}
-	for _, leftName := range left.States {
-		for _, rightName := range right.States {
+	for _, leftName := range declarationSymbolStates(left) {
+		for _, rightName := range declarationSymbolStates(right) {
 			if leftName == rightName {
 				return false
 			}
@@ -107,11 +122,21 @@ func projectStateVariantsCoexist(left, right *semantic.Symbol) bool {
 
 func (m *Model) buildDeclarations() {
 	for _, file := range m.Files {
-		for _, symbol := range file.Semantic.Symbols {
-			if symbol.Function != nil && symbol.Kind != semantic.SymbolFunction {
+		if file.Semantic != nil {
+			for _, symbol := range file.Semantic.Symbols {
+				if symbol.Function != nil && symbol.Kind != semantic.SymbolFunction {
+					continue
+				}
+				declaration := Declaration{Name: symbol.Name, Kind: symbol.Kind, File: file, Node: symbol.Decl, Symbol: symbol, syntax: file.Syntax.PointerNode(symbol.Decl)}
+				m.Declarations[symbol.Name] = append(m.Declarations[symbol.Name], declaration)
+			}
+			continue
+		}
+		for _, symbol := range file.CompactSemantic.Symbols {
+			if symbol.Function != syntax.NoNode && symbol.Kind != semantic.SymbolFunction {
 				continue
 			}
-			declaration := Declaration{Name: symbol.Name, Kind: symbol.Kind, File: file, Node: symbol.Decl, Symbol: symbol, syntax: file.Syntax.PointerNode(symbol.Decl)}
+			declaration := Declaration{Name: symbol.Name, Kind: symbol.Kind, File: file, syntax: file.Syntax.CompactNode(symbol.Decl), compactSymbol: symbol}
 			m.Declarations[symbol.Name] = append(m.Declarations[symbol.Name], declaration)
 		}
 	}
@@ -122,41 +147,50 @@ func (m *Model) buildDeclarations() {
 
 func (m *Model) buildReferences() {
 	bySymbol := make(map[*semantic.Symbol]Declaration)
+	byCompactSymbol := make(map[*semantic.CompactSymbol]Declaration)
 	seen := make(map[referenceID]struct{})
 	for _, declarations := range m.Declarations {
 		for _, declaration := range declarations {
-			bySymbol[declaration.Symbol] = declaration
+			if declaration.Symbol != nil {
+				bySymbol[declaration.Symbol] = declaration
+			} else if declaration.compactSymbol != nil {
+				byCompactSymbol[declaration.compactSymbol] = declaration
+			}
 		}
 	}
 	for _, file := range m.Files {
-		for _, symbol := range file.Semantic.Symbols {
-			declaration, exists := bySymbol[symbol]
+		if file.Semantic != nil {
+			for _, symbol := range file.Semantic.Symbols {
+				declaration, exists := bySymbol[symbol]
+				if !exists {
+					continue
+				}
+				for _, reference := range file.Semantic.References(symbol) {
+					m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind, syntax: file.Syntax.PointerNode(reference.Node)}, seen)
+				}
+			}
+			continue
+		}
+		for _, symbol := range file.CompactSemantic.Symbols {
+			declaration, exists := byCompactSymbol[symbol]
 			if !exists {
 				continue
 			}
-			for _, reference := range file.Semantic.References(symbol) {
-				m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind, syntax: file.Syntax.PointerNode(reference.Node)}, seen)
+			for _, reference := range file.CompactSemantic.References(symbol) {
+				m.addReference(declaration, Reference{File: file, Kind: reference.Kind, syntax: file.Syntax.CompactNode(reference.Node)}, seen)
 			}
 		}
 	}
 	for _, unit := range m.Units {
 		for _, file := range unit.Files {
-			for _, reference := range file.Semantic.UnresolvedReferences() {
-				if reference.Target == semantic.ReferenceFunction {
-					variants := m.FunctionVariants(file, reference.Node)
-					if len(variants) != 0 {
-						for _, declaration := range variants {
-							m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind, syntax: file.Syntax.PointerNode(reference.Node)}, seen)
-						}
-						continue
-					}
+			if file.Semantic != nil {
+				for _, reference := range file.Semantic.UnresolvedReferences() {
+					m.addUnresolvedReference(unit, file, file.Syntax.PointerNode(reference.Node), reference.Node, reference.Kind, reference.Target, seen)
 				}
-				name := file.Walk.Text(reference.Node)
-				declaration, ok := m.resolveInUnit(unit, file, name, reference.Target)
-				if !ok {
-					continue
-				}
-				m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind, syntax: file.Syntax.PointerNode(reference.Node)}, seen)
+				continue
+			}
+			for _, reference := range file.CompactSemantic.UnresolvedReferences() {
+				m.addUnresolvedReference(unit, file, file.Syntax.CompactNode(reference.Node), nil, reference.Kind, reference.Target, seen)
 			}
 		}
 	}
@@ -174,15 +208,31 @@ func (m *Model) buildReferences() {
 	}
 }
 
+func (m *Model) addUnresolvedReference(unit *Unit, file *File, node cst.Node, pointer *parser.Node, kind semantic.ReferenceKind, target semantic.ReferenceTarget, seen map[referenceID]struct{}) {
+	if target == semantic.ReferenceFunction {
+		variants := m.functionVariants(file, node)
+		if len(variants) != 0 {
+			for _, declaration := range variants {
+				m.addReference(declaration, Reference{File: file, Node: pointer, Kind: kind, syntax: node}, seen)
+			}
+			return
+		}
+	}
+	declaration, ok := m.resolveInUnit(unit, file, node.Text(), target)
+	if ok {
+		m.addReference(declaration, Reference{File: file, Node: pointer, Kind: kind, syntax: node}, seen)
+	}
+}
+
 func (m *Model) resolveInUnit(unit *Unit, from *File, name string, target semantic.ReferenceTarget) (Declaration, bool) {
 	var candidates []Declaration
 	for _, declaration := range m.Declarations[name] {
-		if _, included := unit.members[declaration.File]; !included || declaration.Symbol == nil || declaration.Symbol.Ambiguous {
+		if _, included := unit.members[declaration.File]; !included || declarationSymbolAmbiguous(declaration) {
 			continue
 		}
 		switch target {
 		case semantic.ReferenceFunction:
-			if declaration.Kind == semantic.SymbolFunction && declaration.Node.Kind == parser.KindFunctionDefinition {
+			if declaration.Kind == semantic.SymbolFunction && declarationSyntax(declaration).Kind() == parser.KindFunctionDefinition {
 				candidates = append(candidates, declaration)
 			}
 		case semantic.ReferenceValue:
@@ -209,20 +259,45 @@ func (m *Model) addReference(declaration Declaration, reference Reference, seen 
 	seen[referenceKey] = struct{}{}
 	m.references[key] = append(m.references[key], reference)
 	if m.resolved[reference.File] == nil {
-		m.resolved[reference.File] = make(map[*parser.Node]Declaration)
+		m.resolved[reference.File] = make(map[cst.Node]Declaration)
 	}
-	if existing, exists := m.resolved[reference.File][reference.Node]; exists && declarationKey(existing) != key {
-		delete(m.resolved[reference.File], reference.Node)
+	node := referenceSyntax(reference)
+	if existing, exists := m.resolved[reference.File][node]; exists && declarationKey(existing) != key {
+		delete(m.resolved[reference.File], node)
 		if m.ambiguous[reference.File] == nil {
-			m.ambiguous[reference.File] = make(map[*parser.Node]bool)
+			m.ambiguous[reference.File] = make(map[cst.Node]bool)
 		}
-		m.ambiguous[reference.File][reference.Node] = true
+		m.ambiguous[reference.File][node] = true
 		return
 	}
-	if m.ambiguous[reference.File][reference.Node] {
+	if m.ambiguous[reference.File][node] {
 		return
 	}
-	m.resolved[reference.File][reference.Node] = declaration
+	m.resolved[reference.File][node] = declaration
+}
+
+func declarationSymbolAmbiguous(declaration Declaration) bool {
+	if declaration.Symbol != nil {
+		return declaration.Symbol.Ambiguous
+	}
+	return declaration.compactSymbol == nil || declaration.compactSymbol.Ambiguous
+}
+
+func declarationSymbolStateRaw(declaration Declaration) bool {
+	if declaration.Symbol != nil {
+		return declaration.Symbol.StateRaw
+	}
+	return declaration.compactSymbol != nil && declaration.compactSymbol.StateRaw
+}
+
+func declarationSymbolStates(declaration Declaration) []string {
+	if declaration.Symbol != nil {
+		return declaration.Symbol.States
+	}
+	if declaration.compactSymbol != nil {
+		return declaration.compactSymbol.States
+	}
+	return nil
 }
 
 func sortDeclarations(declarations []Declaration) {

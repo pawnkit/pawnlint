@@ -49,9 +49,12 @@ type File struct {
 	Path              string
 	Source            []byte
 	Parsed            *parser.File
+	CompactParsed     *parser.CompactFile
 	Walk              *walk.Model
+	CompactWalk       *walk.CompactModel
 	Syntax            *cst.Model
 	Semantic          *semantic.Model
+	CompactSemantic   *semantic.CompactModel
 	ExpandedSource    []byte
 	ExpandedParsed    *parser.File
 	ExpandedWalk      *walk.Model
@@ -88,12 +91,13 @@ type Unit struct {
 }
 
 type Declaration struct {
-	Name   string
-	Kind   semantic.SymbolKind
-	File   *File
-	Node   *parser.Node
-	Symbol *semantic.Symbol
-	syntax cst.Node
+	Name          string
+	Kind          semantic.SymbolKind
+	File          *File
+	Node          *parser.Node
+	Symbol        *semantic.Symbol
+	syntax        cst.Node
+	compactSymbol *semantic.CompactSymbol
 }
 
 type DuplicateFunction struct {
@@ -137,8 +141,8 @@ type Model struct {
 	nextEnvironmentID  uint32
 	physical           map[string]*physicalFile
 	references         map[declarationID][]Reference
-	resolved           map[*File]map[*parser.Node]Declaration
-	ambiguous          map[*File]map[*parser.Node]bool
+	resolved           map[*File]map[cst.Node]Declaration
+	ambiguous          map[*File]map[cst.Node]bool
 	effects            map[declarationID]FunctionEffects
 	definedNames       map[string]struct{}
 	sourceFiles        map[uint32]*File
@@ -193,8 +197,8 @@ func Build(sources []Source, options Options) (*Model, error) {
 		defineEnvironments: make(map[uint64][]*defineEnvironment),
 		physical:           make(map[string]*physicalFile),
 		references:         make(map[declarationID][]Reference),
-		resolved:           make(map[*File]map[*parser.Node]Declaration),
-		ambiguous:          make(map[*File]map[*parser.Node]bool),
+		resolved:           make(map[*File]map[cst.Node]Declaration),
+		ambiguous:          make(map[*File]map[cst.Node]bool),
 		definedNames:       make(map[string]struct{}),
 		sourceFiles:        make(map[uint32]*File),
 		options:            options,

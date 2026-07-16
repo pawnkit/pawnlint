@@ -471,7 +471,7 @@ func (m *Model) runtimeDefinitions(file *File, name string) []Declaration {
 	sortDeclarations(result)
 	for left := range result {
 		for right := left + 1; right < len(result); right++ {
-			if !projectStateVariantsCoexist(result[left].Symbol, result[right].Symbol) {
+			if !projectStateVariantsCoexist(result[left], result[right]) {
 				return nil
 			}
 		}
