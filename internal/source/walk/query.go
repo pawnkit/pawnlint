@@ -24,7 +24,7 @@ func (m *Model) Parent(n *parser.Node) *parser.Node {
 	if m == nil || n == nil {
 		return nil
 	}
-	return m.parents[n]
+	return m.index.parents[n]
 }
 
 func (m *Model) NextSibling(n *parser.Node) *parser.Node {
@@ -65,7 +65,7 @@ func (m *Model) OfKind(k parser.Kind) []*parser.Node {
 	if m == nil {
 		return nil
 	}
-	return m.byKind[k]
+	return m.index.byKind[k]
 }
 
 func (m *Model) All() []*parser.Node {
@@ -132,7 +132,7 @@ func (m *Model) IterKind(k parser.Kind, visit func(*parser.Node)) {
 	if m == nil {
 		return
 	}
-	for _, n := range m.byKind[k] {
+	for _, n := range m.index.byKind[k] {
 		visit(n)
 	}
 }

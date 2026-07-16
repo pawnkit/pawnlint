@@ -10,18 +10,22 @@ import (
 )
 
 type Model struct {
-	File       *parser.File
-	Path       string
-	LineTable  *source.LineTable
+	File      *parser.File
+	Path      string
+	LineTable *source.LineTable
+	index     *Index
+	branches  map[*parser.Node]branchState
+	uncertain map[*parser.Node]bool
+	inactive  map[*parser.Node]bool
+	defines   *DefineContext
+	snapshots []DefineSnapshot
+	complete  bool
+}
+
+type Index struct {
 	parents    map[*parser.Node]*parser.Node
 	byKind     map[parser.Kind][]*parser.Node
 	directives []*parser.Node
-	branches   map[*parser.Node]branchState
-	uncertain  map[*parser.Node]bool
-	inactive   map[*parser.Node]bool
-	defines    *DefineContext
-	snapshots  []DefineSnapshot
-	complete   bool
 }
 
 type DefineSnapshot struct {
@@ -60,14 +64,14 @@ func NewWithDefineSnapshots(path string, pf *parser.File, defines []string, snap
 }
 
 func NewWithDefineContext(path string, pf *parser.File, defines []string, snapshots []DefineSnapshot, complete bool) *Model {
-	return NewWithContext(path, pf, NewDefineContext(defines), snapshots, complete, nil)
+	return NewWithContext(path, pf, NewDefineContext(defines), snapshots, complete, nil, nil)
 }
 
 func NewDefineContext(defines []string) *DefineContext {
 	return &DefineContext{names: append([]string(nil), defines...)}
 }
 
-func NewWithContext(path string, pf *parser.File, defines *DefineContext, snapshots []DefineSnapshot, complete bool, lineTable *source.LineTable) *Model {
+func NewWithContext(path string, pf *parser.File, defines *DefineContext, snapshots []DefineSnapshot, complete bool, lineTable *source.LineTable, index *Index) *Model {
 	var src []byte
 	if pf != nil {
 		src = pf.Source
@@ -78,12 +82,14 @@ func NewWithContext(path string, pf *parser.File, defines *DefineContext, snapsh
 	if defines == nil {
 		defines = NewDefineContext(nil)
 	}
+	if index == nil {
+		index = NewIndex(pf)
+	}
 	m := &Model{
 		File:      pf,
 		Path:      path,
 		LineTable: lineTable,
-		parents:   make(map[*parser.Node]*parser.Node),
-		byKind:    make(map[parser.Kind][]*parser.Node),
+		index:     index,
 		branches:  make(map[*parser.Node]branchState),
 		uncertain: make(map[*parser.Node]bool),
 		inactive:  make(map[*parser.Node]bool),
@@ -92,11 +98,21 @@ func NewWithContext(path string, pf *parser.File, defines *DefineContext, snapsh
 		complete:  complete,
 	}
 	if pf != nil && pf.Root != nil {
-		m.index(pf.Root, nil)
 		m.indexConditionalStates()
 		m.indexNodeStates()
 	}
 	return m
+}
+
+func NewIndex(pf *parser.File) *Index {
+	index := &Index{
+		parents: make(map[*parser.Node]*parser.Node),
+		byKind:  make(map[parser.Kind][]*parser.Node),
+	}
+	if pf != nil && pf.Root != nil {
+		index.add(pf.Root, nil)
+	}
+	return index
 }
 
 func cloneDefineSnapshots(snapshots []DefineSnapshot) []DefineSnapshot {
@@ -108,16 +124,16 @@ func cloneDefineSnapshots(snapshots []DefineSnapshot) []DefineSnapshot {
 	return cloned
 }
 
-func (m *Model) index(n, parent *parser.Node) {
+func (i *Index) add(n, parent *parser.Node) {
 	if n == nil {
 		return
 	}
-	m.parents[n] = parent
-	m.byKind[n.Kind] = append(m.byKind[n.Kind], n)
+	i.parents[n] = parent
+	i.byKind[n.Kind] = append(i.byKind[n.Kind], n)
 	if n.Kind == parser.KindDirectiveDefine || n.Kind == parser.KindDirectiveUndef {
-		m.directives = append(m.directives, n)
+		i.directives = append(i.directives, n)
 	}
 	for _, c := range n.Children {
-		m.index(c, n)
+		i.add(c, n)
 	}
 }

@@ -41,7 +41,7 @@ func (m *Model) indexNodeStates() {
 
 func (m *Model) indexConditionalStates() {
 	cursor := m.NewDefineCursor()
-	for _, region := range m.byKind[parser.KindConditionalRegion] {
+	for _, region := range m.index.byKind[parser.KindConditionalRegion] {
 		reached := branchActive
 		for _, branch := range region.Children {
 			if branch.Kind != parser.KindConditionalBranch {
@@ -177,12 +177,12 @@ func (c *DefineCursor) definesAt(offset int) []string {
 	}
 	m := c.model
 	for {
-		directiveReady := c.directiveIndex < len(m.directives) && m.directives[c.directiveIndex].Start < offset
+		directiveReady := c.directiveIndex < len(m.index.directives) && m.index.directives[c.directiveIndex].Start < offset
 		snapshotReady := c.snapshotIndex < len(m.snapshots) && m.snapshots[c.snapshotIndex].Offset < offset
 		if !directiveReady && !snapshotReady {
 			break
 		}
-		if snapshotReady && (!directiveReady || m.snapshots[c.snapshotIndex].Offset <= m.directives[c.directiveIndex].Start) {
+		if snapshotReady && (!directiveReady || m.snapshots[c.snapshotIndex].Offset <= m.index.directives[c.directiveIndex].Start) {
 			snapshot := m.snapshots[c.snapshotIndex]
 			c.clearKnown(len(snapshot.Defines))
 			for _, name := range snapshot.Defines {
@@ -191,7 +191,7 @@ func (c *DefineCursor) definesAt(offset int) []string {
 			c.snapshotIndex++
 			continue
 		}
-		node := m.directives[c.directiveIndex]
+		node := m.index.directives[c.directiveIndex]
 		c.directiveIndex++
 		if !m.directiveActive(node) {
 			continue

@@ -46,7 +46,7 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 			parsed = parser.Parse(source)
 			m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
 		}
-		physical = &physicalFile{source: source, parsed: parsed, lineTable: sourceinfo.NewLineTable(source)}
+		physical = &physicalFile{source: source, parsed: parsed, lineTable: sourceinfo.NewLineTable(source), syntaxIndex: walk.NewIndex(parsed)}
 		m.physical[canonical] = physical
 	}
 	parsed := physical.parsed
@@ -57,8 +57,8 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	if !provided {
 		display = canonical
 	}
-	tree := walk.NewWithContext(display, parsed, defines.walk, nil, m.options.DefinesComplete, physical.lineTable)
-	file := &File{Path: display, Source: physical.source, Parsed: parsed, Walk: tree, Provided: provided, canonical: canonical, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1)}
+	tree := walk.NewWithContext(display, parsed, defines.walk, nil, m.options.DefinesComplete, physical.lineTable, physical.syntaxIndex)
+	file := &File{Path: display, Source: physical.source, Parsed: parsed, Walk: tree, Provided: provided, canonical: canonical, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1), syntaxIndex: physical.syntaxIndex}
 	m.Files = append(m.Files, file)
 	m.sourceFiles[file.sourceID] = file
 	m.byContext[instance] = file
@@ -154,7 +154,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	} else {
 		file.ExpandedSource = expanded.Source
 		file.ExpandedParsed = expanded.Parsed
-		file.ExpandedWalk = walk.NewWithContext(file.Path, expanded.Parsed, file.defines.walk, nil, file.complete, nil)
+		file.ExpandedWalk = walk.NewWithContext(file.Path, expanded.Parsed, file.defines.walk, nil, file.complete, nil, nil)
 		if !m.options.ReleaseExpanded {
 			file.ExpandedSemantic = semantic.Build(expanded.Parsed, file.ExpandedWalk)
 		}
@@ -244,7 +244,7 @@ func (m *Model) resolveInclude(from *File, path string, defines *defineEnvironme
 }
 
 func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot) {
-	f.Walk = walk.NewWithContext(f.Path, f.Parsed, f.defines.walk, snapshots, f.complete, f.Walk.LineTable)
+	f.Walk = walk.NewWithContext(f.Path, f.Parsed, f.defines.walk, snapshots, f.complete, f.Walk.LineTable, f.syntaxIndex)
 }
 
 func (m *Model) internDefines(defines []string) *defineEnvironment {

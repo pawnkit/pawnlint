@@ -569,6 +569,9 @@ func TestRootsUseIndependentIncludeContexts(t *testing.T) {
 	if len(contexts) != 2 || contexts[0].Walk.LineTable != contexts[1].Walk.LineTable {
 		t.Fatal("physical source index was not shared")
 	}
+	if contexts[0].syntaxIndex != contexts[1].syntaxIndex {
+		t.Fatal("physical syntax index was not shared")
+	}
 	for _, unit := range model.Units {
 		want := "FromOne"
 		unwanted := "FromTwo"

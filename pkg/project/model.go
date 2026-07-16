@@ -62,6 +62,7 @@ type File struct {
 	resolved          bool
 	complete          bool
 	sourceID          uint32
+	syntaxIndex       *walk.Index
 	expansionState    *preprocess.State
 	runtimeCalls      []runtimeCallFact
 	expansionOrigins  map[*parser.Node][]expansionOriginFact
@@ -139,9 +140,10 @@ type Model struct {
 }
 
 type physicalFile struct {
-	source    []byte
-	parsed    *parser.File
-	lineTable *sourceinfo.LineTable
+	source      []byte
+	parsed      *parser.File
+	lineTable   *sourceinfo.LineTable
+	syntaxIndex *walk.Index
 }
 
 type fileContextKey struct {
