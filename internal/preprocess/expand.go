@@ -267,7 +267,11 @@ func piecesInRange(tree *cst.Model, node cst.Node, fileID uint32) []piece {
 		return nil
 	}
 	var result []piece
-	for index := 0; index < tree.TokenCount(); index++ {
+	count := tree.TokenCount()
+	start := sort.Search(count, func(index int) bool {
+		return tree.Token(index).Start() >= node.Start()
+	})
+	for index := start; index < count; index++ {
 		current := tree.Token(index)
 		if current.Kind() == token.EOF || current.Start() > node.End() {
 			break
