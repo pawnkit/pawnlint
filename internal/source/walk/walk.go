@@ -120,17 +120,18 @@ func NewWithContext(path string, pf *parser.File, defines *DefineContext, snapsh
 }
 
 func NewIndex(pf *parser.File) *Index {
-	index := &Index{
-		parents: make(map[*parser.Node]*parser.Node),
-	}
+	index := &Index{}
 	if pf != nil && pf.Root != nil {
 		var counts [parser.KindMacroInvocation + 1]int
 		directives := countIndexNodes(pf.Root, &counts)
+		nodes := 0
 		for kind, count := range counts {
+			nodes += count
 			if count != 0 {
 				index.byKind[kind] = make([]*parser.Node, 0, count)
 			}
 		}
+		index.parents = make(map[*parser.Node]*parser.Node, nodes)
 		index.directives = make([]*parser.Node, 0, directives)
 		index.add(pf.Root, nil)
 	}
