@@ -327,10 +327,10 @@ func (m *Model) resolveInclude(from *File, path string, defines *defineEnvironme
 func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot) {
 	f.snapshots = append(f.snapshots[:0], snapshots...)
 	if f.Parsed != nil {
-		f.Walk = walk.NewWithContext(f.Path, f.Parsed, f.defines.walk, snapshots, f.complete, f.Walk.LineTable, f.syntaxIndex)
+		f.Walk = walk.NewWithSharedContext(f.Path, f.Parsed, f.defines.walk, f.snapshots, f.complete, f.Walk.LineTable, f.syntaxIndex)
 		f.Syntax = cst.Pointer(f.Walk)
 	} else {
-		f.CompactWalk = walk.NewCompactWithContext(f.Path, f.CompactParsed, f.defines.walk, snapshots, f.complete, f.CompactWalk.LineTable)
+		f.CompactWalk = walk.NewCompactWithSharedContext(f.Path, f.CompactParsed, f.defines.walk, f.snapshots, f.complete, f.CompactWalk.LineTable)
 		f.Syntax = cst.Compact(f.CompactWalk)
 	}
 }

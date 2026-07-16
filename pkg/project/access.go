@@ -182,7 +182,7 @@ func (f *File) PointerWalk(parsed *parser.File) *walk.Model {
 	if f == nil || parsed == nil {
 		return nil
 	}
-	return walk.NewWithContext(f.Path, parsed, f.defines.walk, f.snapshots, f.complete, f.LineTable(), walk.NewIndex(parsed))
+	return walk.NewWithSharedContext(f.Path, parsed, f.defines.walk, f.snapshots, f.complete, f.LineTable(), walk.NewIndex(parsed))
 }
 
 func (c Call) Valid() bool {
@@ -256,7 +256,7 @@ func (f *File) ensurePointerSyntax() {
 		if f.Walk == nil {
 			lines := f.LineTable()
 			f.syntaxIndex = walk.NewIndex(f.Parsed)
-			f.Walk = walk.NewWithContext(f.Path, f.Parsed, f.defines.walk, f.snapshots, f.complete, lines, f.syntaxIndex)
+			f.Walk = walk.NewWithSharedContext(f.Path, f.Parsed, f.defines.walk, f.snapshots, f.complete, lines, f.syntaxIndex)
 		}
 		if f.Semantic == nil {
 			f.Semantic = semantic.Build(f.Parsed, f.Walk)

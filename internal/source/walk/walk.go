@@ -88,6 +88,14 @@ func NewDefineContext(defines []string) *DefineContext {
 }
 
 func NewWithContext(path string, pf *parser.File, defines *DefineContext, snapshots []DefineSnapshot, complete bool, lineTable *source.LineTable, index *Index) *Model {
+	return newWithContext(path, pf, defines, snapshots, complete, lineTable, index, true)
+}
+
+func NewWithSharedContext(path string, pf *parser.File, defines *DefineContext, snapshots []DefineSnapshot, complete bool, lineTable *source.LineTable, index *Index) *Model {
+	return newWithContext(path, pf, defines, snapshots, complete, lineTable, index, false)
+}
+
+func newWithContext(path string, pf *parser.File, defines *DefineContext, snapshots []DefineSnapshot, complete bool, lineTable *source.LineTable, index *Index, cloneSnapshots bool) *Model {
 	var src []byte
 	if pf != nil {
 		src = pf.Source
@@ -101,6 +109,9 @@ func NewWithContext(path string, pf *parser.File, defines *DefineContext, snapsh
 	if index == nil {
 		index = NewIndex(pf)
 	}
+	if cloneSnapshots {
+		snapshots = cloneDefineSnapshots(snapshots)
+	}
 	m := &Model{
 		File:      pf,
 		Path:      path,
@@ -109,7 +120,7 @@ func NewWithContext(path string, pf *parser.File, defines *DefineContext, snapsh
 		branches:  make(map[*parser.Node]branchState),
 		states:    make(map[*parser.Node]nodeState),
 		defines:   defines,
-		snapshots: cloneDefineSnapshots(snapshots),
+		snapshots: snapshots,
 		complete:  complete,
 	}
 	if pf != nil && pf.Root != nil {
