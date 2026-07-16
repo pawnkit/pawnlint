@@ -302,11 +302,11 @@ func (m *Model) DefinesName(name string) bool {
 
 func (m *Model) buildDefinedNames() {
 	for _, file := range m.Files {
-		for _, node := range file.Walk.OfKind(parser.KindDirectiveDefine) {
-			if file.Walk.Inactive(node) {
+		for _, node := range file.Syntax.OfKind(parser.KindDirectiveDefine) {
+			if file.Syntax.Inactive(node) {
 				continue
 			}
-			name := file.Walk.Text(node.Field("name"))
+			name := node.Field("name").Text()
 			if name != "" {
 				m.definedNames[name] = struct{}{}
 			}

@@ -6,7 +6,8 @@ import (
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/semantic"
-	"github.com/pawnkit/pawnlint/internal/source/walk"
+	"github.com/pawnkit/pawnlint/internal/source/cst"
+	"github.com/pawnkit/pawnlint/internal/syntax"
 )
 
 type FunctionEffects struct {
@@ -26,8 +27,8 @@ type functionEffectState struct {
 	writes              map[declarationID]Declaration
 	mutated             map[int]bool
 	calls               []Call
-	parameterIndexes    map[*semantic.Symbol]int
-	referenceParameters map[*semantic.Symbol]bool
+	parameterIndexes    map[cst.Node]int
+	referenceParameters map[cst.Node]bool
 }
 
 func (m *Model) FunctionEffects(function Declaration) (FunctionEffects, bool) {
@@ -51,18 +52,28 @@ func (m *Model) buildFunctionEffects() {
 		return
 	}
 	states := make(map[declarationID]*functionEffectState, len(m.CallGraph.Functions))
-	references := make(map[*File]map[*parser.Node]semantic.ReferenceKind)
-	symbols := make(map[*parser.Node][]*semantic.Symbol)
+	references := make(map[*File]map[cst.Node]semantic.ReferenceKind)
+	symbols := make(map[cst.Node][]cst.Node)
 	for _, file := range m.Files {
 		references[file] = effectReferenceKinds(file)
-		for _, symbol := range file.Semantic.Symbols {
-			if symbol.Function != nil {
-				symbols[symbol.Function] = append(symbols[symbol.Function], symbol)
+		if file.Semantic != nil {
+			for _, symbol := range file.Semantic.Symbols {
+				if symbol.Function != nil {
+					function := file.Syntax.PointerNode(symbol.Function)
+					symbols[function] = append(symbols[function], file.Syntax.PointerNode(symbol.Decl))
+				}
+			}
+			continue
+		}
+		for _, symbol := range file.CompactSemantic.Symbols {
+			if symbol.Function != syntax.NoNode {
+				function := file.Syntax.CompactNode(symbol.Function)
+				symbols[function] = append(symbols[function], file.Syntax.CompactNode(symbol.Decl))
 			}
 		}
 	}
 	for _, function := range m.CallGraph.Functions {
-		states[declarationKey(function)] = m.directFunctionEffects(function, references[function.File], symbols[function.Node])
+		states[declarationKey(function)] = m.directFunctionEffects(function, references[function.File], symbols[declarationSyntax(function)])
 	}
 	for iteration := 0; iteration <= len(states); iteration++ {
 		changed := false
@@ -82,19 +93,19 @@ func (m *Model) buildFunctionEffects() {
 	}
 }
 
-func (m *Model) directFunctionEffects(function Declaration, referenceKinds map[*parser.Node]semantic.ReferenceKind, symbols []*semantic.Symbol) *functionEffectState {
+func (m *Model) directFunctionEffects(function Declaration, referenceKinds map[cst.Node]semantic.ReferenceKind, symbols []cst.Node) *functionEffectState {
 	state := &functionEffectState{
 		complete:            true,
 		pure:                true,
 		reads:               make(map[declarationID]Declaration),
 		writes:              make(map[declarationID]Declaration),
 		mutated:             make(map[int]bool),
-		parameterIndexes:    make(map[*semantic.Symbol]int),
-		referenceParameters: make(map[*semantic.Symbol]bool),
+		parameterIndexes:    make(map[cst.Node]int),
+		referenceParameters: make(map[cst.Node]bool),
 	}
 	file := function.File
-	node := function.Node
-	if file == nil || node == nil || node.HasError || file.Walk.Inactive(node) || file.Walk.Uncertain(node) {
+	node := declarationSyntax(function)
+	if file == nil || !node.Valid() || node.HasError() || file.Syntax.Inactive(node) || file.Syntax.Uncertain(node) {
 		state.complete = false
 		state.intrinsicImpure = true
 		state.pure = false
@@ -102,30 +113,31 @@ func (m *Model) directFunctionEffects(function Declaration, referenceKinds map[*
 	}
 	m.indexEffectParameters(file, node, state)
 	for _, symbol := range symbols {
-		if symbol.Kind != semantic.SymbolLocal || !walk.HasChildToken(file.Walk.Parent(symbol.Decl), token.KwStatic) {
+		kind, known := effectSymbolKind(file, symbol)
+		if !known || kind != semantic.SymbolLocal || !file.Syntax.Parent(symbol).HasChildToken(token.KwStatic) {
 			continue
 		}
 		state.intrinsicImpure = true
 	}
 	state.calls = append([]Call(nil), m.CallGraph.Outgoing(function)...)
-	knownCalls := make(map[*parser.Node]bool)
+	knownCalls := make(map[cst.Node]bool)
 	for _, call := range state.calls {
-		knownCalls[call.Node] = true
+		knownCalls[callSyntax(call)] = true
 	}
-	var visit func(*parser.Node)
-	visit = func(current *parser.Node) {
-		if current == nil || file.Walk.Inactive(current) {
+	var visit func(cst.Node)
+	visit = func(current cst.Node) {
+		if !current.Valid() || file.Syntax.Inactive(current) {
 			return
 		}
-		if current != node && current.Kind == parser.KindFunctionDefinition {
+		if !current.Same(node) && current.Kind() == parser.KindFunctionDefinition {
 			state.complete = false
 			return
 		}
-		if file.Walk.Uncertain(current) {
+		if file.Syntax.Uncertain(current) {
 			state.complete = false
 			return
 		}
-		switch current.Kind {
+		switch current.Kind() {
 		case parser.KindMacroInvocation, parser.KindMacroInvocationBlock, parser.KindConditionalSplice:
 			state.complete = false
 		case parser.KindStateStatement:
@@ -137,8 +149,8 @@ func (m *Model) directFunctionEffects(function Declaration, referenceKinds map[*
 		case parser.KindIdentifier:
 			m.applyDirectReferenceEffect(state, file, current, referenceKinds)
 		}
-		for _, child := range current.Children {
-			visit(child)
+		for index := 0; index < current.ChildCount(); index++ {
+			visit(current.Child(index))
 		}
 	}
 	visit(node)
@@ -146,20 +158,21 @@ func (m *Model) directFunctionEffects(function Declaration, referenceKinds map[*
 	return state
 }
 
-func (m *Model) applyDirectReferenceEffect(state *functionEffectState, file *File, identifier *parser.Node, referenceKinds map[*parser.Node]semantic.ReferenceKind) {
+func (m *Model) applyDirectReferenceEffect(state *functionEffectState, file *File, identifier cst.Node, referenceKinds map[cst.Node]semantic.ReferenceKind) {
 	kind, reference := referenceKinds[identifier]
 	if !reference {
 		return
 	}
-	symbol := file.Semantic.Resolve(identifier)
-	if symbol != nil && symbol.Kind == semantic.SymbolParameter && state.referenceParameters[symbol] && kind != semantic.ReferenceRead {
+	symbol := effectResolvedSymbol(file, identifier)
+	symbolKind, symbolKnown := effectSymbolKind(file, symbol)
+	if symbol.Valid() && symbolKnown && symbolKind == semantic.SymbolParameter && state.referenceParameters[symbol] && kind != semantic.ReferenceRead {
 		state.mutated[state.parameterIndexes[symbol]] = true
 	}
-	declaration, ok := m.Resolve(file, identifier)
+	declaration, ok := m.resolveSyntax(file, identifier)
 	if !ok || declaration.Kind != semantic.SymbolGlobal {
 		return
 	}
-	if kind == semantic.ReferenceRead && declaration.Symbol != nil && declaration.Symbol.Constant {
+	if kind == semantic.ReferenceRead && declarationSymbolConstant(declaration) {
 		return
 	}
 	key := declarationKey(declaration)
@@ -170,23 +183,22 @@ func (m *Model) applyDirectReferenceEffect(state *functionEffectState, file *Fil
 	}
 }
 
-func (m *Model) indexEffectParameters(file *File, function *parser.Node, state *functionEffectState) {
+func (m *Model) indexEffectParameters(file *File, function cst.Node, state *functionEffectState) {
 	list := function.Field("parameters")
-	if list == nil {
+	if !list.Valid() {
 		return
 	}
 	index := 0
-	for _, parameter := range list.Children {
-		if parameter.Kind != parser.KindParameter {
+	for child := 0; child < list.ChildCount(); child++ {
+		parameter := list.Child(child)
+		if parameter.Kind() != parser.KindParameter {
 			continue
 		}
-		for _, symbol := range file.Semantic.Symbols {
-			if symbol.Kind != semantic.SymbolParameter || symbol.Decl != parameter || symbol.Ambiguous {
-				continue
-			}
+		symbol := parameter
+		symbolKind, symbolKnown := effectSymbolKind(file, symbol)
+		if symbol.Valid() && symbolKnown && symbolKind == semantic.SymbolParameter {
 			state.parameterIndexes[symbol] = index
-			state.referenceParameters[symbol] = walk.ReferencesByAmpersand(file.Parsed.Tokens, parameter) || effectHasDimension(parameter)
-			break
+			state.referenceParameters[symbol] = effectReferencesByAmpersand(file, parameter) || effectHasDimension(parameter)
 		}
 		index++
 	}
@@ -223,29 +235,29 @@ func (m *Model) mergeFunctionEffects(function Declaration, state *functionEffect
 }
 
 func (m *Model) mapMutatedArguments(state *functionEffectState, call Call, calleeMutated map[int]bool, mutated map[int]bool, writes map[declarationID]Declaration) bool {
-	arguments := call.Node.Field("arguments")
-	if arguments == nil {
+	arguments := callSyntax(call).Field("arguments")
+	if !arguments.Valid() {
 		return false
 	}
 	complete := true
 	for index := range calleeMutated {
 		argumentIndex := index + call.ArgumentOffset
-		if argumentIndex < 0 || argumentIndex >= len(arguments.Children) {
+		if argumentIndex < 0 || argumentIndex >= arguments.ChildCount() {
 			complete = false
 			continue
 		}
-		identifier := effectBaseIdentifier(call.File, arguments.Children[argumentIndex])
-		if identifier == nil {
+		identifier := effectBaseIdentifier(arguments.Child(argumentIndex))
+		if !identifier.Valid() {
 			complete = false
 			continue
 		}
-		if symbol := call.File.Semantic.Resolve(identifier); symbol != nil {
+		if symbol := effectResolvedSymbol(call.File, identifier); symbol.Valid() {
 			if parameterIndex, ok := state.parameterIndexes[symbol]; ok && state.referenceParameters[symbol] {
 				mutated[parameterIndex] = true
 			}
 			continue
 		}
-		if declaration, ok := m.Resolve(call.File, identifier); ok && declaration.Kind == semantic.SymbolGlobal {
+		if declaration, ok := m.resolveSyntax(call.File, identifier); ok && declaration.Kind == semantic.SymbolGlobal {
 			writes[declarationKey(declaration)] = declaration
 			continue
 		}
@@ -254,44 +266,59 @@ func (m *Model) mapMutatedArguments(state *functionEffectState, call Call, calle
 	return complete
 }
 
-func effectReferenceKinds(file *File) map[*parser.Node]semantic.ReferenceKind {
-	result := make(map[*parser.Node]semantic.ReferenceKind)
-	for _, symbol := range file.Semantic.Symbols {
-		for _, reference := range file.Semantic.References(symbol) {
-			result[reference.Node] = effectReferenceKind(file, reference.Node, reference.Kind)
+func effectReferenceKinds(file *File) map[cst.Node]semantic.ReferenceKind {
+	result := make(map[cst.Node]semantic.ReferenceKind)
+	if file.Semantic != nil {
+		for _, symbol := range file.Semantic.Symbols {
+			for _, reference := range file.Semantic.References(symbol) {
+				node := file.Syntax.PointerNode(reference.Node)
+				result[node] = effectReferenceKind(file, node, reference.Kind)
+			}
+		}
+		for _, reference := range file.Semantic.UnresolvedReferences() {
+			node := file.Syntax.PointerNode(reference.Node)
+			result[node] = effectReferenceKind(file, node, reference.Kind)
+		}
+		return result
+	}
+	for _, symbol := range file.CompactSemantic.Symbols {
+		for _, reference := range file.CompactSemantic.References(symbol) {
+			node := file.Syntax.CompactNode(reference.Node)
+			result[node] = effectReferenceKind(file, node, reference.Kind)
 		}
 	}
-	for _, reference := range file.Semantic.UnresolvedReferences() {
-		result[reference.Node] = effectReferenceKind(file, reference.Node, reference.Kind)
+	for _, reference := range file.CompactSemantic.UnresolvedReferences() {
+		node := file.Syntax.CompactNode(reference.Node)
+		result[node] = effectReferenceKind(file, node, reference.Kind)
 	}
 	return result
 }
 
-func effectReferenceKind(file *File, node *parser.Node, kind semantic.ReferenceKind) semantic.ReferenceKind {
-	for current := node; current != nil; current = file.Walk.Parent(current) {
-		parent := file.Walk.Parent(current)
-		if parent == nil {
+func effectReferenceKind(file *File, node cst.Node, kind semantic.ReferenceKind) semantic.ReferenceKind {
+	for current := node; current.Valid(); current = file.Syntax.Parent(current) {
+		parent := file.Syntax.Parent(current)
+		if !parent.Valid() {
 			break
 		}
-		if parent.Kind == parser.KindAssignmentExpression && effectInside(current, parent.Field("left")) {
-			if parent.Tok.Kind == token.Assign {
+		if parent.Kind() == parser.KindAssignmentExpression && effectInside(current, parent.Field("left")) {
+			if parent.TokenKind() == token.Assign {
 				return semantic.ReferenceWrite
 			}
 			return semantic.ReferenceReadWrite
 		}
-		if parent.Kind == parser.KindUpdateExpression {
+		if parent.Kind() == parser.KindUpdateExpression {
 			return semantic.ReferenceReadWrite
 		}
-		if parent.Kind != parser.KindSubscriptExpression && parent.Kind != parser.KindParenthesizedExpression && parent.Kind != parser.KindTaggedExpression {
+		if parent.Kind() != parser.KindSubscriptExpression && parent.Kind() != parser.KindParenthesizedExpression && parent.Kind() != parser.KindTaggedExpression {
 			break
 		}
 	}
 	return kind
 }
 
-func effectBaseIdentifier(file *File, node *parser.Node) *parser.Node {
-	for node != nil {
-		switch node.Kind {
+func effectBaseIdentifier(node cst.Node) cst.Node {
+	for node.Valid() {
+		switch node.Kind() {
 		case parser.KindIdentifier:
 			return node
 		case parser.KindParenthesizedExpression, parser.KindTaggedExpression:
@@ -299,23 +326,78 @@ func effectBaseIdentifier(file *File, node *parser.Node) *parser.Node {
 		case parser.KindSubscriptExpression:
 			node = node.Field("array")
 		default:
-			return nil
+			return cst.Node{}
 		}
 	}
-	return nil
+	return cst.Node{}
 }
 
-func effectHasDimension(node *parser.Node) bool {
-	for _, child := range node.Children {
-		if child.Kind == parser.KindDimension {
+func effectHasDimension(node cst.Node) bool {
+	for index := 0; index < node.ChildCount(); index++ {
+		if node.Child(index).Kind() == parser.KindDimension {
 			return true
 		}
 	}
 	return false
 }
 
-func effectInside(node, container *parser.Node) bool {
-	return node != nil && container != nil && node.Start >= container.Start && node.End <= container.End
+func effectInside(node, container cst.Node) bool {
+	return node.Valid() && container.Valid() && node.Start() >= container.Start() && node.End() <= container.End()
+}
+
+func effectResolvedSymbol(file *File, node cst.Node) cst.Node {
+	if file == nil || !node.Valid() {
+		return cst.Node{}
+	}
+	if file.Semantic != nil {
+		symbol := file.Semantic.Resolve(node.Pointer())
+		if symbol == nil || symbol.Ambiguous {
+			return cst.Node{}
+		}
+		return file.Syntax.PointerNode(symbol.Decl)
+	}
+	symbol := file.CompactSemantic.Resolve(node.ID())
+	if symbol == nil || symbol.Ambiguous {
+		return cst.Node{}
+	}
+	return file.Syntax.CompactNode(symbol.Decl)
+}
+
+func effectSymbolKind(file *File, node cst.Node) (semantic.SymbolKind, bool) {
+	if file == nil || !node.Valid() {
+		return 0, false
+	}
+	if file.Semantic != nil {
+		for _, symbol := range file.Semantic.Symbols {
+			if symbol.Decl == node.Pointer() {
+				return symbol.Kind, true
+			}
+		}
+		return 0, false
+	}
+	for _, symbol := range file.CompactSemantic.Symbols {
+		if symbol.Decl == node.ID() {
+			return symbol.Kind, true
+		}
+	}
+	return 0, false
+}
+
+func effectReferencesByAmpersand(file *File, parameter cst.Node) bool {
+	end := parameter.End()
+	if name := parameter.Field("name"); name.Valid() {
+		end = name.Start()
+	}
+	for index := 0; index < file.Syntax.TokenCount(); index++ {
+		current := file.Syntax.Token(index)
+		if current.Start() >= end {
+			break
+		}
+		if current.Start() >= parameter.Start() && current.End() <= end && current.Kind() == token.Amp {
+			return true
+		}
+	}
+	return false
 }
 
 func cloneEffectDeclarations(values map[declarationID]Declaration) map[declarationID]Declaration {
