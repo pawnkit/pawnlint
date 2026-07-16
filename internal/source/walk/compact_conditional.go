@@ -91,10 +91,8 @@ func (m *CompactModel) compactDirectiveValue(cursor *CompactDefineCursor, node s
 		if name == syntax.NoNode {
 			return 0, false
 		}
-		known := cursor.definesAt(offset)
 		text := m.Text(name)
-		index := sort.SearchStrings(known, text)
-		if index < len(known) && known[index] == text {
+		if cursor.containsAt(offset, text) {
 			return 1, true
 		}
 		if m.complete {
@@ -144,6 +142,8 @@ type CompactDefineCursor struct {
 	directiveIndex int
 	snapshotIndex  int
 	known          []string
+	set            map[string]struct{}
+	dirty          bool
 }
 
 func (m *CompactModel) NewCompactDefineCursor() *CompactDefineCursor {
@@ -166,15 +166,39 @@ func (c *CompactDefineCursor) reset() {
 }
 
 func (c *CompactDefineCursor) clearKnown(capacity int) {
+	if c.set == nil {
+		c.set = make(map[string]struct{}, capacity)
+	} else {
+		clear(c.set)
+	}
 	if cap(c.known) < capacity {
 		c.known = make([]string, 0, capacity)
-		return
+	} else {
+		c.known = c.known[:0]
 	}
-	clear(c.known)
-	c.known = c.known[:0]
+	c.dirty = false
 }
 
 func (c *CompactDefineCursor) definesAt(offset int) []string {
+	c.advance(offset)
+	if c.dirty {
+		c.known = c.known[:0]
+		for name := range c.set {
+			c.known = append(c.known, name)
+		}
+		sort.Strings(c.known)
+		c.dirty = false
+	}
+	return c.known
+}
+
+func (c *CompactDefineCursor) containsAt(offset int, name string) bool {
+	c.advance(offset)
+	_, ok := c.set[name]
+	return ok
+}
+
+func (c *CompactDefineCursor) advance(offset int) {
 	if offset < c.offset {
 		c.reset()
 	}
@@ -210,29 +234,25 @@ func (c *CompactDefineCursor) definesAt(offset int) []string {
 		}
 	}
 	c.offset = offset
-	return c.known
 }
 
 func (c *CompactDefineCursor) add(name string) {
 	if name == "" {
 		return
 	}
-	index := sort.SearchStrings(c.known, name)
-	if index < len(c.known) && c.known[index] == name {
+	if _, exists := c.set[name]; exists {
 		return
 	}
-	c.known = append(c.known, "")
-	copy(c.known[index+1:], c.known[index:])
-	c.known[index] = name
+	c.set[name] = struct{}{}
+	c.dirty = true
 }
 
 func (c *CompactDefineCursor) remove(name string) {
-	index := sort.SearchStrings(c.known, name)
-	if index >= len(c.known) || c.known[index] != name {
+	if _, exists := c.set[name]; !exists {
 		return
 	}
-	copy(c.known[index:], c.known[index+1:])
-	c.known = c.known[:len(c.known)-1]
+	delete(c.set, name)
+	c.dirty = true
 }
 
 func (m *CompactModel) KnownDefinesAt(offset int) []string {
