@@ -299,7 +299,7 @@ func (c *DefineCursor) KnownDefinesAt(offset int) []string {
 }
 
 func (m *Model) directiveActive(node *parser.Node) bool {
-	for _, ancestor := range m.Ancestors(node) {
+	for ancestor := m.Parent(node); ancestor != nil; ancestor = m.Parent(ancestor) {
 		switch ancestor.Kind {
 		case parser.KindConditionalBranch:
 			if m.branches[ancestor] != branchActive {
@@ -345,8 +345,8 @@ func (m *Model) directiveName(node *parser.Node) string {
 }
 
 func (m *Model) IsInsideConditionalBranch(n *parser.Node) bool {
-	for _, a := range m.Ancestors(n) {
-		switch a.Kind {
+	for ancestor := m.Parent(n); ancestor != nil; ancestor = m.Parent(ancestor) {
+		switch ancestor.Kind {
 		case parser.KindConditionalRegion, parser.KindConditionalBranch,
 			parser.KindSharedConditional, parser.KindConditionalFunction,
 			parser.KindConditionalSplice:

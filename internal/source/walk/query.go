@@ -106,9 +106,9 @@ func (m *Model) TokenText(tok token.Token) string {
 }
 
 func (m *Model) EnclosingFunction(n *parser.Node) *parser.Node {
-	for _, a := range m.Ancestors(n) {
-		if a.Kind == parser.KindFunctionDefinition {
-			return a
+	for ancestor := m.Parent(n); ancestor != nil; ancestor = m.Parent(ancestor) {
+		if ancestor.Kind == parser.KindFunctionDefinition {
+			return ancestor
 		}
 	}
 	return nil

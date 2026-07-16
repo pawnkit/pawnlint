@@ -87,7 +87,7 @@ func enumPrefixEntries(ctx *lint.Context) map[*parser.Node]*enumPrefixMembers {
 			continue
 		}
 		var declaration *parser.Node
-		for _, ancestor := range ctx.Walk.Ancestors(entry) {
+		for ancestor := ctx.Walk.Parent(entry); ancestor != nil; ancestor = ctx.Walk.Parent(ancestor) {
 			if ancestor.Kind == parser.KindEnumDeclaration {
 				declaration = ancestor
 				break

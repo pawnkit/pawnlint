@@ -194,7 +194,7 @@ func identifierInside(ctx *lint.Context, node, owner *parser.Node) bool {
 	if node == owner {
 		return true
 	}
-	for _, ancestor := range ctx.Walk.Ancestors(node) {
+	for ancestor := ctx.Walk.Parent(node); ancestor != nil; ancestor = ctx.Walk.Parent(ancestor) {
 		if ancestor == owner {
 			return true
 		}

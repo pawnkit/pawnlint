@@ -214,7 +214,7 @@ func (c *CompactDefineCursor) KnownDefinesAt(offset int) []string {
 }
 
 func (m *CompactModel) compactDirectiveActive(node syntax.NodeID) bool {
-	for _, ancestor := range m.Ancestors(node) {
+	for ancestor := m.Parent(node); ancestor != syntax.NoNode; ancestor = m.Parent(ancestor) {
 		switch m.Tree.Kind(ancestor) {
 		case parser.KindConditionalBranch:
 			if m.branches[ancestor] != branchActive {
@@ -251,7 +251,7 @@ func (m *CompactModel) compactDirectiveName(node syntax.NodeID) string {
 }
 
 func (m *CompactModel) IsInsideConditionalBranch(node syntax.NodeID) bool {
-	for _, ancestor := range m.Ancestors(node) {
+	for ancestor := m.Parent(node); ancestor != syntax.NoNode; ancestor = m.Parent(ancestor) {
 		switch m.Tree.Kind(ancestor) {
 		case parser.KindConditionalRegion, parser.KindConditionalBranch,
 			parser.KindSharedConditional, parser.KindConditionalFunction,

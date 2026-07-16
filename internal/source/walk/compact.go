@@ -159,7 +159,7 @@ func (m *CompactModel) Text(node syntax.NodeID) string {
 }
 
 func (m *CompactModel) EnclosingFunction(node syntax.NodeID) syntax.NodeID {
-	for _, ancestor := range m.Ancestors(node) {
+	for ancestor := m.Parent(node); ancestor != syntax.NoNode; ancestor = m.Parent(ancestor) {
 		if m.Tree.Kind(ancestor) == parser.KindFunctionDefinition {
 			return ancestor
 		}
