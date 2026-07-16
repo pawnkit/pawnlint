@@ -13,11 +13,12 @@ const (
 	FeatureReferences
 	FeatureUnusedIncludes
 	FeatureCallGraph
+	FeatureRuntimeCalls
 	FeatureFunctionEffects
 )
 
 func AllFeatures() Features {
-	return Features(FeatureDefinedNames | FeatureDuplicates | FeatureConflicts | FeatureIncludeCycles | FeatureIncludeIssues | FeatureReferences | FeatureUnusedIncludes | FeatureCallGraph | FeatureFunctionEffects)
+	return Features(FeatureDefinedNames | FeatureDuplicates | FeatureConflicts | FeatureIncludeCycles | FeatureIncludeIssues | FeatureReferences | FeatureUnusedIncludes | FeatureCallGraph | FeatureRuntimeCalls | FeatureFunctionEffects)
 }
 
 func NewFeatures(features ...Feature) Features {
@@ -41,6 +42,9 @@ func (f Features) withDependencies() Features {
 		f |= Features(FeatureIncludeIssues | FeatureReferences)
 	}
 	if f.Has(FeatureFunctionEffects) {
+		f |= Features(FeatureCallGraph)
+	}
+	if f.Has(FeatureRuntimeCalls) {
 		f |= Features(FeatureCallGraph)
 	}
 	if f.Has(FeatureCallGraph) {

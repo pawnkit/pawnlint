@@ -26,6 +26,9 @@ func TestRecommendedProjectFeatures(t *testing.T) {
 	if features.Has(project.FeatureFunctionEffects) {
 		t.Fatal("function effect analysis is enabled")
 	}
+	if features.Has(project.FeatureRuntimeCalls) {
+		t.Fatal("runtime call analysis is enabled")
+	}
 }
 
 func TestAllProjectFeatures(t *testing.T) {
@@ -34,7 +37,8 @@ func TestAllProjectFeatures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if features := resolved.ProjectFeatures(registry); !features.Has(project.FeatureFunctionEffects) {
-		t.Fatal("function effect analysis is disabled")
+	features := resolved.ProjectFeatures(registry)
+	if !features.Has(project.FeatureFunctionEffects) || !features.Has(project.FeatureRuntimeCalls) {
+		t.Fatal("full project analysis is disabled")
 	}
 }

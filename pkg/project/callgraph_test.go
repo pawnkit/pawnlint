@@ -231,3 +231,34 @@ public Dispatch(value)
 		t.Fatalf("calls = %#v", calls)
 	}
 }
+
+func TestDirectCallGraphSkipsRuntimeCalls(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	includePath := filepath.Join(dir, "shared.inc")
+	if err := os.WriteFile(includePath, []byte("Work() {}\npublic Tick() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	source := []byte(`#include "shared.inc"
+main()
+{
+	Work();
+	SetTimer("Tick", 1000, false);
+}
+`)
+	features := project.NewFeatures(project.FeatureCallGraph)
+	model, err := project.Build([]project.Source{{Path: path, Content: source}}, project.Options{WorkingDir: dir, DefinesComplete: true, ReleaseIncludes: true, Features: &features})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if model.CallGraph == nil || len(model.CallGraph.Calls) != 1 || model.CallGraph.Calls[0].Callee.Name != "Work" {
+		t.Fatalf("direct calls = %#v", model.CallGraph)
+	}
+	if len(model.CallGraph.AsyncCalls) != 0 {
+		t.Fatalf("runtime calls = %#v", model.CallGraph.AsyncCalls)
+	}
+	file := model.File(includePath)
+	if file == nil || file.CompactParsed == nil || file.CompactParsed.Tokens != nil {
+		t.Fatal("direct call graph did not use analysis syntax")
+	}
+}

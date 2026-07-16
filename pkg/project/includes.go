@@ -1,6 +1,7 @@
 package project
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -36,7 +37,11 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	if physical == nil {
 		if m.options.ReleaseIncludes && (!provided || len(source) >= compactTargetThreshold) {
 			started := time.Now()
-			compact := parser.ParseCompact(source, parser.ParseOptions{})
+			profile := parser.ProfileLossless
+			if m.options.Features != nil && !m.options.Features.Has(FeatureRuntimeCalls) && !bytes.Contains(source, []byte("pawnlint-")) {
+				profile = parser.ProfileAnalysis
+			}
+			compact := parser.ParseWithProfile(source, profile)
 			if m.options.ObserveTiming != nil {
 				m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
 			}
@@ -155,7 +160,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		}
 		m.observe(TimingEvent{Stage: TimingSemantic, Duration: time.Since(started)})
 	}
-	if m.options.Features != nil && !m.options.Features.Has(FeatureCallGraph) {
+	if m.options.Features != nil && !m.options.Features.Has(FeatureRuntimeCalls) {
 		file.resolved = true
 		return nil
 	}

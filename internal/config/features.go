@@ -47,8 +47,10 @@ func ruleProjectFeatures(id string) project.Features {
 		return project.NewFeatures(project.FeatureIncludeIssues)
 	case "unused-include":
 		return project.NewFeatures(project.FeatureUnusedIncludes)
-	case "unconditional-recursion", "recursive-call", "unused-function", "unused-global", "tainted-data-to-sink":
+	case "unconditional-recursion", "recursive-call":
 		return project.NewFeatures(project.FeatureCallGraph)
+	case "unused-function", "unused-global", "tainted-data-to-sink":
+		return project.NewFeatures(project.FeatureCallGraph, project.FeatureRuntimeCalls)
 	case "argument-tag-mismatch", "incomplete-enum-switch", "unsafe-string-termination", "restricted-syntax", "target-native-availability", "overwritten-copy", "repeated-format-work", "repeated-strlen", "string-concatenation-loop":
 		return project.NewFeatures(project.FeatureReferences)
 	case "possibly-uninitialized":

@@ -1,10 +1,12 @@
 package project
 
 import (
+	"bytes"
 	"sort"
 	"strings"
 
 	"github.com/pawnkit/pawn-parser"
+	"github.com/pawnkit/pawn-parser/lexer"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/internal/source/cst"
@@ -181,32 +183,43 @@ func insideFunction(file *File, node cst.Node) bool {
 func functionMacroQualifiers(unit *Unit) map[string]struct{} {
 	qualifiers := make(map[string]struct{})
 	for _, file := range unit.Files {
-		for index := 0; index+3 < file.Syntax.TokenCount(); index++ {
-			hash := file.Syntax.Token(index)
-			directive := file.Syntax.Token(index + 1)
-			name := file.Syntax.Token(index + 2)
-			colon := file.Syntax.Token(index + 3)
-			if hash.Kind() == token.Hash && directive.Kind() == token.Identifier && directive.Text() == "define" && name.Kind() == token.Identifier && colon.Kind() == token.Colon {
-				qualifiers[name.Text()] = struct{}{}
+		for _, directive := range file.Syntax.OfKind(parser.KindDirectiveDefine) {
+			name := directive.Field("name")
+			if !name.Valid() || !nextSourceByte(file.Source, name.End(), directive.End(), ':') {
+				continue
 			}
+			qualifiers[name.Text()] = struct{}{}
 		}
 	}
 	return qualifiers
 }
 
+func nextSourceByte(source []byte, start, end int, expected byte) bool {
+	end = min(end, len(source))
+	for index := max(start, 0); index < end; index++ {
+		switch source[index] {
+		case ' ', '\t', '\r', '\n':
+			continue
+		default:
+			return source[index] == expected
+		}
+	}
+	return false
+}
+
 func numericSeparatorArtifact(declaration Declaration) bool {
 	file := declaration.File
 	name := declarationNameSyntax(declaration)
-	if file == nil || !name.Valid() {
+	if file == nil || !name.Valid() || !strings.HasPrefix(declaration.Name, "_") || name.Start() <= 0 {
 		return false
 	}
-	for index := 0; index < file.Syntax.TokenCount(); index++ {
-		current := file.Syntax.Token(index)
-		if current.Start() != name.Start() || index == 0 {
-			continue
+	start := bytes.LastIndexByte(file.Source[:name.Start()], '\n') + 1
+	prefix := file.Source[start:name.Start()]
+	var previous token.Token
+	for _, current := range lexer.Tokenize(prefix) {
+		if current.Kind != token.EOF {
+			previous = current
 		}
-		previous := file.Syntax.Token(index - 1)
-		return current.Kind() == token.Identifier && strings.HasPrefix(declaration.Name, "_") && previous.Kind() == token.IntLiteral && previous.End() == current.Start()
 	}
-	return false
+	return previous.Kind == token.IntLiteral && previous.End.Offset == len(prefix)
 }

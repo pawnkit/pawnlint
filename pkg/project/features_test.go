@@ -14,6 +14,9 @@ func TestFeatureDependencies(t *testing.T) {
 			t.Fatalf("feature %d is missing", feature)
 		}
 	}
+	if features := project.NewFeatures(project.FeatureRuntimeCalls); !features.Has(project.FeatureRuntimeCalls) || !features.Has(project.FeatureCallGraph) {
+		t.Fatal("runtime call dependencies are incomplete")
+	}
 }
 
 func TestBuildSkipsUnrequestedProjectFeatures(t *testing.T) {

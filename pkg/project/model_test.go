@@ -303,6 +303,27 @@ func TestDuplicateMacroQualifiedFunctionsAreIgnored(t *testing.T) {
 	}
 }
 
+func TestDuplicateMacroQualifiedFunctionsAreIgnoredWithAnalysisSyntax(t *testing.T) {
+	dir := t.TempDir()
+	rootPath := filepath.Join(dir, "main.pwn")
+	includePath := filepath.Join(dir, "commands.inc")
+	include := []byte("#define ACMD:%0(%1) forward acmd_%0(%1); public acmd_%0(%1)\nACMD:vehicle(playerid) {}\nvehicle() {}\n")
+	if err := os.WriteFile(includePath, include, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	features := NewFeatures(FeatureDuplicates)
+	model, err := Build([]Source{{Path: rootPath, Content: []byte("#include \"commands.inc\"\nmain() {}\n")}}, Options{WorkingDir: dir, ReleaseIncludes: true, Features: &features})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if file := model.File(includePath); file == nil || file.CompactParsed == nil || file.CompactParsed.Tokens != nil {
+		t.Fatal("include did not use analysis syntax")
+	}
+	if duplicates := model.DuplicateFunctions(); len(duplicates) != 0 {
+		t.Fatalf("duplicates = %#v", duplicates)
+	}
+}
+
 func TestDuplicateTaggedFunctionsAreReported(t *testing.T) {
 	dir := t.TempDir()
 	rootPath := filepath.Join(dir, "main.pwn")
@@ -393,6 +414,23 @@ func TestNumericSeparatorsDoNotCreateDuplicateGlobals(t *testing.T) {
 	rootPath := filepath.Join(dir, "main.pwn")
 	source := []byte("const First = 1_000;\nconst Second = 2_000;\nmain() {}\n")
 	model, err := Build([]Source{{Path: rootPath, Content: source}}, Options{WorkingDir: dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if duplicates := model.DuplicateGlobals(); len(duplicates) != 0 {
+		t.Fatalf("duplicates = %#v", duplicates)
+	}
+}
+
+func TestNumericSeparatorsDoNotCreateDuplicateGlobalsWithAnalysisSyntax(t *testing.T) {
+	dir := t.TempDir()
+	rootPath := filepath.Join(dir, "main.pwn")
+	includePath := filepath.Join(dir, "values.inc")
+	if err := os.WriteFile(includePath, []byte("const First = 1_000;\nconst Second = 0xFF_FF;\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	features := NewFeatures(FeatureDuplicates)
+	model, err := Build([]Source{{Path: rootPath, Content: []byte("#include \"values.inc\"\nmain() {}\n")}}, Options{WorkingDir: dir, ReleaseIncludes: true, Features: &features})
 	if err != nil {
 		t.Fatal(err)
 	}
