@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/pawnkit/pawn-parser"
+	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
@@ -100,6 +101,54 @@ func BenchmarkCompactWalkIndex(b *testing.B) {
 	b.ResetTimer()
 	for range b.N {
 		walk.NewCompact("x.pwn", file)
+	}
+}
+
+func BenchmarkSemanticModel(b *testing.B) {
+	file := parser.Parse([]byte(benchSrc))
+	tree := walk.New("x.pwn", file)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		semantic.Build(file, tree)
+	}
+}
+
+func BenchmarkCompactSemanticModel(b *testing.B) {
+	file := parser.ParseForLinter([]byte(benchSrc))
+	tree := walk.NewCompact("x.pwn", file)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		semantic.BuildCompact(file, tree)
+	}
+}
+
+func BenchmarkSemanticModelLarge(b *testing.B) {
+	source := make([]byte, 0, len(benchSrc)*200)
+	for range 200 {
+		source = append(source, benchSrc...)
+	}
+	file := parser.Parse(source)
+	tree := walk.New("x.pwn", file)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		semantic.Build(file, tree)
+	}
+}
+
+func BenchmarkCompactSemanticModelLarge(b *testing.B) {
+	source := make([]byte, 0, len(benchSrc)*200)
+	for range 200 {
+		source = append(source, benchSrc...)
+	}
+	file := parser.ParseForLinter(source)
+	tree := walk.NewCompact("x.pwn", file)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		semantic.BuildCompact(file, tree)
 	}
 }
 

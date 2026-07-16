@@ -24,6 +24,34 @@ func TestCompactTreeMatchesPointerTree(t *testing.T) {
 	}
 }
 
+func TestCompactTreeIndexesOnlyReachableNodes(t *testing.T) {
+	source := []byte("enum Color { Red, Green }\nforward Float:GetValue(Float:value);\n")
+	pointer := parser.Parse(source)
+	file := parser.ParseForLinter(source)
+	compact := syntax.NewCompactTree(file)
+	counts := make(map[parser.Kind]int)
+	var count func(*parser.Node)
+	count = func(node *parser.Node) {
+		counts[node.Kind]++
+		for _, child := range node.Children {
+			count(child)
+		}
+	}
+	count(pointer.Root)
+	var pointerCount int
+	for _, count := range counts {
+		pointerCount += count
+	}
+	if len(file.Tree.Nodes) != pointerCount {
+		t.Fatalf("raw nodes = %d, pointer = %d", len(file.Tree.Nodes), pointerCount)
+	}
+	for kind, pointerCount := range counts {
+		if pointerCount != len(compact.OfKind(kind)) {
+			t.Fatalf("kind %v = %d, compact = %d", kind, pointerCount, len(compact.OfKind(kind)))
+		}
+	}
+}
+
 func TestCompactDiagnosticsMatchPointerParser(t *testing.T) {
 	for _, source := range [][]byte{
 		[]byte("main( { return 1; }"),
