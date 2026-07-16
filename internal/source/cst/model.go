@@ -64,6 +64,20 @@ func (m *Model) Root() Node {
 	return Node{}
 }
 
+func (m *Model) PointerNode(node *parser.Node) Node {
+	if m == nil || m.pointer == nil || node == nil {
+		return Node{}
+	}
+	return Node{model: m, pointer: node, id: syntax.NoNode}
+}
+
+func (m *Model) CompactNode(node syntax.NodeID) Node {
+	if m == nil || m.compact == nil || !m.compact.Tree.Valid(node) {
+		return Node{}
+	}
+	return Node{model: m, id: node}
+}
+
 func (m *Model) TokenCount() int {
 	if m == nil {
 		return 0

@@ -93,6 +93,7 @@ type Declaration struct {
 	File   *File
 	Node   *parser.Node
 	Symbol *semantic.Symbol
+	syntax cst.Node
 }
 
 type DuplicateFunction struct {
@@ -110,9 +111,10 @@ type DuplicateGlobal struct {
 }
 
 type Reference struct {
-	File *File
-	Node *parser.Node
-	Kind semantic.ReferenceKind
+	File   *File
+	Node   *parser.Node
+	Kind   semantic.ReferenceKind
+	syntax cst.Node
 }
 
 type Model struct {

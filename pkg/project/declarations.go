@@ -5,17 +5,18 @@ import (
 
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawnlint/internal/semantic"
+	"github.com/pawnkit/pawnlint/internal/source/cst"
 )
 
 type declarationID struct {
 	file *File
-	node *parser.Node
+	node cst.Node
 }
 
 type referenceID struct {
 	declaration declarationID
 	file        *File
-	node        *parser.Node
+	node        cst.Node
 }
 
 type declarationPair struct {
@@ -24,7 +25,7 @@ type declarationPair struct {
 }
 
 func (m *Model) References(declaration Declaration) []Reference {
-	if m == nil || declaration.File == nil || declaration.Node == nil {
+	if m == nil || declaration.File == nil || !declarationSyntax(declaration).Valid() {
 		return nil
 	}
 	return m.references[declarationKey(declaration)]
@@ -110,7 +111,7 @@ func (m *Model) buildDeclarations() {
 			if symbol.Function != nil && symbol.Kind != semantic.SymbolFunction {
 				continue
 			}
-			declaration := Declaration{Name: symbol.Name, Kind: symbol.Kind, File: file, Node: symbol.Decl, Symbol: symbol}
+			declaration := Declaration{Name: symbol.Name, Kind: symbol.Kind, File: file, Node: symbol.Decl, Symbol: symbol, syntax: file.Syntax.PointerNode(symbol.Decl)}
 			m.Declarations[symbol.Name] = append(m.Declarations[symbol.Name], declaration)
 		}
 	}
@@ -134,7 +135,7 @@ func (m *Model) buildReferences() {
 				continue
 			}
 			for _, reference := range file.Semantic.References(symbol) {
-				m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind}, seen)
+				m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind, syntax: file.Syntax.PointerNode(reference.Node)}, seen)
 			}
 		}
 	}
@@ -145,7 +146,7 @@ func (m *Model) buildReferences() {
 					variants := m.FunctionVariants(file, reference.Node)
 					if len(variants) != 0 {
 						for _, declaration := range variants {
-							m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind}, seen)
+							m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind, syntax: file.Syntax.PointerNode(reference.Node)}, seen)
 						}
 						continue
 					}
@@ -155,7 +156,7 @@ func (m *Model) buildReferences() {
 				if !ok {
 					continue
 				}
-				m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind}, seen)
+				m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind, syntax: file.Syntax.PointerNode(reference.Node)}, seen)
 			}
 		}
 	}
@@ -165,8 +166,8 @@ func (m *Model) buildReferences() {
 			if left.File.canonical != right.File.canonical {
 				return left.File.canonical < right.File.canonical
 			}
-			if left.Node.Start != right.Node.Start {
-				return left.Node.Start < right.Node.Start
+			if referenceSyntaxOffset(left) != referenceSyntaxOffset(right) {
+				return referenceSyntaxOffset(left) < referenceSyntaxOffset(right)
 			}
 			return left.Kind < right.Kind
 		})
@@ -201,7 +202,7 @@ func (m *Model) resolveInUnit(unit *Unit, from *File, name string, target semant
 
 func (m *Model) addReference(declaration Declaration, reference Reference, seen map[referenceID]struct{}) {
 	key := declarationKey(declaration)
-	referenceKey := referenceID{declaration: key, file: reference.File, node: reference.Node}
+	referenceKey := referenceID{declaration: key, file: reference.File, node: referenceSyntax(reference)}
 	if _, exists := seen[referenceKey]; exists {
 		return
 	}
@@ -231,7 +232,35 @@ func sortDeclarations(declarations []Declaration) {
 }
 
 func declarationKey(declaration Declaration) declarationID {
-	return declarationID{file: declaration.File, node: declaration.Node}
+	return declarationID{file: declaration.File, node: declarationSyntax(declaration)}
+}
+
+func declarationSyntax(declaration Declaration) cst.Node {
+	if declaration.syntax.Valid() {
+		return declaration.syntax
+	}
+	if declaration.File != nil && declaration.File.Syntax != nil {
+		return declaration.File.Syntax.PointerNode(declaration.Node)
+	}
+	return cst.Node{}
+}
+
+func referenceSyntax(reference Reference) cst.Node {
+	if reference.syntax.Valid() {
+		return reference.syntax
+	}
+	if reference.File != nil && reference.File.Syntax != nil {
+		return reference.File.Syntax.PointerNode(reference.Node)
+	}
+	return cst.Node{}
+}
+
+func declarationSyntaxOffset(declaration Declaration) int {
+	return declarationSyntax(declaration).Start()
+}
+
+func referenceSyntaxOffset(reference Reference) int {
+	return referenceSyntax(reference).Start()
 }
 
 func declarationLess(left, right Declaration) bool {
@@ -241,5 +270,5 @@ func declarationLess(left, right Declaration) bool {
 	if left.File.defines.order != right.File.defines.order {
 		return left.File.defines.order < right.File.defines.order
 	}
-	return left.Node.Start < right.Node.Start
+	return declarationSyntaxOffset(left) < declarationSyntaxOffset(right)
 }
