@@ -2,6 +2,7 @@ package preprocess
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -70,6 +71,25 @@ new second = LIMIT;
 	declarators := expandedWalk.OfKind(parser.KindVariableDeclarator)
 	if len(declarators) != 2 || expandedWalk.Text(declarators[0].Field("initializer")) != "10" || expandedWalk.Text(declarators[1].Field("initializer")) != "LIMIT" {
 		t.Fatalf("expanded source = %s", result.Source)
+	}
+}
+
+func TestCompactInputExpansionMatchesPointerInput(t *testing.T) {
+	source := []byte(`#define ADD(%0,%1) ((%0) + (%1))
+#define VALUE 2
+main()
+{
+	return ADD(VALUE, 3);
+}
+`)
+	pointerFile := parser.Parse(source)
+	pointerTree := walk.NewWithDefineContext("test.pwn", pointerFile, nil, nil, true)
+	pointerResult, _ := ExpandCompactWithState(pointerFile, pointerTree, 7, nil, nil)
+	compactFile := parser.ParseCompact(source, parser.ParseOptions{})
+	compactTree := walk.NewCompactWithDefineContext("test.pwn", compactFile, nil, nil, true)
+	compactResult, _ := ExpandCompactSyntaxWithState(compactFile, compactTree, 7, nil, nil)
+	if pointerResult.Complete != compactResult.Complete || pointerResult.Changed != compactResult.Changed || !reflect.DeepEqual(pointerResult.Source, compactResult.Source) || !reflect.DeepEqual(pointerResult.Parsed, compactResult.Parsed) {
+		t.Fatalf("compact input expansion differs\npointer: %#v\ncompact: %#v", pointerResult, compactResult)
 	}
 }
 

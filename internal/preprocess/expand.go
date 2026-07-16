@@ -6,6 +6,7 @@ import (
 
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
+	"github.com/pawnkit/pawnlint/internal/source/cst"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
 )
 
@@ -46,7 +47,7 @@ type definition struct {
 }
 
 type directive struct {
-	node *parser.Node
+	node cst.Node
 	last int
 }
 
@@ -94,41 +95,60 @@ func ExpandCompactWithState(parsed *parser.File, tree *walk.Model, fileID uint32
 	}, state
 }
 
+func ExpandCompactSyntaxWithState(parsed *parser.CompactFile, tree *walk.CompactModel, fileID uint32, initial *State, imports map[int]*State) (CompactResult, *State) {
+	if parsed == nil || tree == nil {
+		return CompactResult{Complete: false}, nil
+	}
+	expanded, state := expandTokensWithSyntax(cst.Compact(tree), fileID, initial, imports)
+	if !expanded.changed {
+		return CompactResult{Source: parsed.Source, Parsed: parsed, Complete: expanded.complete}, state
+	}
+	return CompactResult{
+		Source:   expanded.source,
+		Parsed:   parser.ParseTokensCompact(expanded.source, expanded.tokens, parser.ParseOptions{DiscardTrivia: true}),
+		Complete: expanded.complete, Changed: true,
+	}, state
+}
+
 func expandTokensWithState(parsed *parser.File, tree *walk.Model, fileID uint32, initial *State, imports map[int]*State) (renderedExpansion, *State) {
 	if parsed == nil || tree == nil {
 		return renderedExpansion{}, nil
 	}
-	directives := expansionDirectives(parsed, tree)
+	return expandTokensWithSyntax(cst.Pointer(tree), fileID, initial, imports)
+}
+
+func expandTokensWithSyntax(tree *cst.Model, fileID uint32, initial *State, imports map[int]*State) (renderedExpansion, *State) {
+	directives := expansionDirectives(tree)
 	current := &expander{definitions: make(map[string]definition), undefined: make(map[string]struct{}), complete: true}
 	current.merge(initial)
 	var output []piece
-	for index := 0; index < len(parsed.Tokens); {
-		currentToken := parsed.Tokens[index]
-		if currentToken.Kind == token.EOF {
+	for index := 0; index < tree.TokenCount(); {
+		currentToken := tree.Token(index)
+		if currentToken.Kind() == token.EOF {
 			break
 		}
-		if item, ok := directives[currentToken.Start.Offset]; ok {
+		if item, ok := directives[currentToken.Start()]; ok {
 			for ; index <= item.last; index++ {
 				if current.changed {
-					output = append(output, sourcePiece(parsed.Source, parsed.Tokens[index], fileID, true))
+					output = append(output, sourcePiece(tree.Token(index), fileID, true))
 				}
 			}
-			current.applyDirective(parsed, tree, item.node, fileID)
-			current.merge(imports[item.node.Start])
+			current.applyDirective(tree, item.node, fileID)
+			current.merge(imports[item.node.Start()])
 			continue
 		}
-		if currentToken.Kind != token.Identifier || len(current.definitions) == 0 {
+		if currentToken.Kind() != token.Identifier || len(current.definitions) == 0 {
 			if current.changed {
-				output = append(output, sourcePiece(parsed.Source, currentToken, fileID, true))
+				output = append(output, sourcePiece(currentToken, fileID, true))
 			}
 			index++
 			continue
 		}
-		input := sourcePiece(parsed.Source, currentToken, fileID, true)
+		input := sourcePiece(currentToken, fileID, true)
 		changed := current.changed
-		expanded, consumed := current.expandInvocation(parsed, index, input, fileID, 0, nil)
+		expanded, consumed := current.expandInvocation(tree, index, input, fileID, 0, nil)
 		if !changed && current.changed {
-			output = sourcePiecesOriginal(parsed, 0, index, fileID)
+			output = sourcePiecesOriginal(tree, 0, index, fileID)
 		}
 		if current.changed {
 			output = append(output, expanded...)
@@ -136,7 +156,7 @@ func expandTokensWithState(parsed *parser.File, tree *walk.Model, fileID uint32,
 		index += consumed
 	}
 	if !current.changed {
-		return renderedExpansion{source: parsed.Source, complete: current.complete}, current.state()
+		return renderedExpansion{source: tree.Source(), complete: current.complete}, current.state()
 	}
 	source, tokens := render(output)
 	return renderedExpansion{source: source, tokens: tokens, complete: current.complete, changed: true}, current.state()
@@ -167,32 +187,32 @@ func (e *expander) state() *State {
 	return state
 }
 
-func expansionDirectives(parsed *parser.File, tree *walk.Model) map[int]directive {
+func expansionDirectives(tree *cst.Model) map[int]directive {
 	result := make(map[int]directive)
 	for kind := parser.KindDirectiveInclude; kind <= parser.KindDirectiveRaw; kind++ {
 		for _, node := range tree.OfKind(kind) {
-			first := sort.Search(len(parsed.Tokens), func(index int) bool {
-				return parsed.Tokens[index].Start.Offset >= node.Start
+			first := sort.Search(tree.TokenCount(), func(index int) bool {
+				return tree.Token(index).Start() >= node.Start()
 			})
 			last := -1
-			for index := first; index < len(parsed.Tokens); index++ {
-				current := parsed.Tokens[index]
-				if current.Kind == token.EOF || current.Start.Offset > node.End {
+			for index := first; index < tree.TokenCount(); index++ {
+				current := tree.Token(index)
+				if current.Kind() == token.EOF || current.Start() > node.End() {
 					break
 				}
-				if current.Start.Offset >= node.Start && current.End.Offset <= node.End {
+				if current.Start() >= node.Start() && current.End() <= node.End() {
 					last = index
 				}
 			}
 			if last >= 0 {
-				result[parsed.Tokens[first].Start.Offset] = directive{node: node, last: last}
+				result[tree.Token(first).Start()] = directive{node: node, last: last}
 			}
 		}
 	}
 	return result
 }
 
-func (e *expander) applyDirective(parsed *parser.File, tree *walk.Model, node *parser.Node, fileID uint32) {
+func (e *expander) applyDirective(tree *cst.Model, node cst.Node, fileID uint32) {
 	if tree.Inactive(node) {
 		return
 	}
@@ -200,27 +220,26 @@ func (e *expander) applyDirective(parsed *parser.File, tree *walk.Model, node *p
 		e.complete = false
 		return
 	}
-	nameNode := node.Field("name")
-	name := tree.Text(nameNode)
-	if node.Kind == parser.KindDirectiveUndef {
-		name = directivePayloadName(parsed, node)
+	name := node.Field("name").Text()
+	if node.Kind() == parser.KindDirectiveUndef {
+		name = directivePayloadName(tree, node)
 	}
-	switch node.Kind {
+	switch node.Kind() {
 	case parser.KindDirectiveUndef:
 		delete(e.definitions, name)
 		e.undefined[name] = struct{}{}
 	case parser.KindDirectiveDefine:
-		if name == "" || node.HasError {
+		if name == "" || node.HasError() {
 			e.complete = false
 			return
 		}
 		value := node.Field("value")
-		body := piecesInRange(parsed, value, fileID)
+		body := piecesInRange(tree, value, fileID)
 		parameters := node.Field("parameters")
-		definition := definition{name: name, body: body, function: parameters != nil}
-		if parameters != nil {
-			for _, parameter := range parameters.Children {
-				definition.parameters = append(definition.parameters, tree.Text(parameter))
+		definition := definition{name: name, body: body, function: parameters.Valid()}
+		if parameters.Valid() {
+			for index := 0; index < parameters.ChildCount(); index++ {
+				definition.parameters = append(definition.parameters, parameters.Child(index).Text())
 			}
 		}
 		e.definitions[name] = definition
@@ -228,56 +247,49 @@ func (e *expander) applyDirective(parsed *parser.File, tree *walk.Model, node *p
 	}
 }
 
-func directivePayloadName(parsed *parser.File, node *parser.Node) string {
+func directivePayloadName(tree *cst.Model, node cst.Node) string {
 	seen := 0
-	for _, current := range parsed.Tokens {
-		if current.Start.Offset < node.Start || current.End.Offset > node.End || current.Kind == token.EOF {
+	for index := 0; index < tree.TokenCount(); index++ {
+		current := tree.Token(index)
+		if current.Start() < node.Start() || current.End() > node.End() || current.Kind() == token.EOF {
 			continue
 		}
 		seen++
-		if seen == 3 && current.Kind == token.Identifier {
-			return current.Text(parsed.Source)
+		if seen == 3 && current.Kind() == token.Identifier {
+			return current.Text()
 		}
 	}
 	return ""
 }
 
-func piecesInRange(parsed *parser.File, node *parser.Node, fileID uint32) []piece {
-	if node == nil {
+func piecesInRange(tree *cst.Model, node cst.Node, fileID uint32) []piece {
+	if !node.Valid() {
 		return nil
 	}
 	var result []piece
-	for _, current := range parsed.Tokens {
-		if current.Kind == token.EOF || current.Start.Offset > node.End {
+	for index := 0; index < tree.TokenCount(); index++ {
+		current := tree.Token(index)
+		if current.Kind() == token.EOF || current.Start() > node.End() {
 			break
 		}
-		if current.Start.Offset >= node.Start && current.End.Offset <= node.End {
-			result = append(result, sourcePiece(parsed.Source, current, fileID, false))
+		if current.Start() >= node.Start() && current.End() <= node.End() {
+			result = append(result, sourcePiece(current, fileID, false))
 		}
 	}
 	return result
 }
 
-func sourcePiece(source []byte, current token.Token, fileID uint32, newline bool) piece {
+func sourcePiece(current cst.Token, fileID uint32, newline bool) piece {
 	return piece{
-		kind:    current.Kind,
-		text:    current.Text(source),
-		origin:  current.Origin,
-		span:    token.Span{File: fileID, Start: current.Start, End: current.End},
-		newline: newline && tokenEndsLine(current),
+		kind:    current.Kind(),
+		text:    current.Text(),
+		origin:  current.Origin(),
+		span:    token.Span{File: fileID, Start: current.StartPosition(), End: current.EndPosition()},
+		newline: newline && current.EndsLine(),
 	}
 }
 
-func tokenEndsLine(current token.Token) bool {
-	for _, trivia := range current.TrailingTrivia {
-		if trivia.Kind == token.Newline {
-			return true
-		}
-	}
-	return false
-}
-
-func (e *expander) expandInvocation(parsed *parser.File, index int, input piece, fileID uint32, depth int, disabled map[string]bool) ([]piece, int) {
+func (e *expander) expandInvocation(tree *cst.Model, index int, input piece, fileID uint32, depth int, disabled map[string]bool) ([]piece, int) {
 	definition, known := e.definitions[input.text]
 	if input.kind != token.Identifier || !known {
 		return []piece{input}, 1
@@ -289,25 +301,25 @@ func (e *expander) expandInvocation(parsed *parser.File, index int, input piece,
 	consumed := 1
 	var arguments [][]piece
 	if definition.function {
-		if index+1 >= len(parsed.Tokens) || parsed.Tokens[index+1].Kind != token.LParen {
+		if index+1 >= tree.TokenCount() || tree.Token(index+1).Kind() != token.LParen {
 			return []piece{input}, 1
 		}
 		var ok bool
-		arguments, consumed, ok = invocationArguments(parsed, index, fileID)
+		arguments, consumed, ok = invocationArguments(tree, index, fileID)
 		if !ok || len(arguments) != len(definition.parameters) {
 			e.complete = false
-			return sourcePieces(parsed, index, consumed, fileID), consumed
+			return sourcePieces(tree, index, consumed, fileID), consumed
 		}
 	}
 	invocation := &token.Origin{Span: input.span, Macro: definition.name, Parent: input.origin}
 	replaced, ok := substitute(definition, arguments, invocation)
 	if !ok {
 		e.complete = false
-		return sourcePieces(parsed, index, consumed, fileID), consumed
+		return sourcePieces(tree, index, consumed, fileID), consumed
 	}
 	if e.count > maximumExpandedTokens {
 		e.complete = false
-		return sourcePieces(parsed, index, consumed, fileID), consumed
+		return sourcePieces(tree, index, consumed, fileID), consumed
 	}
 	nextDisabled := make(map[string]bool, len(disabled)+1)
 	for name := range disabled {
@@ -319,19 +331,19 @@ func (e *expander) expandInvocation(parsed *parser.File, index int, input piece,
 	return result, consumed
 }
 
-func invocationArguments(parsed *parser.File, index int, fileID uint32) ([][]piece, int, bool) {
+func invocationArguments(tree *cst.Model, index int, fileID uint32) ([][]piece, int, bool) {
 	depth := 0
 	start := index + 2
 	var arguments [][]piece
-	for current := index + 1; current < len(parsed.Tokens); current++ {
-		switch parsed.Tokens[current].Kind {
+	for current := index + 1; current < tree.TokenCount(); current++ {
+		switch tree.Token(current).Kind() {
 		case token.LParen, token.LBracket, token.LBrace:
 			depth++
 		case token.RParen:
 			depth--
 			if depth == 0 {
 				if current > start || len(arguments) != 0 {
-					arguments = append(arguments, sourcePieces(parsed, start, current-start, fileID))
+					arguments = append(arguments, sourcePieces(tree, start, current-start, fileID))
 				}
 				return arguments, current - index + 1, true
 			}
@@ -339,7 +351,7 @@ func invocationArguments(parsed *parser.File, index int, fileID uint32) ([][]pie
 			depth--
 		case token.Comma:
 			if depth == 1 {
-				arguments = append(arguments, sourcePieces(parsed, start, current-start, fileID))
+				arguments = append(arguments, sourcePieces(tree, start, current-start, fileID))
 				start = current + 1
 			}
 		case token.EOF:
@@ -349,24 +361,24 @@ func invocationArguments(parsed *parser.File, index int, fileID uint32) ([][]pie
 			return nil, current - index + 1, false
 		}
 	}
-	return nil, len(parsed.Tokens) - index, false
+	return nil, tree.TokenCount() - index, false
 }
 
-func sourcePieces(parsed *parser.File, start, count int, fileID uint32) []piece {
+func sourcePieces(tree *cst.Model, start, count int, fileID uint32) []piece {
 	result := make([]piece, 0, count)
-	for index := start; index < start+count && index < len(parsed.Tokens); index++ {
-		if parsed.Tokens[index].Kind != token.EOF {
-			result = append(result, sourcePiece(parsed.Source, parsed.Tokens[index], fileID, false))
+	for index := start; index < start+count && index < tree.TokenCount(); index++ {
+		if tree.Token(index).Kind() != token.EOF {
+			result = append(result, sourcePiece(tree.Token(index), fileID, false))
 		}
 	}
 	return result
 }
 
-func sourcePiecesOriginal(parsed *parser.File, start, count int, fileID uint32) []piece {
-	result := make([]piece, 0, max(count, len(parsed.Tokens)-1))
-	for index := start; index < start+count && index < len(parsed.Tokens); index++ {
-		if parsed.Tokens[index].Kind != token.EOF {
-			result = append(result, sourcePiece(parsed.Source, parsed.Tokens[index], fileID, true))
+func sourcePiecesOriginal(tree *cst.Model, start, count int, fileID uint32) []piece {
+	result := make([]piece, 0, max(count, tree.TokenCount()-1))
+	for index := start; index < start+count && index < tree.TokenCount(); index++ {
+		if tree.Token(index).Kind() != token.EOF {
+			result = append(result, sourcePiece(tree.Token(index), fileID, true))
 		}
 	}
 	return result
