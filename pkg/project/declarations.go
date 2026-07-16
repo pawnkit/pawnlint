@@ -182,7 +182,7 @@ func (m *Model) buildDeclarations() {
 func (m *Model) buildReferences() {
 	bySymbol := make(map[*semantic.Symbol]Declaration)
 	byCompactSymbol := make(map[*semantic.CompactSymbol]Declaration)
-	seen := make(map[referenceID]struct{})
+	ambiguousReferences := make(map[referenceID]struct{})
 	for _, declarations := range m.Declarations {
 		for _, declaration := range declarations {
 			if declaration.Symbol != nil {
@@ -200,7 +200,7 @@ func (m *Model) buildReferences() {
 					continue
 				}
 				for _, reference := range file.Semantic.References(symbol) {
-					m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind, syntax: file.Syntax.PointerNode(reference.Node)}, seen)
+					m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind, syntax: file.Syntax.PointerNode(reference.Node)}, ambiguousReferences)
 				}
 			}
 			continue
@@ -211,7 +211,7 @@ func (m *Model) buildReferences() {
 				continue
 			}
 			for _, reference := range file.CompactSemantic.References(symbol) {
-				m.addReference(declaration, Reference{File: file, Kind: reference.Kind, syntax: file.Syntax.CompactNode(reference.Node)}, seen)
+				m.addReference(declaration, Reference{File: file, Kind: reference.Kind, syntax: file.Syntax.CompactNode(reference.Node)}, ambiguousReferences)
 			}
 		}
 	}
@@ -219,12 +219,12 @@ func (m *Model) buildReferences() {
 		for _, file := range unit.Files {
 			if file.Semantic != nil {
 				for _, reference := range file.Semantic.UnresolvedReferences() {
-					m.addUnresolvedReference(unit, file, file.Syntax.PointerNode(reference.Node), reference.Node, reference.Kind, reference.Target, seen)
+					m.addUnresolvedReference(unit, file, file.Syntax.PointerNode(reference.Node), reference.Node, reference.Kind, reference.Target, ambiguousReferences)
 				}
 				continue
 			}
 			for _, reference := range file.CompactSemantic.UnresolvedReferences() {
-				m.addUnresolvedReference(unit, file, file.Syntax.CompactNode(reference.Node), nil, reference.Kind, reference.Target, seen)
+				m.addUnresolvedReference(unit, file, file.Syntax.CompactNode(reference.Node), nil, reference.Kind, reference.Target, ambiguousReferences)
 			}
 		}
 	}
@@ -242,19 +242,19 @@ func (m *Model) buildReferences() {
 	}
 }
 
-func (m *Model) addUnresolvedReference(unit *Unit, file *File, node cst.Node, pointer *parser.Node, kind semantic.ReferenceKind, target semantic.ReferenceTarget, seen map[referenceID]struct{}) {
+func (m *Model) addUnresolvedReference(unit *Unit, file *File, node cst.Node, pointer *parser.Node, kind semantic.ReferenceKind, target semantic.ReferenceTarget, ambiguousReferences map[referenceID]struct{}) {
 	if target == semantic.ReferenceFunction {
 		variants := m.functionVariants(file, node)
 		if len(variants) != 0 {
 			for _, declaration := range variants {
-				m.addReference(declaration, Reference{File: file, Node: pointer, Kind: kind, syntax: node}, seen)
+				m.addReference(declaration, Reference{File: file, Node: pointer, Kind: kind, syntax: node}, ambiguousReferences)
 			}
 			return
 		}
 	}
 	declaration, ok := m.resolveInUnit(unit, file, node.Text(), target)
 	if ok {
-		m.addReference(declaration, Reference{File: file, Node: pointer, Kind: kind, syntax: node}, seen)
+		m.addReference(declaration, Reference{File: file, Node: pointer, Kind: kind, syntax: node}, ambiguousReferences)
 	}
 }
 
@@ -284,28 +284,36 @@ func (m *Model) resolveInUnit(unit *Unit, from *File, name string, target semant
 	return candidates[0], true
 }
 
-func (m *Model) addReference(declaration Declaration, reference Reference, seen map[referenceID]struct{}) {
+func (m *Model) addReference(declaration Declaration, reference Reference, ambiguousReferences map[referenceID]struct{}) {
 	key := declarationKey(declaration)
 	node := referenceSyntax(reference)
-	referenceKey := referenceID{declaration: key, pointer: node.Pointer(), source: reference.File.sourceID, compact: node.ID()}
-	if _, exists := seen[referenceKey]; exists {
-		return
-	}
-	seen[referenceKey] = struct{}{}
-	m.references[key] = append(m.references[key], reference)
 	if m.resolved[reference.File] == nil {
 		m.resolved[reference.File] = make(map[fileNodeID]declarationID)
 	}
 	nodeKey := fileNodeKey(node)
-	if existing, exists := m.resolved[reference.File][nodeKey]; exists && existing != key {
+	existing, resolved := m.resolved[reference.File][nodeKey]
+	if resolved && existing == key {
+		return
+	}
+	referenceKey := referenceID{declaration: key, pointer: node.Pointer(), source: reference.File.sourceID, compact: node.ID()}
+	ambiguous := m.ambiguous[reference.File][nodeKey]
+	if ambiguous {
+		if _, exists := ambiguousReferences[referenceKey]; exists {
+			return
+		}
+		ambiguousReferences[referenceKey] = struct{}{}
+	} else if resolved {
 		delete(m.resolved[reference.File], nodeKey)
 		if m.ambiguous[reference.File] == nil {
 			m.ambiguous[reference.File] = make(map[fileNodeID]bool)
 		}
 		m.ambiguous[reference.File][nodeKey] = true
-		return
+		ambiguousReferences[referenceID{declaration: existing, pointer: node.Pointer(), source: reference.File.sourceID, compact: node.ID()}] = struct{}{}
+		ambiguousReferences[referenceKey] = struct{}{}
+		ambiguous = true
 	}
-	if m.ambiguous[reference.File][nodeKey] {
+	m.references[key] = append(m.references[key], reference)
+	if ambiguous {
 		return
 	}
 	m.resolved[reference.File][nodeKey] = key
