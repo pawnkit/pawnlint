@@ -40,6 +40,7 @@ func (m *Model) indexNodeStates() {
 }
 
 func (m *Model) indexConditionalStates() {
+	cursor := m.NewDefineCursor()
 	for _, region := range m.byKind[parser.KindConditionalRegion] {
 		reached := branchActive
 		for _, branch := range region.Children {
@@ -60,7 +61,7 @@ func (m *Model) indexConditionalStates() {
 				reached = branchInactive
 				continue
 			}
-			value, known := m.directiveValue(directive.Field("condition"), directive.Start)
+			value, known := m.directiveValue(cursor, directive.Field("condition"), directive.Start)
 			if !known {
 				m.branches[branch] = branchUncertain
 				reached = branchUncertain
@@ -76,20 +77,21 @@ func (m *Model) indexConditionalStates() {
 	}
 }
 
-func (m *Model) directiveValue(node *parser.Node, offset int) (int64, bool) {
+func (m *Model) directiveValue(cursor *DefineCursor, node *parser.Node, offset int) (int64, bool) {
 	if node == nil || node.HasError {
 		return 0, false
 	}
 	switch node.Kind {
 	case parser.KindParenthesizedExpression:
-		return m.directiveValue(node.Field("expression"), offset)
+		return m.directiveValue(cursor, node.Field("expression"), offset)
 	case parser.KindDefinedExpression:
 		name := node.Field("name")
 		if name == nil {
 			return 0, false
 		}
-		_, known := m.knownDefinesAt(offset)[m.Text(name)]
-		if known {
+		known := cursor.definesAt(offset)
+		index := sort.SearchStrings(known, m.Text(name))
+		if index < len(known) && known[index] == m.Text(name) {
 			return 1, true
 		}
 		if m.complete {
@@ -111,7 +113,7 @@ func (m *Model) directiveValue(node *parser.Node, offset int) (int64, bool) {
 		unsigned, err := strconv.ParseUint(text, base, 32)
 		return int64(int32(uint32(unsigned))), err == nil
 	case parser.KindUnaryExpression:
-		value, ok := m.directiveValue(node.Field("expression"), offset)
+		value, ok := m.directiveValue(cursor, node.Field("expression"), offset)
 		if !ok {
 			return 0, false
 		}
@@ -133,37 +135,61 @@ func (m *Model) directiveValue(node *parser.Node, offset int) (int64, bool) {
 	}
 }
 
-func (m *Model) knownDefinesAt(offset int) map[string]struct{} {
-	known := make(map[string]struct{}, len(m.defines))
-	for _, name := range m.defines {
-		if name != "" {
-			known[name] = struct{}{}
-		}
+type DefineCursor struct {
+	model          *Model
+	offset         int
+	directiveIndex int
+	snapshotIndex  int
+	known          []string
+}
+
+func (m *Model) NewDefineCursor() *DefineCursor {
+	cursor := &DefineCursor{model: m}
+	cursor.reset()
+	return cursor
+}
+
+func (c *DefineCursor) reset() {
+	c.offset = -1
+	c.directiveIndex = 0
+	c.snapshotIndex = 0
+	c.clearKnown(len(c.model.defines))
+	for _, name := range c.model.defines {
+		c.add(name)
 	}
-	directiveIndex := 0
-	snapshotIndex := 0
+}
+
+func (c *DefineCursor) clearKnown(capacity int) {
+	if cap(c.known) < capacity {
+		c.known = make([]string, 0, capacity)
+		return
+	}
+	clear(c.known)
+	c.known = c.known[:0]
+}
+
+func (c *DefineCursor) definesAt(offset int) []string {
+	if offset < c.offset {
+		c.reset()
+	}
+	m := c.model
 	for {
-		for directiveIndex < len(m.directives) && m.directives[directiveIndex].Start >= offset {
-			directiveIndex++
-		}
-		for snapshotIndex < len(m.snapshots) && m.snapshots[snapshotIndex].Offset >= offset {
-			snapshotIndex++
-		}
-		if directiveIndex >= len(m.directives) && snapshotIndex >= len(m.snapshots) {
+		directiveReady := c.directiveIndex < len(m.directives) && m.directives[c.directiveIndex].Start < offset
+		snapshotReady := c.snapshotIndex < len(m.snapshots) && m.snapshots[c.snapshotIndex].Offset < offset
+		if !directiveReady && !snapshotReady {
 			break
 		}
-		if snapshotIndex < len(m.snapshots) && (directiveIndex >= len(m.directives) || m.snapshots[snapshotIndex].Offset <= m.directives[directiveIndex].Start) {
-			clear(known)
-			for _, name := range m.snapshots[snapshotIndex].Defines {
-				if name != "" {
-					known[name] = struct{}{}
-				}
+		if snapshotReady && (!directiveReady || m.snapshots[c.snapshotIndex].Offset <= m.directives[c.directiveIndex].Start) {
+			snapshot := m.snapshots[c.snapshotIndex]
+			c.clearKnown(len(snapshot.Defines))
+			for _, name := range snapshot.Defines {
+				c.add(name)
 			}
-			snapshotIndex++
+			c.snapshotIndex++
 			continue
 		}
-		node := m.directives[directiveIndex]
-		directiveIndex++
+		node := m.directives[c.directiveIndex]
+		c.directiveIndex++
 		if !m.directiveActive(node) {
 			continue
 		}
@@ -172,22 +198,44 @@ func (m *Model) knownDefinesAt(offset int) map[string]struct{} {
 			continue
 		}
 		if node.Kind == parser.KindDirectiveUndef {
-			delete(known, name)
+			c.remove(name)
 		} else {
-			known[name] = struct{}{}
+			c.add(name)
 		}
 	}
-	return known
+	c.offset = offset
+	return c.known
+}
+
+func (c *DefineCursor) add(name string) {
+	if name == "" {
+		return
+	}
+	index := sort.SearchStrings(c.known, name)
+	if index < len(c.known) && c.known[index] == name {
+		return
+	}
+	c.known = append(c.known, "")
+	copy(c.known[index+1:], c.known[index:])
+	c.known[index] = name
+}
+
+func (c *DefineCursor) remove(name string) {
+	index := sort.SearchStrings(c.known, name)
+	if index >= len(c.known) || c.known[index] != name {
+		return
+	}
+	copy(c.known[index:], c.known[index+1:])
+	c.known = c.known[:len(c.known)-1]
 }
 
 func (m *Model) KnownDefinesAt(offset int) []string {
-	known := m.knownDefinesAt(offset)
-	names := make([]string, 0, len(known))
-	for name := range known {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
+	return m.NewDefineCursor().KnownDefinesAt(offset)
+}
+
+func (c *DefineCursor) KnownDefinesAt(offset int) []string {
+	known := c.definesAt(offset)
+	return append([]string(nil), known...)
 }
 
 func (m *Model) directiveActive(node *parser.Node) bool {

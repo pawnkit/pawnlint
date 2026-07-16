@@ -132,6 +132,25 @@ func TestKnownDefinesTracksActiveConditionalDefinesAndSpecificUndef(t *testing.T
 	}
 }
 
+func TestDefineCursorSupportsOutOfOrderQueries(t *testing.T) {
+	src := "#define FIRST\n#undef FIRST\n#define LAST\n"
+	f := mustParse(t, src)
+	m := walk.NewWithDefineContext("x.pwn", f, nil, nil, true)
+	cursor := m.NewDefineCursor()
+	late := cursor.KnownDefinesAt(len(src) + 1)
+	early := cursor.KnownDefinesAt(len("#define FIRST\n"))
+	again := cursor.KnownDefinesAt(len(src) + 1)
+	if hasString(late, "FIRST") || !hasString(late, "LAST") {
+		t.Fatalf("late defines = %v", late)
+	}
+	if !hasString(early, "FIRST") || hasString(early, "LAST") {
+		t.Fatalf("early defines = %v", early)
+	}
+	if hasString(again, "FIRST") || !hasString(again, "LAST") {
+		t.Fatalf("repeated late defines = %v", again)
+	}
+}
+
 func TestDefineSnapshotAffectsLaterConditional(t *testing.T) {
 	src := "#include \"shared.inc\"\n#if defined EXPORTED\nnew active;\n#endif\n"
 	f := mustParse(t, src)

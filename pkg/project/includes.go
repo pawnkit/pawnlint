@@ -80,9 +80,11 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	sort.SliceStable(nodes, func(i, j int) bool { return nodes[i].Start < nodes[j].Start })
 	var snapshots []walk.DefineSnapshot
 	dirty := false
+	defineCursor := file.Walk.NewDefineCursor()
 	for _, node := range nodes {
 		if dirty {
 			file.rebuildWalk(snapshots)
+			defineCursor = file.Walk.NewDefineCursor()
 			dirty = false
 		}
 		if file.Walk.Inactive(node) {
@@ -94,7 +96,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		if path == "" || include.Uncertain {
 			continue
 		}
-		defines := file.Walk.KnownDefinesAt(node.Start)
+		defines := defineCursor.KnownDefinesAt(node.Start)
 		resolved, candidates, err := m.resolveInclude(file, path, defines)
 		if err != nil {
 			return err
@@ -114,8 +116,9 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	}
 	if dirty {
 		file.rebuildWalk(snapshots)
+		defineCursor = file.Walk.NewDefineCursor()
 	}
-	file.final = file.Walk.KnownDefinesAt(len(file.Source) + 1)
+	file.final = defineCursor.KnownDefinesAt(len(file.Source) + 1)
 	if m.options.ObserveTiming == nil {
 		file.Semantic = semantic.Build(file.Parsed, file.Walk)
 	} else {
