@@ -53,6 +53,20 @@ func SourceInput(workingDirectory, target string, defines []string, path string,
 	}
 }
 
+func RunProject(ctx context.Context, configured []config.ExternalRule, workingDirectory, build, target string, defines []string, model *project.Model, targetPaths []string) ([]diagnostic.Diagnostic, error) {
+	if len(configured) == 0 {
+		return nil, nil
+	}
+	return Run(ctx, configured, ProjectInput(workingDirectory, build, target, defines, model, targetPaths))
+}
+
+func RunSource(ctx context.Context, configured []config.ExternalRule, workingDirectory, target string, defines []string, path string, content []byte) ([]diagnostic.Diagnostic, error) {
+	if len(configured) == 0 {
+		return nil, nil
+	}
+	return Run(ctx, configured, SourceInput(workingDirectory, target, defines, path, content))
+}
+
 func relativePath(base, path string) string {
 	if base != "" {
 		if relative, err := filepath.Rel(base, path); err == nil {

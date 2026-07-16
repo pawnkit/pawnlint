@@ -113,7 +113,7 @@ func analyze(ctx context.Context, request Request, parseCache *project.ParseCach
 		for index, source := range provided {
 			targetPaths[index] = source.Path
 		}
-		externalDiagnostics, err := external.Run(ctx, resolved.Source.ExternalRules, external.ProjectInput(projectDir, settings.name, settings.target, settings.defines, model, targetPaths))
+		externalDiagnostics, err := external.RunProject(ctx, resolved.Source.ExternalRules, projectDir, settings.name, settings.target, settings.defines, model, targetPaths)
 		if err != nil {
 			return Result{}, fmt.Errorf("analyzer: %w", err)
 		}

@@ -38,7 +38,7 @@ func runStdin(opts *cli, stdin io.Reader, stdout, stderr io.Writer, reg *lint.Re
 	}
 	rel := discovery.RelPath(projectDir, name)
 	diags := engine.LintFile(name, src, lint.ControlFlowAnalysis, r.EnabledForPath(rel), r.AllKnownRuleIDs, r.RuleConfigForPath(rel))
-	externalDiagnostics, err := external.Run(context.Background(), r.Source.ExternalRules, external.SourceInput(projectDir, string(r.Target), r.Source.Defines, name, src))
+	externalDiagnostics, err := external.RunSource(context.Background(), r.Source.ExternalRules, projectDir, string(r.Target), r.Source.Defines, name, src)
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "pawnlint: %v\n", err)
 		return exitInternal

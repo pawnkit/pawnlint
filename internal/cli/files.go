@@ -119,7 +119,7 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 			}
 			return diagnostics
 		})
-		externalDiagnostics, err := external.Run(context.Background(), r.Source.ExternalRules, external.ProjectInput(projectDir, variant.Name, string(r.Target), variant.Defines, model, targetPaths))
+		externalDiagnostics, err := external.RunProject(context.Background(), r.Source.ExternalRules, projectDir, variant.Name, string(r.Target), variant.Defines, model, targetPaths)
 		if err != nil {
 			_, _ = fmt.Fprintf(stderr, "pawnlint: %v\n", err)
 			return exitInternal
@@ -238,7 +238,7 @@ func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registra
 			}
 			return findings
 		})
-		externalDiagnostics, err := external.Run(context.Background(), r.Source.ExternalRules, external.ProjectInput(projectDir, build.Name, string(target), defines, model, targetPaths))
+		externalDiagnostics, err := external.RunProject(context.Background(), r.Source.ExternalRules, projectDir, build.Name, string(target), defines, model, targetPaths)
 		if err != nil {
 			_, _ = fmt.Fprintf(stderr, "pawnlint: build %q: %v\n", build.Name, err)
 			return exitInternal
