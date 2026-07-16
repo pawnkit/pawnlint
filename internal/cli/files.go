@@ -81,6 +81,7 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 			IncludePaths:    includePaths,
 			Defines:         variant.Defines,
 			ReleaseExpanded: true,
+			ReleaseIncludes: true,
 			Features:        &projectFeatures,
 			ObserveTiming:   projectTimingObserver(timings),
 		})
@@ -213,6 +214,7 @@ func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registra
 			engine.ObserveTiming = timings.observeLint
 		}
 		files := configuredBuildFiles(model, entry, workingDir, build.Files, build.Exclude)
+		model.ReleaseIncludeTokens(files)
 		targetPaths := make([]string, len(files))
 		for index, file := range files {
 			targetPaths[index] = file.Path

@@ -1,6 +1,7 @@
 package project
 
 import (
+	"bytes"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -24,6 +25,7 @@ type Options struct {
 	Defines         []string
 	DefinesComplete bool
 	ReleaseExpanded bool
+	ReleaseIncludes bool
 	Features        *Features
 	ParseCache      *ParseCache
 	ObserveTiming   func(TimingEvent)
@@ -251,7 +253,35 @@ func Build(sources []Source, options Options) (*Model, error) {
 	if features.Has(FeatureFunctionEffects) {
 		model.buildFunctionEffects()
 	}
+	if options.ReleaseIncludes {
+		model.ReleaseIncludeTokens(nil)
+	}
 	return model, nil
+}
+
+func (m *Model) ReleaseIncludeTokens(files []*File) {
+	retained := make(map[*parser.File]struct{})
+	for _, file := range m.Files {
+		if file.Provided && file.Parsed != nil {
+			retained[file.Parsed] = struct{}{}
+		}
+	}
+	for _, file := range files {
+		if file != nil && file.Parsed != nil {
+			retained[file.Parsed] = struct{}{}
+		}
+	}
+	for _, physical := range m.physical {
+		if physical == nil || physical.parsed == nil {
+			continue
+		}
+		if bytes.Contains(physical.source, []byte("pawnlint-")) {
+			continue
+		}
+		if _, keep := retained[physical.parsed]; !keep {
+			physical.parsed.Tokens = nil
+		}
+	}
 }
 
 func (m *Model) DefinesName(name string) bool {

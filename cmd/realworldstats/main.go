@@ -74,6 +74,7 @@ func main() {
 		Defines:         cfg.Defines,
 		DefinesComplete: true,
 		ReleaseExpanded: *releaseExpanded,
+		ReleaseIncludes: *releaseExpanded,
 	})
 	if err != nil {
 		fatal(err)
