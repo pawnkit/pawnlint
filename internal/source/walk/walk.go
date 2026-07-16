@@ -15,8 +15,7 @@ type Model struct {
 	LineTable *source.LineTable
 	index     *Index
 	branches  map[*parser.Node]branchState
-	uncertain map[*parser.Node]bool
-	inactive  map[*parser.Node]bool
+	states    map[*parser.Node]nodeState
 	defines   *DefineContext
 	snapshots []DefineSnapshot
 	complete  bool
@@ -39,6 +38,8 @@ type DefineContext struct {
 
 type branchState uint8
 
+type nodeState uint8
+
 var compilerDefines = []string{
 	"true", "false", "EOS", "cellbits", "cellmax", "cellmin", "charbits",
 	"charmin", "charmax", "ucharmax", "__Pawn", "__PawnBuild", "__line",
@@ -49,6 +50,11 @@ const (
 	branchActive branchState = iota
 	branchInactive
 	branchUncertain
+)
+
+const (
+	nodeUncertain nodeState = 1 << iota
+	nodeInactive
 )
 
 func New(path string, pf *parser.File) *Model {
@@ -101,8 +107,7 @@ func NewWithContext(path string, pf *parser.File, defines *DefineContext, snapsh
 		LineTable: lineTable,
 		index:     index,
 		branches:  make(map[*parser.Node]branchState),
-		uncertain: make(map[*parser.Node]bool),
-		inactive:  make(map[*parser.Node]bool),
+		states:    make(map[*parser.Node]nodeState),
 		defines:   defines,
 		snapshots: cloneDefineSnapshots(snapshots),
 		complete:  complete,

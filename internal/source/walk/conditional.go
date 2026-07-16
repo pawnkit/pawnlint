@@ -13,10 +13,10 @@ func (m *Model) indexNodeStates() {
 	var index func(*parser.Node, bool, bool, bool)
 	index = func(node *parser.Node, conditionalUncertain, inactive, ancestorError bool) {
 		if node.HasError || conditionalUncertain || ancestorError {
-			m.uncertain[node] = true
+			m.states[node] |= nodeUncertain
 		}
 		if inactive {
-			m.inactive[node] = true
+			m.states[node] |= nodeInactive
 		}
 		childUncertain := conditionalUncertain
 		childInactive := inactive
@@ -327,12 +327,12 @@ func (m *Model) Uncertain(n *parser.Node) bool {
 	if m == nil || n == nil {
 		return false
 	}
-	return m.uncertain[n]
+	return m.states[n]&nodeUncertain != 0
 }
 
 func (m *Model) Inactive(n *parser.Node) bool {
 	if m == nil || n == nil {
 		return false
 	}
-	return m.inactive[n]
+	return m.states[n]&nodeInactive != 0
 }
