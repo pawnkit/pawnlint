@@ -27,7 +27,7 @@ func TestReleaseIncludesDropsOnlyIncludeTokens(t *testing.T) {
 	if entry == nil || len(entry.Parsed.Tokens) == 0 {
 		t.Fatal("entry tokens were released")
 	}
-	if include == nil || include.Parsed.Tokens != nil {
-		t.Fatal("include tokens were retained")
+	if include == nil || include.Parsed != nil || include.CompactParsed == nil {
+		t.Fatal("include was not stored compactly")
 	}
 }

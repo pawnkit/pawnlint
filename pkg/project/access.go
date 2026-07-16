@@ -3,9 +3,16 @@ package project
 import (
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
+	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/internal/source"
 	"github.com/pawnkit/pawnlint/internal/source/cst"
 )
+
+type FunctionParameter struct {
+	Tags     []string
+	Variadic bool
+	Known    bool
+}
 
 func (d Declaration) Valid() bool {
 	return declarationSyntax(d).Valid()
@@ -72,6 +79,54 @@ func (d Declaration) NameRange() source.Range {
 	return d.File.Syntax.Range(declarationNameSyntax(d))
 }
 
+func (d Declaration) FunctionParameters() []FunctionParameter {
+	list := declarationSyntax(d).Field("parameters")
+	if !list.Valid() {
+		return nil
+	}
+	var result []FunctionParameter
+	for index := 0; index < list.ChildCount(); index++ {
+		parameter := list.Child(index)
+		if parameter.Kind() != parser.KindParameter {
+			continue
+		}
+		if !parameter.Field("name").Valid() && parameter.TokenKind() == token.Ellipsis {
+			result = append(result, FunctionParameter{Variadic: true, Known: true})
+			continue
+		}
+		item := FunctionParameter{Tags: []string{""}}
+		if d.File.Semantic != nil {
+			for _, symbol := range d.File.Semantic.Symbols {
+				if symbol.Kind != semantic.SymbolParameter || symbol.Decl != parameter.Pointer() {
+					continue
+				}
+				if !symbol.Ambiguous {
+					item.Known = true
+					if len(symbol.Tags) != 0 {
+						item.Tags = append([]string(nil), symbol.Tags...)
+					}
+				}
+				break
+			}
+		} else if d.File.CompactSemantic != nil {
+			for _, symbol := range d.File.CompactSemantic.Symbols {
+				if symbol.Kind != semantic.SymbolParameter || symbol.Decl != parameter.ID() {
+					continue
+				}
+				if !symbol.Ambiguous {
+					item.Known = true
+					if len(symbol.Tags) != 0 {
+						item.Tags = append([]string(nil), symbol.Tags...)
+					}
+				}
+				break
+			}
+		}
+		result = append(result, item)
+	}
+	return result
+}
+
 func (i *Include) Valid() bool {
 	return i != nil && includeSyntax(i).Valid()
 }
@@ -92,6 +147,19 @@ func (i *Include) PathRange() source.Range {
 		return source.Range{}
 	}
 	return i.syntax.Field("path").Range()
+}
+
+func (f *File) LineTable() *source.LineTable {
+	if f == nil || f.Syntax == nil {
+		return nil
+	}
+	if f.Walk != nil {
+		return f.Walk.LineTable
+	}
+	if f.CompactWalk != nil {
+		return f.CompactWalk.LineTable
+	}
+	return nil
 }
 
 func includeSyntax(include *Include) cst.Node {

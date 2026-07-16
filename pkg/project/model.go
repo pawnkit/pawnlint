@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pawnkit/pawn-parser"
@@ -73,6 +74,8 @@ type File struct {
 	expansionState    *preprocess.State
 	runtimeCalls      []runtimeCallFact
 	expansionOrigins  map[*parser.Node][]expansionOriginFact
+	snapshots         []walk.DefineSnapshot
+	pointerOnce       sync.Once
 }
 
 type Include struct {
@@ -153,6 +156,7 @@ type Model struct {
 type physicalFile struct {
 	source      []byte
 	parsed      *parser.File
+	compact     *parser.CompactFile
 	lineTable   *sourceinfo.LineTable
 	syntaxIndex *walk.Index
 }

@@ -88,6 +88,25 @@ func FromFile(path string, src []byte, f *parser.File) []Directive {
 	return out
 }
 
+func FromCompact(path string, src []byte, f *parser.CompactFile) []Directive {
+	if f == nil {
+		return nil
+	}
+	var out []Directive
+	for _, trivia := range f.Trivia {
+		if trivia.Kind != token.Comment {
+			continue
+		}
+		out = append(out, parseTrivia(path, src, token.Trivia{
+			Kind:  trivia.Kind,
+			Start: token.Position{Offset: int(trivia.Start.Offset), Line: int(trivia.Start.Line), Col: int(trivia.Start.Col)},
+			End:   token.Position{Offset: int(trivia.End.Offset), Line: int(trivia.End.Line), Col: int(trivia.End.Col)},
+		})...)
+	}
+	SortDirectives(out)
+	return out
+}
+
 const marker = "pawnlint-"
 
 func parseTrivia(path string, src []byte, tr token.Trivia) []Directive {

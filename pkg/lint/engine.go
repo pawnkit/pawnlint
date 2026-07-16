@@ -266,11 +266,15 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 			projectFile := e.Project.File(d.Filename)
 			if projectFile != nil {
 				directives := suppress.FromFile(projectFile.Path, projectFile.Source, projectFile.Parsed)
-				directives, _ = e.normalizeSuppressionAliases(directives, projectFile.Walk.LineTable)
+				if projectFile.Parsed == nil {
+					directives = suppress.FromCompact(projectFile.Path, projectFile.Source, projectFile.CompactParsed)
+				}
+				lines := projectFile.LineTable()
+				directives, _ = e.normalizeSuppressionAliases(directives, lines)
 				projectMatcher := suppress.NewMatcher(directives)
 				line := d.Range.Start.Line
-				if line == 0 {
-					line = projectFile.Walk.LineTable.Lookup(d.Range.Start.Offset).Line
+				if line == 0 && lines != nil {
+					line = lines.Lookup(d.Range.Start.Offset).Line
 				}
 				if projectMatcher.IsSuppressed(nil, d.RuleID, line) {
 					continue

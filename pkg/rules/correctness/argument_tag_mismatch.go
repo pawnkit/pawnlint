@@ -11,6 +11,7 @@ import (
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
+	"github.com/pawnkit/pawnlint/pkg/project"
 )
 
 type ArgumentTagMismatch struct{}
@@ -80,10 +81,10 @@ func argumentTagSignature(ctx *lint.Context, call *parser.Node) (string, []argum
 	name := ctx.Walk.Text(callee)
 	if ctx.Project != nil && ctx.ProjectFile != nil {
 		if declaration, ok := ctx.Project.Resolve(ctx.ProjectFile, callee); ok {
-			if declaration.Kind != semantic.SymbolFunction || declaration.Node == nil || declaration.Symbol == nil || declaration.Symbol.Ambiguous {
+			if declaration.Kind != semantic.SymbolFunction || !declaration.Valid() || declaration.Ambiguous() {
 				return "", nil, false
 			}
-			return name, argumentSourceParameters(declaration.File.Semantic, declaration.Node), true
+			return name, argumentProjectParameters(declaration), true
 		}
 		for _, declaration := range ctx.Project.Declarations[name] {
 			if declaration.Kind == semantic.SymbolFunction {
@@ -104,6 +105,15 @@ func argumentTagSignature(ctx *lint.Context, call *parser.Node) (string, []argum
 		return name, argumentAPIParameters(function.Parameters), true
 	}
 	return "", nil, false
+}
+
+func argumentProjectParameters(declaration project.Declaration) []argumentTagParameter {
+	parameters := declaration.FunctionParameters()
+	result := make([]argumentTagParameter, len(parameters))
+	for index, parameter := range parameters {
+		result[index] = argumentTagParameter{tags: normalizeArgumentTags(parameter.Tags), variadic: parameter.Variadic, known: parameter.Known}
+	}
+	return result
 }
 
 func argumentSourceParameters(model *semantic.Model, function *parser.Node) []argumentTagParameter {
@@ -168,11 +178,12 @@ func argumentExpressionTags(ctx *lint.Context, node *parser.Node) ([]string, boo
 		return argumentExpressionTags(ctx, node.Field("expression"))
 	case parser.KindIdentifier:
 		if ctx.Project != nil && ctx.ProjectFile != nil {
-			if declaration, ok := ctx.Project.Resolve(ctx.ProjectFile, node); ok && declaration.Symbol != nil && !declaration.Symbol.Ambiguous {
-				if len(declaration.Symbol.Tags) == 0 {
+			if declaration, ok := ctx.Project.Resolve(ctx.ProjectFile, node); ok && !declaration.Ambiguous() {
+				tags := declaration.Tags()
+				if len(tags) == 0 {
 					return []string{""}, true
 				}
-				return normalizeArgumentTags(declaration.Symbol.Tags), true
+				return normalizeArgumentTags(tags), true
 			}
 		}
 		if symbol := ctx.Semantic.Resolve(node); symbol != nil && !symbol.Ambiguous && len(symbol.Tags) == 0 {

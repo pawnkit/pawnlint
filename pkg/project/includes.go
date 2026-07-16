@@ -32,34 +32,51 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	}
 	physical := m.physical[canonical]
 	if physical == nil {
-		var parsed *parser.File
-		if m.options.ParseCache != nil {
+		if !provided && m.options.ReleaseIncludes {
 			started := time.Now()
-			var cached bool
-			parsed, cached = m.options.ParseCache.parse(canonical, source)
-			if !cached && m.options.ObserveTiming != nil {
+			compact := parser.ParseCompact(source, parser.ParseOptions{})
+			if m.options.ObserveTiming != nil {
 				m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
 			}
-		} else if m.options.ObserveTiming == nil {
-			parsed = parser.Parse(source)
+			physical = &physicalFile{source: source, compact: compact, lineTable: sourceinfo.NewLineTable(source)}
+			m.physical[canonical] = physical
 		} else {
-			started := time.Now()
-			parsed = parser.Parse(source)
-			m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
+			var parsed *parser.File
+			if m.options.ParseCache != nil {
+				started := time.Now()
+				var cached bool
+				parsed, cached = m.options.ParseCache.parse(canonical, source)
+				if !cached && m.options.ObserveTiming != nil {
+					m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
+				}
+			} else if m.options.ObserveTiming == nil {
+				parsed = parser.Parse(source)
+			} else {
+				started := time.Now()
+				parsed = parser.Parse(source)
+				m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
+			}
+			physical = &physicalFile{source: source, parsed: parsed, lineTable: sourceinfo.NewLineTable(source), syntaxIndex: walk.NewIndex(parsed)}
+			m.physical[canonical] = physical
 		}
-		physical = &physicalFile{source: source, parsed: parsed, lineTable: sourceinfo.NewLineTable(source), syntaxIndex: walk.NewIndex(parsed)}
-		m.physical[canonical] = physical
 	}
 	parsed := physical.parsed
-	if parsed == nil {
+	compact := physical.compact
+	if parsed == nil && compact == nil {
 		return nil, fmt.Errorf("project: parse %s", path)
 	}
 	display := path
 	if !provided {
 		display = canonical
 	}
-	tree := walk.NewWithContext(display, parsed, defines.walk, nil, m.options.DefinesComplete, physical.lineTable, physical.syntaxIndex)
-	file := &File{Path: display, Source: physical.source, Parsed: parsed, Walk: tree, Syntax: cst.Pointer(tree), Provided: provided, canonical: canonical, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1), syntaxIndex: physical.syntaxIndex}
+	file := &File{Path: display, Source: physical.source, Parsed: parsed, CompactParsed: compact, Provided: provided, canonical: canonical, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1), syntaxIndex: physical.syntaxIndex}
+	if parsed != nil {
+		file.Walk = walk.NewWithContext(display, parsed, defines.walk, nil, m.options.DefinesComplete, physical.lineTable, physical.syntaxIndex)
+		file.Syntax = cst.Pointer(file.Walk)
+	} else {
+		file.CompactWalk = walk.NewCompactWithContext(display, compact, defines.walk, nil, m.options.DefinesComplete, physical.lineTable)
+		file.Syntax = cst.Compact(file.CompactWalk)
+	}
 	m.Files = append(m.Files, file)
 	m.sourceFiles[file.sourceID] = file
 	m.byContext[instance] = file
@@ -122,10 +139,18 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	}
 	file.final = m.internDefines(defineCursor.KnownDefinesAt(len(file.Source) + 1))
 	if m.options.ObserveTiming == nil {
-		file.Semantic = semantic.Build(file.Parsed, file.Walk)
+		if file.Parsed != nil {
+			file.Semantic = semantic.Build(file.Parsed, file.Walk)
+		} else {
+			file.CompactSemantic = semantic.BuildCompact(file.CompactParsed, file.CompactWalk)
+		}
 	} else {
 		started := time.Now()
-		file.Semantic = semantic.Build(file.Parsed, file.Walk)
+		if file.Parsed != nil {
+			file.Semantic = semantic.Build(file.Parsed, file.Walk)
+		} else {
+			file.CompactSemantic = semantic.BuildCompact(file.CompactParsed, file.CompactWalk)
+		}
 		m.observe(TimingEvent{Stage: TimingSemantic, Duration: time.Since(started)})
 	}
 	if m.options.Features != nil && !m.options.Features.Has(FeatureCallGraph) {
@@ -138,6 +163,30 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		if include.Resolved != nil && !include.Uncertain && include.Resolved.expansionState != nil {
 			imports[include.Start()] = include.Resolved.expansionState
 		}
+	}
+	if file.CompactParsed != nil {
+		expanded, expansionState := preprocess.ExpandCompactSyntaxWithState(file.CompactParsed, file.CompactWalk, file.sourceID, nil, imports)
+		file.expansionState = expansionState
+		file.ExpansionComplete = expanded.Complete
+		for _, include := range file.Includes {
+			if include.Uncertain || include.Resolved != nil && !include.Resolved.ExpansionComplete {
+				file.ExpansionComplete = false
+			}
+		}
+		parsed := expanded.Parsed
+		if parsed == nil {
+			parsed = file.CompactParsed
+		}
+		tree := file.CompactWalk
+		if expanded.Changed {
+			tree = walk.NewCompactWithDefineContext(file.Path, parsed, file.defines.names, nil, file.complete)
+		}
+		m.captureCompactRuntimeCalls(file, parsed, tree)
+		if m.options.ObserveTiming != nil {
+			m.observe(TimingEvent{Stage: TimingPreprocess, Duration: time.Since(started)})
+		}
+		file.resolved = true
+		return nil
 	}
 	if m.options.ReleaseExpanded {
 		expanded, expansionState := preprocess.ExpandCompactWithState(file.Parsed, file.Walk, file.sourceID, nil, imports)
@@ -268,8 +317,14 @@ func (m *Model) resolveInclude(from *File, path string, defines *defineEnvironme
 }
 
 func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot) {
-	f.Walk = walk.NewWithContext(f.Path, f.Parsed, f.defines.walk, snapshots, f.complete, f.Walk.LineTable, f.syntaxIndex)
-	f.Syntax = cst.Pointer(f.Walk)
+	f.snapshots = append(f.snapshots[:0], snapshots...)
+	if f.Parsed != nil {
+		f.Walk = walk.NewWithContext(f.Path, f.Parsed, f.defines.walk, snapshots, f.complete, f.Walk.LineTable, f.syntaxIndex)
+		f.Syntax = cst.Pointer(f.Walk)
+	} else {
+		f.CompactWalk = walk.NewCompactWithContext(f.Path, f.CompactParsed, f.defines.walk, snapshots, f.complete, f.CompactWalk.LineTable)
+		f.Syntax = cst.Compact(f.CompactWalk)
+	}
 }
 
 func (m *Model) internDefines(defines []string) *defineEnvironment {
