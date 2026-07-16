@@ -55,9 +55,8 @@ type File struct {
 	Includes          []*Include
 	Provided          bool
 	canonical         string
-	instance          string
-	defines           []string
-	final             []string
+	defines           *defineEnvironment
+	final             *defineEnvironment
 	resolving         bool
 	resolved          bool
 	complete          bool
@@ -125,7 +124,9 @@ type Model struct {
 	unusedIncludes     []IncludeIssue
 	symbolConflicts    []SymbolConflict
 	byCanonical        map[string]*File
-	byContext          map[string]*File
+	byContext          map[fileContextKey]*File
+	defineEnvironments map[uint64][]*defineEnvironment
+	nextEnvironmentID  uint32
 	physical           map[string]*physicalFile
 	references         map[declarationID][]Reference
 	resolved           map[*File]map[*parser.Node]Declaration
@@ -139,6 +140,17 @@ type Model struct {
 type physicalFile struct {
 	source []byte
 	parsed *parser.File
+}
+
+type fileContextKey struct {
+	canonical   string
+	environment uint32
+}
+
+type defineEnvironment struct {
+	id    uint32
+	order uint32
+	names []string
 }
 
 func Build(sources []Source, options Options) (*Model, error) {
@@ -164,19 +176,21 @@ func Build(sources []Source, options Options) (*Model, error) {
 		options.IncludePaths[i] = filepath.Clean(path)
 	}
 	model := &Model{
-		Declarations: make(map[string][]Declaration),
-		byCanonical:  make(map[string]*File),
-		byContext:    make(map[string]*File),
-		physical:     make(map[string]*physicalFile),
-		references:   make(map[declarationID][]Reference),
-		resolved:     make(map[*File]map[*parser.Node]Declaration),
-		ambiguous:    make(map[*File]map[*parser.Node]bool),
-		definedNames: make(map[string]struct{}),
-		sourceFiles:  make(map[uint32]*File),
-		options:      options,
+		Declarations:       make(map[string][]Declaration),
+		byCanonical:        make(map[string]*File),
+		byContext:          make(map[fileContextKey]*File),
+		defineEnvironments: make(map[uint64][]*defineEnvironment),
+		physical:           make(map[string]*physicalFile),
+		references:         make(map[declarationID][]Reference),
+		resolved:           make(map[*File]map[*parser.Node]Declaration),
+		ambiguous:          make(map[*File]map[*parser.Node]bool),
+		definedNames:       make(map[string]struct{}),
+		sourceFiles:        make(map[uint32]*File),
+		options:            options,
 	}
+	rootEnvironment := model.internDefines(options.Defines)
 	for _, source := range sources {
-		file, err := model.addFile(source.Path, source.Content, true, options.Defines)
+		file, err := model.addFile(source.Path, source.Content, true, rootEnvironment)
 		if err != nil {
 			return nil, err
 		}
@@ -189,6 +203,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 			return nil, err
 		}
 	}
+	model.orderDefineEnvironments()
 	if features.Has(FeatureDefinedNames) {
 		model.buildDefinedNames()
 	}
@@ -196,7 +211,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 		if model.Files[i].canonical != model.Files[j].canonical {
 			return model.Files[i].canonical < model.Files[j].canonical
 		}
-		return model.Files[i].instance < model.Files[j].instance
+		return model.Files[i].defines.order < model.Files[j].defines.order
 	})
 	needsDeclarations := features.Has(FeatureReferences) || features.Has(FeatureDuplicates) || features.Has(FeatureConflicts)
 	needsUnits := needsDeclarations || features.Has(FeatureCallGraph)

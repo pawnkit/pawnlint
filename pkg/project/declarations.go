@@ -235,8 +235,11 @@ func declarationKey(declaration Declaration) declarationID {
 }
 
 func declarationLess(left, right Declaration) bool {
-	if left.File.instance != right.File.instance {
-		return left.File.instance < right.File.instance
+	if left.File.canonical != right.File.canonical {
+		return left.File.canonical < right.File.canonical
+	}
+	if left.File.defines.order != right.File.defines.order {
+		return left.File.defines.order < right.File.defines.order
 	}
 	return left.Node.Start < right.Node.Start
 }

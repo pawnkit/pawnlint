@@ -572,6 +572,22 @@ func TestRootsUseIndependentIncludeContexts(t *testing.T) {
 	}
 }
 
+func TestBuildInternsDefineEnvironments(t *testing.T) {
+	dir := t.TempDir()
+	onePath := filepath.Join(dir, "one.pwn")
+	twoPath := filepath.Join(dir, "two.pwn")
+	source := []byte("#define SHARED\n")
+	model, err := Build([]Source{{Path: onePath, Content: source}, {Path: twoPath, Content: source}}, Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	one := model.File(onePath)
+	two := model.File(twoPath)
+	if one.defines != two.defines || one.final != two.final {
+		t.Fatal("equivalent define environments were not interned")
+	}
+}
+
 func TestContextualDeclarationsKeepIndependentReferences(t *testing.T) {
 	dir := t.TempDir()
 	includePath := filepath.Join(dir, "shared.inc")

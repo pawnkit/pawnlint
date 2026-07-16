@@ -15,12 +15,12 @@ import (
 	"github.com/pawnkit/pawnlint/internal/source/walk"
 )
 
-func (m *Model) addFile(path string, source []byte, provided bool, defines []string) (*File, error) {
+func (m *Model) addFile(path string, source []byte, provided bool, defines *defineEnvironment) (*File, error) {
 	canonical, err := canonicalPath(path, m.options.WorkingDir)
 	if err != nil {
 		return nil, err
 	}
-	instance := contextKey(canonical, defines)
+	instance := fileContextKey{canonical: canonical, environment: defines.id}
 	if existing := m.byContext[instance]; existing != nil {
 		existing.Provided = existing.Provided || provided
 		if provided {
@@ -56,8 +56,8 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines []str
 	if !provided {
 		display = canonical
 	}
-	tree := walk.NewWithDefineContext(display, parsed, defines, nil, m.options.DefinesComplete)
-	file := &File{Path: display, Source: physical.source, Parsed: parsed, Walk: tree, Provided: provided, canonical: canonical, instance: instance, defines: append([]string(nil), defines...), complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1)}
+	tree := walk.NewWithDefineContext(display, parsed, defines.names, nil, m.options.DefinesComplete)
+	file := &File{Path: display, Source: physical.source, Parsed: parsed, Walk: tree, Provided: provided, canonical: canonical, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1)}
 	m.Files = append(m.Files, file)
 	m.sourceFiles[file.sourceID] = file
 	m.byContext[instance] = file
@@ -96,7 +96,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		if path == "" || include.Uncertain {
 			continue
 		}
-		defines := defineCursor.KnownDefinesAt(node.Start)
+		defines := m.internDefines(defineCursor.KnownDefinesAt(node.Start))
 		resolved, candidates, err := m.resolveInclude(file, path, defines)
 		if err != nil {
 			return err
@@ -109,8 +109,8 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		if err := m.resolveFileIncludes(resolved); err != nil {
 			return err
 		}
-		if len(resolved.final) > 0 && !sameDefines(defines, resolved.final) {
-			snapshots = append(snapshots, walk.DefineSnapshot{Offset: node.End, Defines: resolved.final})
+		if resolved.final != nil && len(resolved.final.names) > 0 && defines != resolved.final {
+			snapshots = append(snapshots, walk.DefineSnapshot{Offset: node.End, Defines: resolved.final.names})
 			dirty = true
 		}
 	}
@@ -118,7 +118,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		file.rebuildWalk(snapshots)
 		defineCursor = file.Walk.NewDefineCursor()
 	}
-	file.final = defineCursor.KnownDefinesAt(len(file.Source) + 1)
+	file.final = m.internDefines(defineCursor.KnownDefinesAt(len(file.Source) + 1))
 	if m.options.ObserveTiming == nil {
 		file.Semantic = semantic.Build(file.Parsed, file.Walk)
 	} else {
@@ -153,7 +153,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	} else {
 		file.ExpandedSource = expanded.Source
 		file.ExpandedParsed = expanded.Parsed
-		file.ExpandedWalk = walk.NewWithDefineContext(file.Path, expanded.Parsed, file.defines, nil, file.complete)
+		file.ExpandedWalk = walk.NewWithDefineContext(file.Path, expanded.Parsed, file.defines.names, nil, file.complete)
 		if !m.options.ReleaseExpanded {
 			file.ExpandedSemantic = semantic.Build(expanded.Parsed, file.ExpandedWalk)
 		}
@@ -178,7 +178,7 @@ func (m *Model) observe(event TimingEvent) {
 	}
 }
 
-func (m *Model) resolveInclude(from *File, path string, defines []string) (*File, []string, error) {
+func (m *Model) resolveInclude(from *File, path string, defines *defineEnvironment) (*File, []string, error) {
 	path = filepath.FromSlash(strings.ReplaceAll(path, "\\", "/"))
 	var bases []string
 	if filepath.IsAbs(path) {
@@ -225,7 +225,7 @@ func (m *Model) resolveInclude(from *File, path string, defines []string) (*File
 		return nil, nil, nil
 	}
 	chosen := candidates[0]
-	if existing := m.byContext[contextKey(chosen, defines)]; existing != nil {
+	if existing := m.byContext[fileContextKey{canonical: chosen, environment: defines.id}]; existing != nil {
 		return existing, candidates, nil
 	}
 	var source []byte
@@ -243,11 +243,48 @@ func (m *Model) resolveInclude(from *File, path string, defines []string) (*File
 }
 
 func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot) {
-	f.Walk = walk.NewWithDefineContext(f.Path, f.Parsed, f.defines, snapshots, f.complete)
+	f.Walk = walk.NewWithDefineContext(f.Path, f.Parsed, f.defines.names, snapshots, f.complete)
 }
 
-func contextKey(canonical string, defines []string) string {
-	return canonical + "\x00" + strings.Join(defines, "\x00")
+func (m *Model) internDefines(defines []string) *defineEnvironment {
+	hash := defineEnvironmentHash(defines)
+	for _, environment := range m.defineEnvironments[hash] {
+		if sameDefines(environment.names, defines) {
+			return environment
+		}
+	}
+	m.nextEnvironmentID++
+	environment := &defineEnvironment{id: m.nextEnvironmentID, names: append([]string(nil), defines...)}
+	m.defineEnvironments[hash] = append(m.defineEnvironments[hash], environment)
+	return environment
+}
+
+func defineEnvironmentHash(defines []string) uint64 {
+	const offset = uint64(14695981039346656037)
+	const prime = uint64(1099511628211)
+	hash := offset
+	for _, define := range defines {
+		for index := 0; index < len(define); index++ {
+			hash ^= uint64(define[index])
+			hash *= prime
+		}
+		hash ^= 0
+		hash *= prime
+	}
+	return hash
+}
+
+func (m *Model) orderDefineEnvironments() {
+	environments := make([]*defineEnvironment, 0, m.nextEnvironmentID)
+	for _, bucket := range m.defineEnvironments {
+		environments = append(environments, bucket...)
+	}
+	sort.Slice(environments, func(i, j int) bool {
+		return compareDefines(environments[i].names, environments[j].names) < 0
+	})
+	for index, environment := range environments {
+		environment.order = uint32(index)
+	}
 }
 
 func normalizeDefines(defines []string) []string {
@@ -277,6 +314,24 @@ func sameDefines(left, right []string) bool {
 		}
 	}
 	return true
+}
+
+func compareDefines(left, right []string) int {
+	for index := 0; index < len(left) && index < len(right); index++ {
+		if left[index] < right[index] {
+			return -1
+		}
+		if left[index] > right[index] {
+			return 1
+		}
+	}
+	if len(left) < len(right) {
+		return -1
+	}
+	if len(left) > len(right) {
+		return 1
+	}
+	return 0
 }
 
 func includePath(raw string) string {
