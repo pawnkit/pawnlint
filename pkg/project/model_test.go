@@ -560,6 +560,15 @@ func TestRootsUseIndependentIncludeContexts(t *testing.T) {
 	if len(model.Files) != 4 || len(model.Units) != 2 {
 		t.Fatalf("files = %d, units = %d", len(model.Files), len(model.Units))
 	}
+	var contexts []*File
+	for _, file := range model.Files {
+		if file.canonical == includePath {
+			contexts = append(contexts, file)
+		}
+	}
+	if len(contexts) != 2 || contexts[0].Walk.LineTable != contexts[1].Walk.LineTable {
+		t.Fatal("physical source index was not shared")
+	}
 	for _, unit := range model.Units {
 		want := "FromOne"
 		unwanted := "FromTwo"

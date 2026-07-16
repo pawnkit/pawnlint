@@ -153,8 +153,11 @@ func (c *DefineCursor) reset() {
 	c.offset = -1
 	c.directiveIndex = 0
 	c.snapshotIndex = 0
-	c.clearKnown(len(c.model.defines))
-	for _, name := range c.model.defines {
+	c.clearKnown(len(compilerDefines) + len(c.model.defines.names))
+	for _, name := range compilerDefines {
+		c.add(name)
+	}
+	for _, name := range c.model.defines.names {
 		c.add(name)
 	}
 }

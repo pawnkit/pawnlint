@@ -19,7 +19,7 @@ type Model struct {
 	branches   map[*parser.Node]branchState
 	uncertain  map[*parser.Node]bool
 	inactive   map[*parser.Node]bool
-	defines    []string
+	defines    *DefineContext
 	snapshots  []DefineSnapshot
 	complete   bool
 }
@@ -27,6 +27,10 @@ type Model struct {
 type DefineSnapshot struct {
 	Offset  int
 	Defines []string
+}
+
+type DefineContext struct {
+	names []string
 }
 
 type branchState uint8
@@ -56,20 +60,34 @@ func NewWithDefineSnapshots(path string, pf *parser.File, defines []string, snap
 }
 
 func NewWithDefineContext(path string, pf *parser.File, defines []string, snapshots []DefineSnapshot, complete bool) *Model {
+	return NewWithContext(path, pf, NewDefineContext(defines), snapshots, complete, nil)
+}
+
+func NewDefineContext(defines []string) *DefineContext {
+	return &DefineContext{names: append([]string(nil), defines...)}
+}
+
+func NewWithContext(path string, pf *parser.File, defines *DefineContext, snapshots []DefineSnapshot, complete bool, lineTable *source.LineTable) *Model {
 	var src []byte
 	if pf != nil {
 		src = pf.Source
 	}
+	if lineTable == nil {
+		lineTable = source.NewLineTable(src)
+	}
+	if defines == nil {
+		defines = NewDefineContext(nil)
+	}
 	m := &Model{
 		File:      pf,
 		Path:      path,
-		LineTable: source.NewLineTable(src),
+		LineTable: lineTable,
 		parents:   make(map[*parser.Node]*parser.Node),
 		byKind:    make(map[parser.Kind][]*parser.Node),
 		branches:  make(map[*parser.Node]branchState),
 		uncertain: make(map[*parser.Node]bool),
 		inactive:  make(map[*parser.Node]bool),
-		defines:   append(append([]string(nil), compilerDefines...), defines...),
+		defines:   defines,
 		snapshots: cloneDefineSnapshots(snapshots),
 		complete:  complete,
 	}

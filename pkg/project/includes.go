@@ -12,6 +12,7 @@ import (
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawnlint/internal/preprocess"
 	"github.com/pawnkit/pawnlint/internal/semantic"
+	sourceinfo "github.com/pawnkit/pawnlint/internal/source"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
 )
 
@@ -45,7 +46,7 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 			parsed = parser.Parse(source)
 			m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
 		}
-		physical = &physicalFile{source: source, parsed: parsed}
+		physical = &physicalFile{source: source, parsed: parsed, lineTable: sourceinfo.NewLineTable(source)}
 		m.physical[canonical] = physical
 	}
 	parsed := physical.parsed
@@ -56,7 +57,7 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	if !provided {
 		display = canonical
 	}
-	tree := walk.NewWithDefineContext(display, parsed, defines.names, nil, m.options.DefinesComplete)
+	tree := walk.NewWithContext(display, parsed, defines.walk, nil, m.options.DefinesComplete, physical.lineTable)
 	file := &File{Path: display, Source: physical.source, Parsed: parsed, Walk: tree, Provided: provided, canonical: canonical, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1)}
 	m.Files = append(m.Files, file)
 	m.sourceFiles[file.sourceID] = file
@@ -153,7 +154,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	} else {
 		file.ExpandedSource = expanded.Source
 		file.ExpandedParsed = expanded.Parsed
-		file.ExpandedWalk = walk.NewWithDefineContext(file.Path, expanded.Parsed, file.defines.names, nil, file.complete)
+		file.ExpandedWalk = walk.NewWithContext(file.Path, expanded.Parsed, file.defines.walk, nil, file.complete, nil)
 		if !m.options.ReleaseExpanded {
 			file.ExpandedSemantic = semantic.Build(expanded.Parsed, file.ExpandedWalk)
 		}
@@ -243,7 +244,7 @@ func (m *Model) resolveInclude(from *File, path string, defines *defineEnvironme
 }
 
 func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot) {
-	f.Walk = walk.NewWithDefineContext(f.Path, f.Parsed, f.defines.names, snapshots, f.complete)
+	f.Walk = walk.NewWithContext(f.Path, f.Parsed, f.defines.walk, snapshots, f.complete, f.Walk.LineTable)
 }
 
 func (m *Model) internDefines(defines []string) *defineEnvironment {
@@ -254,7 +255,8 @@ func (m *Model) internDefines(defines []string) *defineEnvironment {
 		}
 	}
 	m.nextEnvironmentID++
-	environment := &defineEnvironment{id: m.nextEnvironmentID, names: append([]string(nil), defines...)}
+	names := append([]string(nil), defines...)
+	environment := &defineEnvironment{id: m.nextEnvironmentID, names: names, walk: walk.NewDefineContext(names)}
 	m.defineEnvironments[hash] = append(m.defineEnvironments[hash], environment)
 	return environment
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawnlint/internal/preprocess"
 	"github.com/pawnkit/pawnlint/internal/semantic"
+	sourceinfo "github.com/pawnkit/pawnlint/internal/source"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
 )
 
@@ -138,8 +139,9 @@ type Model struct {
 }
 
 type physicalFile struct {
-	source []byte
-	parsed *parser.File
+	source    []byte
+	parsed    *parser.File
+	lineTable *sourceinfo.LineTable
 }
 
 type fileContextKey struct {
@@ -151,6 +153,7 @@ type defineEnvironment struct {
 	id    uint32
 	order uint32
 	names []string
+	walk  *walk.DefineContext
 }
 
 func Build(sources []Source, options Options) (*Model, error) {
