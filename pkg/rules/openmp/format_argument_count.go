@@ -2,6 +2,7 @@ package openmp
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pawnkit/pawn-parser"
@@ -122,15 +123,15 @@ func literalContinues(ctx *lint.Context, node *parser.Node) bool {
 	if ctx == nil || ctx.File == nil || ctx.File.Parsed == nil || node == nil {
 		return false
 	}
-	for index := range ctx.File.Parsed.Tokens {
-		current := &ctx.File.Parsed.Tokens[index]
-		if current.Start.Offset != node.Tok.Start.Offset || current.End.Offset != node.Tok.End.Offset || index+1 >= len(ctx.File.Parsed.Tokens) {
-			continue
-		}
-		next := &ctx.File.Parsed.Tokens[index+1]
-		return next.Kind == token.Identifier || next.Kind == token.StringLiteral || next.Kind == token.PackedString
+	tokens := ctx.File.Parsed.Tokens
+	index := sort.Search(len(tokens), func(index int) bool {
+		return tokens[index].Start.Offset >= node.Tok.Start.Offset
+	})
+	if index >= len(tokens) || tokens[index].Start.Offset != node.Tok.Start.Offset || tokens[index].End.Offset != node.Tok.End.Offset || index+1 >= len(tokens) {
+		return false
 	}
-	return false
+	next := tokens[index+1].Kind
+	return next == token.Identifier || next == token.StringLiteral || next == token.PackedString
 }
 
 func formatArgumentCount(value string) (int, bool) {
