@@ -8,6 +8,7 @@ import (
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/semantic"
+	"github.com/pawnkit/pawnlint/internal/source/cst"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
 	"github.com/pawnkit/pawnlint/internal/syntax"
 )
@@ -34,6 +35,7 @@ type Call struct {
 	Node           *parser.Node
 	Kind           CallKind
 	ArgumentOffset int
+	syntax         cst.Node
 }
 
 type EntryPoint struct {
@@ -67,36 +69,36 @@ type expansionOriginFact struct {
 
 func (m *Model) buildCallGraph() *CallGraph {
 	graph := &CallGraph{outgoing: make(map[declarationID][]Call), asyncOutgoing: make(map[declarationID][]Call), asyncIncoming: make(map[declarationID][]Call)}
-	byNode := make(map[*File]map[*parser.Node]Declaration)
+	byNode := make(map[*File]map[cst.Node]Declaration)
 	for _, declarations := range m.Declarations {
 		for _, declaration := range declarations {
-			if declaration.Kind != semantic.SymbolFunction || declaration.Node.Kind != parser.KindFunctionDefinition || declaration.Symbol == nil || declaration.Symbol.Ambiguous {
+			if declaration.Kind != semantic.SymbolFunction || declarationSyntax(declaration).Kind() != parser.KindFunctionDefinition || declarationSymbolAmbiguous(declaration) {
 				continue
 			}
 			graph.Functions = append(graph.Functions, declaration)
 			if byNode[declaration.File] == nil {
-				byNode[declaration.File] = make(map[*parser.Node]Declaration)
+				byNode[declaration.File] = make(map[cst.Node]Declaration)
 			}
-			byNode[declaration.File][declaration.Node] = declaration
+			byNode[declaration.File][declarationSyntax(declaration)] = declaration
 		}
 	}
 	sortDeclarations(graph.Functions)
 	for _, file := range m.Files {
-		for _, call := range file.Walk.OfKind(parser.KindCallExpression) {
-			if file.Walk.Uncertain(call) || file.Walk.Inactive(call) {
+		for _, call := range file.Syntax.OfKind(parser.KindCallExpression) {
+			if file.Syntax.Uncertain(call) || file.Syntax.Inactive(call) {
 				continue
 			}
 			calleeNode := call.Field("function")
-			if calleeNode == nil || calleeNode.Kind != parser.KindIdentifier {
+			if !calleeNode.Valid() || calleeNode.Kind() != parser.KindIdentifier {
 				continue
 			}
-			caller := byNode[file][file.Walk.EnclosingFunction(call)]
-			if caller.Node == nil {
+			caller := byNode[file][file.Syntax.EnclosingFunction(call)]
+			if !declarationSyntax(caller).Valid() {
 				continue
 			}
-			callees := m.FunctionVariants(file, calleeNode)
+			callees := m.functionVariants(file, calleeNode)
 			if len(callees) == 0 {
-				resolved, ok := m.Resolve(file, calleeNode)
+				resolved, ok := m.resolveSyntax(file, calleeNode)
 				if !ok {
 					continue
 				}
@@ -107,7 +109,7 @@ func (m *Model) buildCallGraph() *CallGraph {
 				callees = []Declaration{callee}
 			}
 			for _, callee := range callees {
-				graph.Calls = append(graph.Calls, Call{Caller: caller, Callee: callee, File: file, Node: call})
+				graph.Calls = append(graph.Calls, Call{Caller: caller, Callee: callee, File: file, Node: call.Pointer(), syntax: call})
 			}
 		}
 	}
@@ -119,8 +121,8 @@ func (m *Model) buildCallGraph() *CallGraph {
 		if left.File.canonical != right.File.canonical {
 			return left.File.canonical < right.File.canonical
 		}
-		if left.Node.Start != right.Node.Start {
-			return left.Node.Start < right.Node.Start
+		if callSyntaxOffset(left) != callSyntaxOffset(right) {
+			return callSyntaxOffset(left) < callSyntaxOffset(right)
 		}
 		return declarationLess(left.Callee, right.Callee)
 	})
@@ -349,14 +351,14 @@ func (g *CallGraph) buildRuntimeEdges(model *Model) {
 	for _, function := range g.Functions {
 		if function.Name == "main" {
 			g.EntryPoints = append(g.EntryPoints, EntryPoint{Function: function, Kind: EntryMain})
-		} else if walk.HasChildToken(function.Node, token.KwPublic) {
+		} else if declarationSyntax(function).HasChildToken(token.KwPublic) {
 			g.EntryPoints = append(g.EntryPoints, EntryPoint{Function: function, Kind: EntryCallback})
 		}
 	}
 	for _, file := range model.Files {
 		for _, fact := range file.runtimeCalls {
 			caller := runtimeCaller(file, fact.caller, model.Declarations)
-			if caller.Node == nil {
+			if !declarationSyntax(caller).Valid() {
 				continue
 			}
 			for _, targetFunction := range model.runtimeDefinitions(file, fact.target) {
@@ -377,8 +379,8 @@ func (g *CallGraph) buildRuntimeEdges(model *Model) {
 		if declarationKey(left.Caller) != declarationKey(right.Caller) {
 			return declarationLess(left.Caller, right.Caller)
 		}
-		if left.Node.Start != right.Node.Start {
-			return left.Node.Start < right.Node.Start
+		if callSyntaxOffset(left) != callSyntaxOffset(right) {
+			return callSyntaxOffset(left) < callSyntaxOffset(right)
 		}
 		return declarationLess(left.Callee, right.Callee)
 	})
@@ -390,8 +392,8 @@ func (g *CallGraph) buildRuntimeEdges(model *Model) {
 		if left.File.canonical != right.File.canonical {
 			return left.File.canonical < right.File.canonical
 		}
-		if left.Node.Start != right.Node.Start {
-			return left.Node.Start < right.Node.Start
+		if callSyntaxOffset(left) != callSyntaxOffset(right) {
+			return callSyntaxOffset(left) < callSyntaxOffset(right)
 		}
 		return declarationLess(left.Callee, right.Callee)
 	})
@@ -411,10 +413,10 @@ func (g *CallGraph) buildRuntimeEdges(model *Model) {
 func runtimeCaller(file *File, name string, declarations map[string][]Declaration) Declaration {
 	var result Declaration
 	for _, declaration := range declarations[name] {
-		if declaration.File != file || declaration.Node.Kind != parser.KindFunctionDefinition || declaration.Symbol == nil || declaration.Symbol.Ambiguous {
+		if declaration.File != file || declarationSyntax(declaration).Kind() != parser.KindFunctionDefinition || declarationSymbolAmbiguous(declaration) {
 			continue
 		}
-		if result.Node != nil {
+		if declarationSyntax(result).Valid() {
 			return Declaration{}
 		}
 		result = declaration
@@ -459,7 +461,7 @@ func (m *Model) runtimeDefinitions(file *File, name string) []Declaration {
 			continue
 		}
 		for _, declaration := range m.Declarations[name] {
-			if _, included := unit.members[declaration.File]; included && declaration.Node.Kind == parser.KindFunctionDefinition && declaration.Symbol != nil && !declaration.Symbol.Ambiguous {
+			if _, included := unit.members[declaration.File]; included && declarationSyntax(declaration).Kind() == parser.KindFunctionDefinition && !declarationSymbolAmbiguous(declaration) {
 				seen[declarationKey(declaration)] = declaration
 			}
 		}
@@ -480,7 +482,7 @@ func (m *Model) runtimeDefinitions(file *File, name string) []Declaration {
 }
 
 func (m *Model) callDefinition(from *File, resolved Declaration) (Declaration, bool) {
-	if resolved.Node != nil && resolved.Node.Kind == parser.KindFunctionDefinition && resolved.Symbol != nil && !resolved.Symbol.Ambiguous {
+	if declarationSyntax(resolved).Kind() == parser.KindFunctionDefinition && !declarationSymbolAmbiguous(resolved) {
 		return resolved, true
 	}
 	seen := make(map[declarationID]Declaration)
@@ -493,7 +495,7 @@ func (m *Model) callDefinition(from *File, resolved Declaration) (Declaration, b
 			continue
 		}
 		for _, declaration := range m.Declarations[resolved.Name] {
-			if declaration.Node == nil || declaration.Node.Kind != parser.KindFunctionDefinition || declaration.Symbol == nil || declaration.Symbol.Ambiguous {
+			if declarationSyntax(declaration).Kind() != parser.KindFunctionDefinition || declarationSymbolAmbiguous(declaration) {
 				continue
 			}
 			for _, file := range unit.Files {
@@ -510,6 +512,20 @@ func (m *Model) callDefinition(from *File, resolved Declaration) (Declaration, b
 		return declaration, true
 	}
 	return Declaration{}, false
+}
+
+func callSyntax(call Call) cst.Node {
+	if call.syntax.Valid() {
+		return call.syntax
+	}
+	if call.File != nil && call.File.Syntax != nil {
+		return call.File.Syntax.PointerNode(call.Node)
+	}
+	return cst.Node{}
+}
+
+func callSyntaxOffset(call Call) int {
+	return callSyntax(call).Start()
 }
 
 func (g *CallGraph) Outgoing(function Declaration) []Call {
