@@ -29,55 +29,39 @@ func (UnreachableCode) Run(ctx *lint.Context) {
 	if ctx.Flow == nil {
 		return
 	}
-	for _, node := range ctx.Walk.All() {
-		if !walk.IsStatement(node) || node.Kind == parser.KindEmptyStatement || ctx.Walk.Inactive(node) {
+	for _, function := range ctx.Flow.Functions {
+		if function == nil || function.Uncertain || function.Node == nil {
 			continue
 		}
-		functionNode := ctx.Walk.EnclosingFunction(node)
-		function := ctx.Flow.Function(functionNode)
-		if function == nil || function.Uncertain || function.Reachable(node) {
-			continue
+		previousUnreachable := false
+		for _, child := range function.Node.Children {
+			unreachableVisit(ctx, function, child, false, previousUnreachable)
+			if walk.IsStatement(child) {
+				previousUnreachable = !function.Reachable(child)
+			}
 		}
-		if unreachableAncestor(ctx, function, node) || unreachablePrevious(ctx, function, node) {
-			continue
-		}
+	}
+}
+
+func unreachableVisit(ctx *lint.Context, function *controlflow.Function, node *parser.Node, ancestorUnreachable, previousUnreachable bool) {
+	if node == nil || node.Kind == parser.KindFunctionDefinition {
+		return
+	}
+	statement := walk.IsStatement(node)
+	reachable := function.Reachable(node)
+	if statement && node.Kind != parser.KindEmptyStatement && !ctx.Walk.Inactive(node) && !reachable && !ancestorUnreachable && !previousUnreachable {
 		ctx.Report(diagnostic.Diagnostic{
 			Message:  "unreachable code",
 			Filename: ctx.File.Path,
 			Range:    ctx.Walk.Range(node),
 		})
 	}
-}
-
-func unreachableAncestor(ctx *lint.Context, function *controlflow.Function, node *parser.Node) bool {
-	for _, ancestor := range ctx.Walk.Ancestors(node) {
-		if ancestor == function.Node {
-			return false
-		}
-		if walk.IsStatement(ancestor) && !function.Reachable(ancestor) {
-			return true
+	childAncestorUnreachable := ancestorUnreachable || statement && !reachable
+	childPreviousUnreachable := false
+	for _, child := range node.Children {
+		unreachableVisit(ctx, function, child, childAncestorUnreachable, childPreviousUnreachable)
+		if walk.IsStatement(child) {
+			childPreviousUnreachable = !function.Reachable(child)
 		}
 	}
-	return false
-}
-
-func unreachablePrevious(ctx *lint.Context, function *controlflow.Function, node *parser.Node) bool {
-	parent := ctx.Walk.Parent(node)
-	if parent == nil {
-		return false
-	}
-	for i, sibling := range parent.Children {
-		if sibling != node {
-			continue
-		}
-		for j := i - 1; j >= 0; j-- {
-			previous := parent.Children[j]
-			if !walk.IsStatement(previous) {
-				continue
-			}
-			return !function.Reachable(previous)
-		}
-		return false
-	}
-	return false
 }
