@@ -21,32 +21,36 @@ func (m *Model) Aliases(node *parser.Node, symbol *semantic.Symbol) []*semantic.
 	if m == nil || node == nil || symbol == nil {
 		return nil
 	}
-	for _, function := range m.Functions {
-		block := function.Block(node)
-		if block == nil || function.Uncertain || !function.ReachableBlock(block) || function.aliasIndexes[symbol] == 0 {
-			continue
-		}
-		state := copyAliasState(function.aliasIn[block])
-		applyAliasEvents(state, function.aliasEvents[block], node.Start, function.aliasIndexes)
-		class := state[symbol]
-		var result []*semantic.Symbol
-		for candidate, candidateClass := range state {
-			if candidateClass == class {
-				result = append(result, candidate)
-			}
-		}
-		sort.SliceStable(result, func(i, j int) bool {
-			if result[i].Name != result[j].Name {
-				return result[i].Name < result[j].Name
-			}
-			return result[i].NameNode.Start < result[j].NameNode.Start
-		})
-		return result
+	function := m.byNode[m.tree.EnclosingFunction(node)]
+	if function == nil {
+		return nil
 	}
-	return nil
+	function.aliasOnce.Do(func() {
+		buildAliasFlow(function, m.tree, m.semantics, m.options, function.flowNodes, function.flowSymbols)
+	})
+	block := function.Block(node)
+	if block == nil || function.Uncertain || !function.ReachableBlock(block) || function.aliasIndexes[symbol] == 0 {
+		return nil
+	}
+	state := copyAliasState(function.aliasIn[block])
+	applyAliasEvents(state, function.aliasEvents[block], node.Start, function.aliasIndexes)
+	class := state[symbol]
+	var result []*semantic.Symbol
+	for candidate, candidateClass := range state {
+		if candidateClass == class {
+			result = append(result, candidate)
+		}
+	}
+	sort.SliceStable(result, func(i, j int) bool {
+		if result[i].Name != result[j].Name {
+			return result[i].Name < result[j].Name
+		}
+		return result[i].NameNode.Start < result[j].NameNode.Start
+	})
+	return result
 }
 
-func buildAliasFlow(function *Function, tree *walk.Model, semantics *semantic.Model, options Options) {
+func buildAliasFlow(function *Function, tree *walk.Model, semantics *semantic.Model, options Options, nodes *functionNodes, symbols []*semantic.Symbol) {
 	function.aliasIn = make(map[*Block]aliasState)
 	function.aliasEvents = make(map[*Block][]aliasEvent)
 	function.aliasIndexes = make(map[*semantic.Symbol]int)
@@ -54,7 +58,7 @@ func buildAliasFlow(function *Function, tree *walk.Model, semantics *semantic.Mo
 		return
 	}
 	eligible := make(map[*semantic.Symbol]bool)
-	for _, symbol := range semantics.Symbols {
+	for _, symbol := range symbols {
 		if aliasSymbol(tree, function, symbol) {
 			eligible[symbol] = true
 			function.aliasIndexes[symbol] = len(function.aliasIndexes) + 1
@@ -70,10 +74,7 @@ func buildAliasFlow(function *Function, tree *walk.Model, semantics *semantic.Mo
 		}
 		function.aliasEvents[block] = append(function.aliasEvents[block], aliasEvent{offset: symbol.Decl.End, target: symbol, source: aliasExpressionSymbol(symbol.Decl.Field("initializer"), semantics, eligible)})
 	}
-	for _, node := range tree.OfKind(parser.KindAssignmentExpression) {
-		if tree.EnclosingFunction(node) != function.Node {
-			continue
-		}
+	for _, node := range nodes.assignments {
 		target := aliasExpressionSymbol(node.Field("left"), semantics, eligible)
 		block := function.Block(node)
 		if target == nil || block == nil {
@@ -85,20 +86,14 @@ func buildAliasFlow(function *Function, tree *walk.Model, semantics *semantic.Mo
 		}
 		function.aliasEvents[block] = append(function.aliasEvents[block], aliasEvent{offset: node.End, target: target, source: source})
 	}
-	for _, node := range tree.OfKind(parser.KindUpdateExpression) {
-		if tree.EnclosingFunction(node) != function.Node {
-			continue
-		}
+	for _, node := range nodes.updates {
 		target := aliasExpressionSymbol(node.Field("expression"), semantics, eligible)
 		block := function.Block(node)
 		if target != nil && block != nil {
 			function.aliasEvents[block] = append(function.aliasEvents[block], aliasEvent{offset: node.End, target: target})
 		}
 	}
-	for _, node := range tree.OfKind(parser.KindCallExpression) {
-		if tree.EnclosingFunction(node) != function.Node {
-			continue
-		}
+	for _, node := range nodes.calls {
 		block := function.Block(node)
 		arguments := node.Field("arguments")
 		if block == nil || arguments == nil {

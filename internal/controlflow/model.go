@@ -1,6 +1,8 @@
 package controlflow
 
 import (
+	"sync"
+
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
@@ -40,15 +42,21 @@ type Function struct {
 	fallthroughExits []*Block
 	valueIn          map[*Block]map[*semantic.Symbol]int64
 	valueEvents      map[*Block][]valueEvent
+	valueOnce        sync.Once
 	aliasIn          map[*Block]aliasState
 	aliasEvents      map[*Block][]aliasEvent
 	aliasIndexes     map[*semantic.Symbol]int
+	aliasOnce        sync.Once
+	flowNodes        *functionNodes
+	flowSymbols      []*semantic.Symbol
 }
 
 type Model struct {
 	Functions []*Function
 	byNode    map[*parser.Node]*Function
 	semantics *semantic.Model
+	tree      *walk.Model
+	options   Options
 }
 
 type CallEffects struct {
@@ -60,14 +68,47 @@ type Options struct {
 	ResolveCallEffects func(*parser.Node) (CallEffects, bool)
 }
 
+type functionNodes struct {
+	assignments []*parser.Node
+	updates     []*parser.Node
+	calls       []*parser.Node
+}
+
 func Build(tree *walk.Model, semantics *semantic.Model) *Model {
 	return BuildWithOptions(tree, semantics, Options{})
 }
 
 func BuildWithOptions(tree *walk.Model, semantics *semantic.Model, options Options) *Model {
-	model := &Model{byNode: make(map[*parser.Node]*Function), semantics: semantics}
+	model := &Model{byNode: make(map[*parser.Node]*Function), semantics: semantics, tree: tree, options: options}
 	if tree == nil {
 		return model
+	}
+	nodes := make(map[*parser.Node]*functionNodes)
+	symbols := make(map[*parser.Node][]*semantic.Symbol)
+	for _, function := range tree.OfKind(parser.KindFunctionDefinition) {
+		nodes[function] = &functionNodes{}
+	}
+	for _, node := range tree.OfKind(parser.KindAssignmentExpression) {
+		if group := nodes[tree.EnclosingFunction(node)]; group != nil {
+			group.assignments = append(group.assignments, node)
+		}
+	}
+	for _, node := range tree.OfKind(parser.KindUpdateExpression) {
+		if group := nodes[tree.EnclosingFunction(node)]; group != nil {
+			group.updates = append(group.updates, node)
+		}
+	}
+	for _, node := range tree.OfKind(parser.KindCallExpression) {
+		if group := nodes[tree.EnclosingFunction(node)]; group != nil {
+			group.calls = append(group.calls, node)
+		}
+	}
+	if semantics != nil {
+		for _, symbol := range semantics.Symbols {
+			if symbol != nil && symbol.Function != nil {
+				symbols[symbol.Function] = append(symbols[symbol.Function], symbol)
+			}
+		}
 	}
 	for _, node := range tree.OfKind(parser.KindFunctionDefinition) {
 		if tree.Inactive(node) {
@@ -75,8 +116,8 @@ func BuildWithOptions(tree *walk.Model, semantics *semantic.Model, options Optio
 		}
 		builder := newBuilder(tree, semantics, node)
 		function := builder.build()
-		buildValueFlow(function, tree, semantics, options)
-		buildAliasFlow(function, tree, semantics, options)
+		function.flowNodes = nodes[node]
+		function.flowSymbols = symbols[node]
 		model.Functions = append(model.Functions, function)
 		model.byNode[node] = function
 	}
@@ -87,16 +128,20 @@ func (m *Model) Eval(node *parser.Node) (int64, bool) {
 	if m == nil || m.semantics == nil {
 		return 0, false
 	}
-	for _, function := range m.Functions {
-		block := function.Block(node)
-		if block == nil || function.Uncertain || !function.ReachableBlock(block) {
-			continue
-		}
-		state := copyValueState(function.valueIn[block])
-		applyValueEvents(state, function.valueEvents[block], node.Start, m.semantics)
-		return m.semantics.EvalWithValues(node, state)
+	function := m.byNode[m.tree.EnclosingFunction(node)]
+	if function == nil {
+		return m.semantics.Eval(node)
 	}
-	return m.semantics.Eval(node)
+	function.valueOnce.Do(func() {
+		buildValueFlow(function, m.tree, m.semantics, m.options, function.flowNodes, function.flowSymbols)
+	})
+	block := function.Block(node)
+	if block == nil || function.Uncertain || !function.ReachableBlock(block) {
+		return m.semantics.Eval(node)
+	}
+	state := copyValueState(function.valueIn[block])
+	applyValueEvents(state, function.valueEvents[block], node.Start, m.semantics)
+	return m.semantics.EvalWithValues(node, state)
 }
 
 func (m *Model) Function(node *parser.Node) *Function {

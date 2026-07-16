@@ -24,20 +24,20 @@ type valueEvent struct {
 	zero   bool
 }
 
-func buildValueFlow(function *Function, tree *walk.Model, semantics *semantic.Model, options Options) {
+func buildValueFlow(function *Function, tree *walk.Model, semantics *semantic.Model, options Options, nodes *functionNodes, symbols []*semantic.Symbol) {
 	function.valueIn = make(map[*Block]map[*semantic.Symbol]int64)
 	function.valueEvents = make(map[*Block][]valueEvent)
 	if function.Uncertain || semantics == nil {
 		return
 	}
 	tracked := make(map[*semantic.Symbol]struct{})
-	for _, symbol := range semantics.Symbols {
+	for _, symbol := range symbols {
 		if valueSymbol(tree, function, symbol) {
 			tracked[symbol] = struct{}{}
 			addDeclarationValueEvent(function, symbol)
 		}
 	}
-	for _, node := range tree.OfKind(parser.KindAssignmentExpression) {
+	for _, node := range nodes.assignments {
 		left := node.Field("left")
 		if left == nil || left.Kind != parser.KindIdentifier {
 			continue
@@ -47,7 +47,7 @@ func buildValueFlow(function *Function, tree *walk.Model, semantics *semantic.Mo
 			continue
 		}
 		block := function.Block(node)
-		if block == nil || tree.EnclosingFunction(node) != function.Node {
+		if block == nil {
 			continue
 		}
 		event := valueEvent{kind: valueInvalidate, offset: node.End, symbol: symbol}
@@ -57,13 +57,13 @@ func buildValueFlow(function *Function, tree *walk.Model, semantics *semantic.Mo
 		}
 		function.valueEvents[block] = append(function.valueEvents[block], event)
 	}
-	for _, node := range tree.OfKind(parser.KindUpdateExpression) {
+	for _, node := range nodes.updates {
 		expression := node.Field("expression")
 		if expression == nil || expression.Kind != parser.KindIdentifier {
 			continue
 		}
 		symbol := semantics.Resolve(expression)
-		if _, ok := tracked[symbol]; !ok || tree.EnclosingFunction(node) != function.Node {
+		if _, ok := tracked[symbol]; !ok {
 			continue
 		}
 		block := function.Block(node)
@@ -71,10 +71,7 @@ func buildValueFlow(function *Function, tree *walk.Model, semantics *semantic.Mo
 			function.valueEvents[block] = append(function.valueEvents[block], valueEvent{kind: valueInvalidate, offset: node.End, symbol: symbol})
 		}
 	}
-	for _, node := range tree.OfKind(parser.KindCallExpression) {
-		if tree.EnclosingFunction(node) != function.Node {
-			continue
-		}
+	for _, node := range nodes.calls {
 		block := function.Block(node)
 		if block == nil {
 			continue

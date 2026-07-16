@@ -192,12 +192,20 @@ func TestValuePropagationUsesResolvedCallEffects(t *testing.T) {
 	file := parser.Parse([]byte("Change(value) {} main() { new value = 1; Change(value); if (value == 1) {} }"))
 	tree := walk.New("x.pwn", file)
 	semantics := semantic.Build(file, tree)
+	calls := 0
 	model := controlflow.BuildWithOptions(tree, semantics, controlflow.Options{ResolveCallEffects: func(call *parser.Node) (controlflow.CallEffects, bool) {
+		calls++
 		return controlflow.CallEffects{Complete: true, MutatedArguments: []int{0}}, true
 	}})
+	if calls != 0 {
+		t.Fatal("value propagation was built eagerly")
+	}
 	condition := tree.OfKind(parser.KindIfStatement)[0].Field("condition")
 	if _, ok := model.Eval(condition); ok {
 		t.Fatal("resolved mutation was ignored")
+	}
+	if calls == 0 {
+		t.Fatal("call effects were not resolved")
 	}
 }
 
