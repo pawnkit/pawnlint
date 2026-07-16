@@ -75,8 +75,6 @@ type Model struct {
 	references     map[*Symbol][]Reference
 	unresolved     []UnresolvedReference
 	nodeScopes     map[*parser.Node]*Scope
-	declNames      map[*parser.Node]struct{}
-	functionScopes map[*parser.Node]*Scope
 	declSymbols    map[*parser.Node]*Symbol
 	constantValues map[*Symbol]int64
 }
@@ -91,18 +89,16 @@ func Build(file *parser.File, tree *walk.Model) *Model {
 		resolved:       make(map[*parser.Node]*Symbol),
 		references:     make(map[*Symbol][]Reference),
 		nodeScopes:     make(map[*parser.Node]*Scope),
-		declNames:      make(map[*parser.Node]struct{}),
-		functionScopes: make(map[*parser.Node]*Scope),
 		declSymbols:    make(map[*parser.Node]*Symbol),
 		constantValues: make(map[*Symbol]int64),
 	}
-	m.Root = &Scope{Node: tree.Root(), symbols: make(map[string][]*Symbol)}
-	m.collect(tree.Root(), m.Root, nil)
+	m.Root = &Scope{Node: tree.Root()}
+	m.collect(tree.Root(), m.Root, nil, nil)
 	for _, node := range tree.OfKind(parser.KindIdentifier) {
 		if m.Walk.Inactive(node) {
 			continue
 		}
-		if _, declared := m.declNames[node]; declared {
+		if m.declarationName(node) {
 			continue
 		}
 		symbol := m.resolve(node)
@@ -119,12 +115,12 @@ func Build(file *parser.File, tree *walk.Model) *Model {
 	return m
 }
 
-func (m *Model) collect(node *parser.Node, scope *Scope, function *parser.Node) {
+func (m *Model) collect(node *parser.Node, scope *Scope, function *parser.Node, functionScope *Scope) {
 	if node == nil {
 		return
 	}
 	if node.Kind == parser.KindIdentifier {
-		if _, declared := m.declNames[node]; !declared {
+		if !m.declarationName(node) {
 			if _, reference := m.referenceFilter(node); reference {
 				m.nodeScopes[node] = scope
 			}
@@ -135,7 +131,7 @@ func (m *Model) collect(node *parser.Node, scope *Scope, function *parser.Node) 
 		m.declare(node, node.Field("name"), SymbolFunction, scope, node)
 		function = node
 		scope = newScope(scope, node)
-		m.functionScopes[node] = scope
+		functionScope = scope
 	case parser.KindParameter:
 		m.declare(node, node.Field("name"), SymbolParameter, scope, function)
 	case parser.KindVariableDeclarator:
@@ -149,7 +145,7 @@ func (m *Model) collect(node *parser.Node, scope *Scope, function *parser.Node) 
 	case parser.KindEnumEntry:
 		m.declare(node, node.Field("name"), SymbolEnumEntry, scope, function)
 	case parser.KindLabelStatement:
-		if functionScope := m.functionScopes[function]; functionScope != nil {
+		if functionScope != nil {
 			m.declare(node, node.Field("label"), SymbolLabel, functionScope, function)
 		}
 	case parser.KindBlock:
@@ -161,10 +157,29 @@ func (m *Model) collect(node *parser.Node, scope *Scope, function *parser.Node) 
 		scope = newScope(scope, node)
 	}
 	for _, child := range node.Children {
-		m.collect(child, scope, function)
+		m.collect(child, scope, function, functionScope)
+	}
+}
+
+func (m *Model) declarationName(node *parser.Node) bool {
+	parent := m.Walk.Parent(node)
+	if parent == nil {
+		return false
+	}
+	field := "name"
+	if parent.Kind == parser.KindLabelStatement {
+		field = "label"
+	}
+	switch parent.Kind {
+	case parser.KindFunctionDefinition, parser.KindFunctionDeclaration, parser.KindParameter,
+		parser.KindVariableDeclarator, parser.KindEnumDeclaration, parser.KindEnumEntry,
+		parser.KindLabelStatement:
+		return parent.Field(field) == node
+	default:
+		return false
 	}
 }
 
 func newScope(parent *Scope, node *parser.Node) *Scope {
-	return &Scope{Parent: parent, Node: node, symbols: make(map[string][]*Symbol)}
+	return &Scope{Parent: parent, Node: node}
 }

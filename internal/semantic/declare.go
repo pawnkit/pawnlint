@@ -38,9 +38,13 @@ func (m *Model) declare(decl, nameNode *parser.Node, kind SymbolKind, scope *Sco
 		symbol.Ambiguous = true
 	}
 	m.Symbols = append(m.Symbols, symbol)
-	m.declSymbols[decl] = symbol
+	if kind == SymbolEnumRoot || kind == SymbolEnumEntry {
+		m.declSymbols[decl] = symbol
+	}
+	if scope.symbols == nil {
+		scope.symbols = make(map[string][]*Symbol)
+	}
 	scope.symbols[name] = append(scope.symbols[name], symbol)
-	m.declNames[nameNode] = struct{}{}
 }
 
 func (m *Model) symbolStates(decl *parser.Node, kind SymbolKind) ([]string, bool) {
