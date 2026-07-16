@@ -457,7 +457,7 @@ func (t Token) EndsLine() bool {
 	if start < 0 || end < start || end > len(t.model.Source()) {
 		return false
 	}
-	return bytes.IndexAny(t.model.Source()[start:end], "\r\n") >= 0
+	return bytes.ContainsAny(t.model.Source()[start:end], "\r\n")
 }
 
 func (t Token) Origin() *token.Origin {

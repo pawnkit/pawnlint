@@ -3,7 +3,7 @@ package project
 import (
 	"sort"
 
-	"github.com/pawnkit/pawn-parser"
+	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/internal/source/cst"
@@ -522,10 +522,6 @@ func effectBaseIdentifier(node cst.Node) cst.Node {
 		}
 	}
 	return cst.Node{}
-}
-
-func effectInside(node, container cst.Node) bool {
-	return node.Valid() && container.Valid() && node.Start() >= container.Start() && node.End() <= container.End()
 }
 
 func effectResolvedSymbol(file *File, node cst.Node) (cst.Node, semantic.SymbolKind, bool) {
