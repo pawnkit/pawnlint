@@ -132,13 +132,10 @@ func projectDeclaresName(ctx *lint.Context, name string) bool {
 }
 
 func projectDefinesName(ctx *lint.Context, name string) bool {
-	if definesName(ctx.Walk, name) {
-		return true
+	if ctx.Project != nil {
+		return ctx.Project.DefinesName(name)
 	}
-	if ctx.Project == nil {
-		return false
-	}
-	return ctx.Project.DefinesName(name)
+	return definesName(ctx.Walk, name)
 }
 
 func definesName(tree *walk.Model, name string) bool {

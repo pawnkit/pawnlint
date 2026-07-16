@@ -2,6 +2,7 @@ package correctness
 
 import (
 	"github.com/pawnkit/pawn-parser"
+	"github.com/pawnkit/pawnlint/internal/controlflow"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 )
@@ -27,12 +28,18 @@ func (MissingReturnValue) Run(ctx *lint.Context) {
 	if ctx.Flow == nil {
 		return
 	}
+	returns := make(map[*parser.Node][]*parser.Node)
+	for _, statement := range ctx.Walk.OfKind(parser.KindReturnStatement) {
+		function := ctx.Walk.EnclosingFunction(statement)
+		returns[function] = append(returns[function], statement)
+	}
 	for _, function := range ctx.Flow.Functions {
-		if function.Uncertain || !hasReachableValueReturn(ctx, function.Node) {
+		statements := returns[function.Node]
+		if function.Uncertain || !hasReachableValueReturn(function, statements) {
 			continue
 		}
-		for _, statement := range ctx.Walk.OfKind(parser.KindReturnStatement) {
-			if ctx.Walk.EnclosingFunction(statement) != function.Node || !function.Reachable(statement) || statement.Field("value") != nil {
+		for _, statement := range statements {
+			if !function.Reachable(statement) || statement.Field("value") != nil {
 				continue
 			}
 			ctx.Report(diagnostic.Diagnostic{
@@ -53,10 +60,9 @@ func (MissingReturnValue) Run(ctx *lint.Context) {
 	}
 }
 
-func hasReachableValueReturn(ctx *lint.Context, function *parser.Node) bool {
-	flow := ctx.Flow.Function(function)
-	for _, statement := range ctx.Walk.OfKind(parser.KindReturnStatement) {
-		if ctx.Walk.EnclosingFunction(statement) == function && statement.Field("value") != nil && flow.Reachable(statement) {
+func hasReachableValueReturn(function *controlflow.Function, statements []*parser.Node) bool {
+	for _, statement := range statements {
+		if statement.Field("value") != nil && function.Reachable(statement) {
 			return true
 		}
 	}
