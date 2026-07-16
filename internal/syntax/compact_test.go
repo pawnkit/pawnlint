@@ -59,11 +59,31 @@ func TestCompactDiagnosticsMatchPointerParser(t *testing.T) {
 		[]byte("#if defined FEATURE\nmain() {\n#endif\n"),
 	} {
 		pointer := parser.Parse(source)
-		compact := parser.ParseForLinter(source)
-		if pointer.Broken != compact.Broken || !reflect.DeepEqual(pointer.Diagnostics, compact.Diagnostics) {
+		compact := parser.ParseWithProfile(source, parser.ProfileAnalysis)
+		if pointer.Broken != compact.Broken || !semanticDiagnosticsEqual(pointer.Diagnostics, compact.Diagnostics) {
 			t.Fatalf("diagnostics differ for %q\npointer: %#v\ncompact: %#v", source, pointer.Diagnostics, compact.Diagnostics)
 		}
 	}
+}
+
+func semanticDiagnosticsEqual(left, right []parser.Diagnostic) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		leftDiagnostic := left[index]
+		rightDiagnostic := right[index]
+		leftDiagnostic.Found.LeadingTrivia = nil
+		leftDiagnostic.Found.TrailingTrivia = nil
+		leftDiagnostic.Found.Origin = nil
+		rightDiagnostic.Found.LeadingTrivia = nil
+		rightDiagnostic.Found.TrailingTrivia = nil
+		rightDiagnostic.Found.Origin = nil
+		if !reflect.DeepEqual(leftDiagnostic, rightDiagnostic) {
+			return false
+		}
+	}
+	return true
 }
 
 func compareNodes(t *testing.T, pointer *parser.Node, compact *syntax.CompactTree, node syntax.NodeID) {

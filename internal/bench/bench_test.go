@@ -58,7 +58,15 @@ func BenchmarkCompactParse(b *testing.B) {
 	source := []byte(benchSrc)
 	b.ReportAllocs()
 	for range b.N {
-		_ = parser.ParseForLinter(source)
+		_ = parser.ParseWithProfile(source, parser.ProfileAnalysis)
+	}
+}
+
+func BenchmarkLosslessParse(b *testing.B) {
+	source := []byte(benchSrc)
+	b.ReportAllocs()
+	for range b.N {
+		_ = parser.ParseWithProfile(source, parser.ProfileLossless)
 	}
 }
 
@@ -82,7 +90,19 @@ func BenchmarkCompactParseLarge(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for range b.N {
-		_ = parser.ParseForLinter(source)
+		_ = parser.ParseWithProfile(source, parser.ProfileAnalysis)
+	}
+}
+
+func BenchmarkLosslessParseLarge(b *testing.B) {
+	source := make([]byte, 0, len(benchSrc)*200)
+	for range 200 {
+		source = append(source, benchSrc...)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		_ = parser.ParseWithProfile(source, parser.ProfileLossless)
 	}
 }
 
