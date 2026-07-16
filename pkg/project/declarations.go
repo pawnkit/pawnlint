@@ -10,14 +10,16 @@ import (
 )
 
 type declarationID struct {
-	file *File
-	node cst.Node
+	pointer *parser.Node
+	source  uint32
+	compact syntax.NodeID
 }
 
 type referenceID struct {
 	declaration declarationID
-	file        *File
-	node        cst.Node
+	pointer     *parser.Node
+	source      uint32
+	compact     syntax.NodeID
 }
 
 type declarationPair struct {
@@ -275,7 +277,8 @@ func (m *Model) resolveInUnit(unit *Unit, from *File, name string, target semant
 
 func (m *Model) addReference(declaration Declaration, reference Reference, seen map[referenceID]struct{}) {
 	key := declarationKey(declaration)
-	referenceKey := referenceID{declaration: key, file: reference.File, node: referenceSyntax(reference)}
+	node := referenceSyntax(reference)
+	referenceKey := referenceID{declaration: key, pointer: node.Pointer(), source: reference.File.sourceID, compact: node.ID()}
 	if _, exists := seen[referenceKey]; exists {
 		return
 	}
@@ -284,7 +287,6 @@ func (m *Model) addReference(declaration Declaration, reference Reference, seen 
 	if m.resolved[reference.File] == nil {
 		m.resolved[reference.File] = make(map[cst.Node]Declaration)
 	}
-	node := referenceSyntax(reference)
 	if existing, exists := m.resolved[reference.File][node]; exists && declarationKey(existing) != key {
 		delete(m.resolved[reference.File], node)
 		if m.ambiguous[reference.File] == nil {
@@ -357,7 +359,11 @@ func sortDeclarations(declarations []Declaration) {
 }
 
 func declarationKey(declaration Declaration) declarationID {
-	return declarationID{file: declaration.File, node: declarationSyntax(declaration)}
+	if declaration.File == nil {
+		return declarationID{}
+	}
+	node := declarationSyntax(declaration)
+	return declarationID{pointer: node.Pointer(), source: declaration.File.sourceID, compact: node.ID()}
 }
 
 func declarationSyntax(declaration Declaration) cst.Node {
