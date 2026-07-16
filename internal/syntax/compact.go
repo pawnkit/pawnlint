@@ -48,6 +48,20 @@ func (t *CompactTree) Root() NodeID {
 	return NodeID(t.file.Tree.Root)
 }
 
+func (t *CompactTree) Len() int {
+	if t == nil || t.file == nil {
+		return 0
+	}
+	return len(t.file.Tree.Nodes)
+}
+
+func (t *CompactTree) Source() []byte {
+	if t == nil || t.file == nil {
+		return nil
+	}
+	return t.file.Source
+}
+
 func (t *CompactTree) Valid(node NodeID) bool {
 	return t != nil && t.file != nil && uint32(node) < uint32(len(t.file.Tree.Nodes))
 }

@@ -1,0 +1,308 @@
+package walk
+
+import (
+	"sort"
+	"strconv"
+	"strings"
+
+	parser "github.com/pawnkit/pawn-parser"
+	"github.com/pawnkit/pawn-parser/token"
+	"github.com/pawnkit/pawnlint/internal/syntax"
+)
+
+func (m *CompactModel) indexCompactNodeStates() {
+	var index func(syntax.NodeID, bool, bool, bool)
+	index = func(node syntax.NodeID, conditionalUncertain, inactive, ancestorError bool) {
+		if m.Tree.HasError(node) || conditionalUncertain || ancestorError {
+			m.states[node] |= compactUncertain
+		}
+		if inactive {
+			m.states[node] |= compactInactive
+		}
+		childUncertain := conditionalUncertain
+		childInactive := inactive
+		childError := ancestorError || m.Tree.HasError(node)
+		if m.Tree.Kind(node) == parser.KindSourceFile {
+			childError = false
+		}
+		switch m.Tree.Kind(node) {
+		case parser.KindConditionalBranch:
+			childUncertain = childUncertain || m.branches[node] != branchActive
+			childInactive = childInactive || m.branches[node] == branchInactive
+		case parser.KindSharedConditional, parser.KindConditionalFunction, parser.KindConditionalSplice:
+			childUncertain = true
+		}
+		for child := 0; child < m.Tree.ChildCount(node); child++ {
+			index(m.Tree.Child(node, child), childUncertain, childInactive, childError)
+		}
+	}
+	index(m.Root(), false, false, false)
+}
+
+func (m *CompactModel) indexCompactConditionalStates() {
+	cursor := m.NewCompactDefineCursor()
+	for _, region := range m.OfKind(parser.KindConditionalRegion) {
+		reached := branchActive
+		for child := 0; child < m.Tree.ChildCount(region); child++ {
+			branch := m.Tree.Child(region, child)
+			if m.Tree.Kind(branch) != parser.KindConditionalBranch {
+				continue
+			}
+			m.branches[branch] = branchUncertain
+			directive := m.Tree.Field(branch, "directive")
+			if directive == syntax.NoNode || m.Tree.Kind(directive) == parser.KindDirectiveEndif {
+				continue
+			}
+			if reached == branchInactive {
+				m.branches[branch] = branchInactive
+				continue
+			}
+			if m.Tree.Kind(directive) == parser.KindDirectiveElse {
+				m.branches[branch] = reached
+				reached = branchInactive
+				continue
+			}
+			value, known := m.compactDirectiveValue(cursor, m.Tree.Field(directive, "condition"), m.Tree.Start(directive))
+			if !known {
+				m.branches[branch] = branchUncertain
+				reached = branchUncertain
+				continue
+			}
+			if value == 0 {
+				m.branches[branch] = branchInactive
+				continue
+			}
+			m.branches[branch] = reached
+			reached = branchInactive
+		}
+	}
+}
+
+func (m *CompactModel) compactDirectiveValue(cursor *CompactDefineCursor, node syntax.NodeID, offset int) (int64, bool) {
+	if !m.Tree.Valid(node) || m.Tree.HasError(node) {
+		return 0, false
+	}
+	switch m.Tree.Kind(node) {
+	case parser.KindParenthesizedExpression:
+		return m.compactDirectiveValue(cursor, m.Tree.Field(node, "expression"), offset)
+	case parser.KindDefinedExpression:
+		name := m.Tree.Field(node, "name")
+		if name == syntax.NoNode {
+			return 0, false
+		}
+		known := cursor.definesAt(offset)
+		text := m.Text(name)
+		index := sort.SearchStrings(known, text)
+		if index < len(known) && known[index] == text {
+			return 1, true
+		}
+		if m.complete {
+			return 0, true
+		}
+		return 0, false
+	case parser.KindLiteral:
+		if m.Tree.TokenKind(node) == token.KwNull {
+			return 0, true
+		}
+		if m.Tree.TokenKind(node) != token.IntLiteral {
+			return 0, false
+		}
+		text := strings.ReplaceAll(m.Tree.TokenText(node), "_", "")
+		base := 10
+		if strings.HasPrefix(text, "0x") || strings.HasPrefix(text, "0X") || strings.HasPrefix(text, "0b") || strings.HasPrefix(text, "0B") {
+			base = 0
+		}
+		unsigned, err := strconv.ParseUint(text, base, 32)
+		return int64(int32(uint32(unsigned))), err == nil
+	case parser.KindUnaryExpression:
+		value, ok := m.compactDirectiveValue(cursor, m.Tree.Field(node, "expression"), offset)
+		if !ok {
+			return 0, false
+		}
+		switch m.Tree.TokenKind(node) {
+		case token.Bang:
+			if value == 0 {
+				return 1, true
+			}
+			return 0, true
+		case token.Plus:
+			return value, true
+		case token.Minus:
+			return -value, true
+		default:
+			return 0, false
+		}
+	default:
+		return 0, false
+	}
+}
+
+type CompactDefineCursor struct {
+	model          *CompactModel
+	offset         int
+	directiveIndex int
+	snapshotIndex  int
+	known          []string
+}
+
+func (m *CompactModel) NewCompactDefineCursor() *CompactDefineCursor {
+	cursor := &CompactDefineCursor{model: m}
+	cursor.reset()
+	return cursor
+}
+
+func (c *CompactDefineCursor) reset() {
+	c.offset = -1
+	c.directiveIndex = 0
+	c.snapshotIndex = 0
+	c.clearKnown(len(compilerDefines) + len(c.model.defines.names))
+	for _, name := range compilerDefines {
+		c.add(name)
+	}
+	for _, name := range c.model.defines.names {
+		c.add(name)
+	}
+}
+
+func (c *CompactDefineCursor) clearKnown(capacity int) {
+	if cap(c.known) < capacity {
+		c.known = make([]string, 0, capacity)
+		return
+	}
+	clear(c.known)
+	c.known = c.known[:0]
+}
+
+func (c *CompactDefineCursor) definesAt(offset int) []string {
+	if offset < c.offset {
+		c.reset()
+	}
+	model := c.model
+	for {
+		directiveReady := c.directiveIndex < len(model.directives) && model.Tree.Start(model.directives[c.directiveIndex]) < offset
+		snapshotReady := c.snapshotIndex < len(model.snapshots) && model.snapshots[c.snapshotIndex].Offset < offset
+		if !directiveReady && !snapshotReady {
+			break
+		}
+		if snapshotReady && (!directiveReady || model.snapshots[c.snapshotIndex].Offset <= model.Tree.Start(model.directives[c.directiveIndex])) {
+			snapshot := model.snapshots[c.snapshotIndex]
+			c.clearKnown(len(snapshot.Defines))
+			for _, name := range snapshot.Defines {
+				c.add(name)
+			}
+			c.snapshotIndex++
+			continue
+		}
+		node := model.directives[c.directiveIndex]
+		c.directiveIndex++
+		if !model.compactDirectiveActive(node) {
+			continue
+		}
+		name := model.compactDirectiveName(node)
+		if name == "" {
+			continue
+		}
+		if model.Tree.Kind(node) == parser.KindDirectiveUndef {
+			c.remove(name)
+		} else {
+			c.add(name)
+		}
+	}
+	c.offset = offset
+	return c.known
+}
+
+func (c *CompactDefineCursor) add(name string) {
+	if name == "" {
+		return
+	}
+	index := sort.SearchStrings(c.known, name)
+	if index < len(c.known) && c.known[index] == name {
+		return
+	}
+	c.known = append(c.known, "")
+	copy(c.known[index+1:], c.known[index:])
+	c.known[index] = name
+}
+
+func (c *CompactDefineCursor) remove(name string) {
+	index := sort.SearchStrings(c.known, name)
+	if index >= len(c.known) || c.known[index] != name {
+		return
+	}
+	copy(c.known[index:], c.known[index+1:])
+	c.known = c.known[:len(c.known)-1]
+}
+
+func (m *CompactModel) KnownDefinesAt(offset int) []string {
+	return m.NewCompactDefineCursor().KnownDefinesAt(offset)
+}
+
+func (c *CompactDefineCursor) KnownDefinesAt(offset int) []string {
+	known := c.definesAt(offset)
+	return append([]string(nil), known...)
+}
+
+func (m *CompactModel) compactDirectiveActive(node syntax.NodeID) bool {
+	for _, ancestor := range m.Ancestors(node) {
+		switch m.Tree.Kind(ancestor) {
+		case parser.KindConditionalBranch:
+			if m.branches[ancestor] != branchActive {
+				return false
+			}
+		case parser.KindSharedConditional, parser.KindConditionalFunction, parser.KindConditionalSplice:
+			return false
+		}
+	}
+	return true
+}
+
+func (m *CompactModel) compactDirectiveName(node syntax.NodeID) string {
+	if m.Tree.Kind(node) == parser.KindDirectiveDefine {
+		return m.Text(m.Tree.Field(node, "name"))
+	}
+	if m.Tree.Kind(node) != parser.KindDirectiveUndef || m.Tree.File() == nil {
+		return ""
+	}
+	seenDirective := false
+	tokens := m.Tree.File().Tokens
+	start := sort.Search(len(tokens), func(index int) bool {
+		return tokens[index].End.Offset > m.Tree.Start(node)
+	})
+	for index := start; index < len(tokens); index++ {
+		tok := tokens[index]
+		if tok.Start.Offset >= m.Tree.End(node) {
+			break
+		}
+		if tok.Start.Offset < m.Tree.Start(node) || tok.End.Offset > m.Tree.End(node) || tok.Kind != token.Identifier {
+			continue
+		}
+		text := tok.Text(m.Source())
+		if !seenDirective {
+			seenDirective = text == "undef"
+			continue
+		}
+		return text
+	}
+	return ""
+}
+
+func (m *CompactModel) IsInsideConditionalBranch(node syntax.NodeID) bool {
+	for _, ancestor := range m.Ancestors(node) {
+		switch m.Tree.Kind(ancestor) {
+		case parser.KindConditionalRegion, parser.KindConditionalBranch,
+			parser.KindSharedConditional, parser.KindConditionalFunction,
+			parser.KindConditionalSplice:
+			return true
+		}
+	}
+	return false
+}
+
+func (m *CompactModel) Uncertain(node syntax.NodeID) bool {
+	return m != nil && m.Tree != nil && m.Tree.Valid(node) && m.states[node]&compactUncertain != 0
+}
+
+func (m *CompactModel) Inactive(node syntax.NodeID) bool {
+	return m != nil && m.Tree != nil && m.Tree.Valid(node) && m.states[node]&compactInactive != 0
+}
