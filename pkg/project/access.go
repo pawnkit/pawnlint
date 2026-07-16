@@ -198,11 +198,36 @@ func (d Declaration) PointerNode() *parser.Node {
 	return pointerNode(d.File, declarationSyntax(d))
 }
 
+func (d Declaration) PointerNodeIn(model *walk.Model) *parser.Node {
+	if model == nil {
+		return nil
+	}
+	for _, node := range model.OfKind(d.NodeKind()) {
+		if node.Start == d.Start() && node.End == d.End() {
+			return node
+		}
+	}
+	return nil
+}
+
 func (c Call) PointerNode() *parser.Node {
 	if c.Node != nil {
 		return c.Node
 	}
 	return pointerNode(c.File, callSyntax(c))
+}
+
+func (c Call) PointerNodeIn(model *walk.Model) *parser.Node {
+	if model == nil {
+		return nil
+	}
+	syntax := callSyntax(c)
+	for _, node := range model.OfKind(syntax.Kind()) {
+		if node.Start == syntax.Start() && node.End == syntax.End() {
+			return node
+		}
+	}
+	return nil
 }
 
 func pointerNode(file *File, node cst.Node) *parser.Node {
@@ -229,20 +254,6 @@ func (f *File) ensurePointerSyntax() {
 		if f.Semantic == nil {
 			f.Semantic = semantic.Build(f.Parsed, f.Walk)
 		}
-		if f.CompactParsed != nil {
-			f.compactNodes = make(map[nodeLocation]cst.Node)
-			var compactIndex func(cst.Node)
-			compactIndex = func(current cst.Node) {
-				if !current.Valid() {
-					return
-				}
-				f.compactNodes[nodeLocation{kind: current.Kind(), start: current.Start(), end: current.End()}] = current
-				for index := 0; index < current.ChildCount(); index++ {
-					compactIndex(current.Child(index))
-				}
-			}
-			compactIndex(f.Syntax.Root())
-		}
 		f.pointerNodes = make(map[nodeLocation]*parser.Node)
 		var index func(*parser.Node)
 		index = func(current *parser.Node) {
@@ -265,8 +276,21 @@ func (f *File) syntaxNode(node *parser.Node) cst.Node {
 	if current := f.Syntax.PointerNode(node); current.Valid() {
 		return current
 	}
-	f.ensurePointerSyntax()
-	return f.compactNodes[nodeLocation{kind: node.Kind, start: node.Start, end: node.End}]
+	location := nodeLocation{kind: node.Kind, start: node.Start, end: node.End}
+	f.compactNodeMu.Lock()
+	defer f.compactNodeMu.Unlock()
+	if f.compactNodes == nil {
+		f.compactNodes = make(map[parser.Kind]map[nodeLocation]cst.Node)
+	}
+	nodes := f.compactNodes[node.Kind]
+	if nodes == nil {
+		nodes = make(map[nodeLocation]cst.Node)
+		for _, current := range f.Syntax.OfKind(node.Kind) {
+			nodes[nodeLocation{kind: current.Kind(), start: current.Start(), end: current.End()}] = current
+		}
+		f.compactNodes[node.Kind] = nodes
+	}
+	return nodes[location]
 }
 
 func includeSyntax(include *Include) cst.Node {

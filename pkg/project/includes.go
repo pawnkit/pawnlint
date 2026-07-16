@@ -32,7 +32,7 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	}
 	physical := m.physical[canonical]
 	if physical == nil {
-		if !provided && m.options.ReleaseIncludes {
+		if m.options.ReleaseIncludes {
 			started := time.Now()
 			compact := parser.ParseCompact(source, parser.ParseOptions{})
 			if m.options.ObserveTiming != nil {

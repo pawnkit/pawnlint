@@ -77,7 +77,8 @@ type File struct {
 	snapshots         []walk.DefineSnapshot
 	pointerOnce       sync.Once
 	pointerNodes      map[nodeLocation]*parser.Node
-	compactNodes      map[nodeLocation]cst.Node
+	compactNodeMu     sync.Mutex
+	compactNodes      map[parser.Kind]map[nodeLocation]cst.Node
 }
 
 type Include struct {
@@ -292,7 +293,19 @@ func (m *Model) ReleaseIncludeTokens(files []*File) {
 		}
 	}
 	for _, physical := range m.physical {
-		if physical == nil || physical.parsed == nil {
+		if physical == nil {
+			continue
+		}
+		if physical.compact != nil {
+			physical.compact.Tokens = nil
+			physical.compact.Origins = nil
+			physical.compact.MacroNames = nil
+			if !bytes.Contains(physical.source, []byte("pawnlint-")) {
+				physical.compact.Trivia = nil
+			}
+			continue
+		}
+		if physical.parsed == nil {
 			continue
 		}
 		if bytes.Contains(physical.source, []byte("pawnlint-")) {

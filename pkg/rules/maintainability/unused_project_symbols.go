@@ -38,14 +38,14 @@ func (UnusedFunction) Run(ctx *lint.Context) {
 		return
 	}
 	callbacks := ctx.Callbacks()
-	for _, symbol := range file.Semantic.Symbols {
+	for _, symbol := range ctx.Semantic.Symbols {
 		if symbol.Kind != semantic.SymbolFunction || symbol.Decl.Kind != parser.KindFunctionDefinition || symbol.Ambiguous {
 			continue
 		}
 		if symbol.Name == "main" || strings.HasPrefix(symbol.Name, "_") || strings.HasPrefix(symbol.Name, "operator") {
 			continue
 		}
-		storage := file.Walk.Text(symbol.Decl.Field("storage"))
+		storage := ctx.Walk.Text(symbol.Decl.Field("storage"))
 		if storage != "" && storage != "static" {
 			continue
 		}
@@ -62,7 +62,7 @@ func (UnusedFunction) Run(ctx *lint.Context) {
 		ctx.Report(diagnostic.Diagnostic{
 			Message:  "function " + quoteName(symbol.Name) + " is never used",
 			Filename: ctx.File.Path,
-			Range:    file.Walk.Range(symbol.NameNode),
+			Range:    ctx.Walk.Range(symbol.NameNode),
 		})
 	}
 }
@@ -92,11 +92,11 @@ func (UnusedGlobal) Run(ctx *lint.Context) {
 	if !ctx.Project.InProgram(file) || projectUnitHasErrors(ctx.Project, file) {
 		return
 	}
-	for _, symbol := range file.Semantic.Symbols {
+	for _, symbol := range ctx.Semantic.Symbols {
 		if symbol.Kind != semantic.SymbolGlobal || symbol.Ambiguous || strings.HasPrefix(symbol.Name, "_") {
 			continue
 		}
-		declarationNode := file.Walk.Parent(symbol.Decl)
+		declarationNode := ctx.Walk.Parent(symbol.Decl)
 		if walk.HasChildToken(declarationNode, token.KwPublic) || walk.HasChildToken(declarationNode, token.KwStock) {
 			continue
 		}
@@ -107,7 +107,7 @@ func (UnusedGlobal) Run(ctx *lint.Context) {
 		ctx.Report(diagnostic.Diagnostic{
 			Message:  "global variable " + quoteName(symbol.Name) + " is never used",
 			Filename: ctx.File.Path,
-			Range:    file.Walk.Range(symbol.NameNode),
+			Range:    ctx.Walk.Range(symbol.NameNode),
 		})
 	}
 }
@@ -135,7 +135,7 @@ func projectUnitHasErrors(model *project.Model, file *project.File) bool {
 
 func projectDeclaration(model *project.Model, file *project.File, symbol *semantic.Symbol) (project.Declaration, bool) {
 	for _, declaration := range model.Declarations[symbol.Name] {
-		if declaration.File == file && declaration.Symbol == symbol {
+		if declaration.File == file && declaration.NodeKind() == symbol.Decl.Kind && declaration.Start() == symbol.Decl.Start && declaration.End() == symbol.Decl.End {
 			return declaration, true
 		}
 	}

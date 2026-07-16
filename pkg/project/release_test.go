@@ -24,8 +24,8 @@ func TestReleaseIncludesDropsOnlyIncludeTokens(t *testing.T) {
 	}
 	entry := model.File(entryPath)
 	include := model.File(includePath)
-	if entry == nil || len(entry.Parsed.Tokens) == 0 {
-		t.Fatal("entry tokens were released")
+	if entry == nil || entry.Parsed != nil || entry.CompactParsed == nil {
+		t.Fatal("entry was not stored compactly")
 	}
 	if include == nil || include.Parsed != nil || include.CompactParsed == nil {
 		t.Fatal("include was not stored compactly")

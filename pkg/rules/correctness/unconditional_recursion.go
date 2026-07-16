@@ -51,7 +51,7 @@ func (UnconditionalRecursion) Run(ctx *lint.Context) {
 			members[function.Key()] = true
 			names = append(names, function.Name)
 		}
-		if !unconditionalComponent(ctx, component, members, flows) {
+		if !unconditionalComponent(ctx, file, component, members, flows) {
 			continue
 		}
 		cycle := strings.Join(names, " -> ")
@@ -93,9 +93,12 @@ func componentContainsFile(component []project.Declaration, file *project.File) 
 	return false
 }
 
-func unconditionalComponent(ctx *lint.Context, component []project.Declaration, members map[project.NodeKey]bool, flows map[*project.File]*controlflow.Model) bool {
+func unconditionalComponent(ctx *lint.Context, target *project.File, component []project.Declaration, members map[project.NodeKey]bool, flows map[*project.File]*controlflow.Model) bool {
 	for _, declaration := range component {
 		declarationNode := declaration.PointerNode()
+		if declaration.File == target {
+			declarationNode = declaration.PointerNodeIn(ctx.Walk)
+		}
 		if declarationNode == nil {
 			return false
 		}
@@ -111,6 +114,9 @@ func unconditionalComponent(ctx *lint.Context, component []project.Declaration, 
 		targets := make(map[*controlflow.Block]bool)
 		for _, call := range ctx.Project.CallGraph.Outgoing(declaration) {
 			callNode := call.PointerNode()
+			if call.File == target {
+				callNode = call.PointerNodeIn(ctx.Walk)
+			}
 			if !members[call.Callee.Key()] || !unconditionalCall(call.File, callNode) {
 				continue
 			}
