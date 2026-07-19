@@ -16,6 +16,9 @@ type Request struct {
 	ConfigPath       string
 	WorkingDirectory string
 	Build            string
+	IncludePaths     []string
+	Defines          []string
+	DefinesComplete  bool
 }
 
 type Position struct {

@@ -46,6 +46,31 @@ func TestEngineRunsAllRules(t *testing.T) {
 	}
 }
 
+func TestEngineIncludesSharedAnalysis(t *testing.T) {
+	tests := []struct {
+		name string
+		text string
+		code string
+	}{
+		{"argument count", "Helper(a, b) {} main() { Helper(1); }", "pawn-analysis:sema/argument-count"},
+		{"not callable", "main() { new value; value(); }", "pawn-analysis:sema/not-callable"},
+		{"tag mismatch", "Float:Get() { return bool:true; }", "pawn-analysis:sema/tag-mismatch"},
+		{"unreachable", "main() { return; new value; }", "pawn-analysis:sema/unreachable"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			engine := lint.NewEngine(rules.Default())
+			diagnostics := engine.LintFile("x.pwn", []byte(test.text), lint.ProjectAnalysis, nil, nil, nil)
+			for _, item := range diagnostics {
+				if item.RuleID == test.code {
+					return
+				}
+			}
+			t.Fatalf("shared diagnostic %s missing: %+v", test.code, diagnostics)
+		})
+	}
+}
+
 func TestEngineSuppression(t *testing.T) {
 	reg := rules.Default()
 	engine := lint.NewEngine(reg)

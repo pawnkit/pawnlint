@@ -50,6 +50,11 @@ func analyze(ctx context.Context, request Request, parseCache *project.ParseCach
 	if err != nil {
 		return Result{}, err
 	}
+	for index := range contexts {
+		contexts[index].includePaths = appendUniqueAnalyzerPaths(contexts[index].includePaths, resolveAnalyzerPaths(request.WorkingDirectory, request.IncludePaths)...)
+		contexts[index].defines = appendUniqueAnalyzerStrings(contexts[index].defines, request.Defines...)
+		contexts[index].definesComplete = contexts[index].definesComplete || request.DefinesComplete
+	}
 	perContext := make([][]diagnostic.Diagnostic, 0, len(contexts))
 	allSources := make(map[string][]byte)
 	cacheStats := CacheStats{}

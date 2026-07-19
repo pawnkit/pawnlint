@@ -1,5 +1,4 @@
-// Package walk provides traversal and query helpers over the pawn-parser CST,
-// including a cached index of nodes by Kind.
+// Package walk provides CST traversal and indexed node lookup.
 package walk
 
 import (

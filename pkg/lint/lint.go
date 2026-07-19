@@ -1,7 +1,7 @@
 package lint
 
 import (
-	"github.com/pawnkit/pawn-parser"
+	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/api"
 	"github.com/pawnkit/pawnlint/internal/controlflow"
@@ -50,6 +50,7 @@ type Metadata struct {
 	Stability       Stability
 	DefaultEnabled  bool
 	Fixable         bool
+	UnsafeFix       bool
 	Tags            []string
 	Options         []Option
 	ConfigExample   string

@@ -22,6 +22,24 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// fixableDiagnostics drops fixes for rules marked UnsafeFix when safeOnly is set.
+func fixableDiagnostics(diags []diagnostic.Diagnostic, reg *lint.Registrar, safeOnly bool) []diagnostic.Diagnostic {
+	if !safeOnly {
+		return diags
+	}
+	filtered := make([]diagnostic.Diagnostic, len(diags))
+	copy(filtered, diags)
+	for i, d := range filtered {
+		if d.Fix == nil {
+			continue
+		}
+		if m, ok := reg.Lookup(d.RuleID); ok && m.UnsafeFix {
+			filtered[i].Fix = nil
+		}
+	}
+	return filtered
+}
+
 func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *config.Resolved, timings *runTimings) int {
 	cwd, _ := os.Getwd()
 	projectDir := cwd
@@ -129,7 +147,7 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 	}
 	all := mergeVariantDiagnostics(perVariant)
 	if opts.Diff || opts.Fix || opts.FixSafe {
-		plan, err := fix.Build(map[string][]byte(sources), all)
+		plan, err := fix.Build(map[string][]byte(sources), fixableDiagnostics(all, reg, opts.FixSafe && !opts.Fix))
 		if err != nil {
 			_, _ = fmt.Fprintf(stderr, "pawnlint: build fixes: %v\n", err)
 			return exitInternal
@@ -251,7 +269,7 @@ func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registra
 	}
 	all := mergeBuildDiagnostics(perBuild)
 	if opts.Diff || opts.Fix || opts.FixSafe {
-		plan, err := fix.Build(map[string][]byte(sources), all)
+		plan, err := fix.Build(map[string][]byte(sources), fixableDiagnostics(all, reg, opts.FixSafe && !opts.Fix))
 		if err != nil {
 			_, _ = fmt.Fprintf(stderr, "pawnlint: build fixes: %v\n", err)
 			return exitInternal

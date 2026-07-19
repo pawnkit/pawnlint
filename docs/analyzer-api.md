@@ -20,11 +20,10 @@ session := analyzer.New()
 result, err := session.Analyze(ctx, request)
 ```
 
-`Result.Diagnostics` contains public one-based positions and byte offsets.
-`SafeEdits` contains machine-safe actions. `Suggestions` contains non-applicable
-guidance and optional edits. Each action references its diagnostic index.
-`Migrations` reports deprecated configuration rule IDs.
-`Cache` reports context hits and misses when `cache` is configured.
+`Result.Diagnostics` uses one-based positions and byte offsets. `SafeEdits`
+contains applicable fixes, while `Suggestions` contains guidance and optional
+edits. Actions reference their diagnostic index. `Migrations` reports renamed
+rule IDs. `Cache` reports configured cache hits and misses.
 
 Configuration, build contexts, variants, overrides, baselines, and diagnostic
 limits match the CLI. Requested buffers replace disk content. Build file globs

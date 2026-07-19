@@ -1,11 +1,9 @@
 # Configuration
 
-`pawnlint` searches upward from the current directory for a config file, in
-order: `pawnlint.toml`, `pawnlint.yaml`, `pawnlint.yml`, `pawnlint.json`.
-Use `--config <path>` to select a file directly (format is chosen by
-extension), or `--init-config` to write a default TOML configuration to
-`pawnlint.toml` (or the path given via `--config`). It refuses to overwrite
-an existing file.
+`pawnlint` searches upward from the current directory for `pawnlint.toml`,
+`pawnlint.yaml`, `pawnlint.yml`, or `pawnlint.json`, in that order.
+`--config <path>` selects a file directly. `--init-config` writes a default
+TOML file and will not overwrite an existing file.
 
 ## Example
 
@@ -105,8 +103,7 @@ target = "openmp"
 
 ## Formats
 
-TOML, JSON, and YAML are equivalent — same keys, same nesting, only the
-syntax differs. The example above in JSON:
+TOML, JSON, and YAML use the same keys and nesting. The example above in JSON:
 
 ```json
 {
@@ -155,11 +152,9 @@ unknown field at once; JSON reports the first one found.
 
 ## Variants
 
-A name absent from `defines` is *uncertain*, not confidently undefined — so
-`#if defined(NAME)` code is skipped rather than analyzed under the wrong
-assumption. That means a target- or feature-specific block, e.g.
-`#if defined SAMP` / `#if defined OPENMP`, is never analyzed unless that exact
-name is in `defines` for the run.
+A name absent from `defines` is uncertain. Pawnlint skips its conditional code
+instead of treating it as undefined. Add names such as `SAMP` or `OPENMP` to
+analyze their blocks.
 
 `variants` re-runs the full build and lint pass once per entry, each with its
 own `defines`, then merges the results:
@@ -177,7 +172,7 @@ defines = ["SAMP"]
 - Diagnostics are deduplicated by (rule, file, range), so code shared by every
   variant is reported once.
 - Exception: `unknown-suppression`'s "unused suppression directive" hint is
-  only reported if *every* variant agreed the directive went unused — it may
+  only reported if every variant agreed the directive went unused; it may
   guard code active under just one variant.
 - Each variant name must be non-empty and unique.
 - `variants` cannot be combined with `builds`.
@@ -276,7 +271,7 @@ relations are configuration errors.
 | `all` | Every implemented rule. |
 
 `strict` includes the native/API/migration rules that apply to your `target`
-(see [Precedence](#precedence)) — for example, `unimplemented-function` only
+(see [Precedence](#precedence)). For example, `unimplemented-function` only
 reports under `--target openmp`, and `target-native-availability` only
 reports under `--target samp`. Setting `--profile strict` without the
 matching `--target` simply means those specific rules stay quiet.
@@ -284,11 +279,8 @@ matching `--target` simply means those specific rules stay quiet.
 ## Rule settings
 
 Set a rule to `error`, `warning`, `info`, `hint`, or `off` under `[rules]`.
-Each rule's own page (see the [rule index](rules/index.md)) documents its
-options, their types and defaults, a full `[rules.<id>]` example, and a
-good/bad code sample — that page is the canonical reference, not this one.
-Rule tables accept only the options documented there, and option types,
-choices, and ranges are validated before linting.
+Each page in the [rule index](rules/index.md) lists its options, defaults, and
+examples. Rule tables accept only those documented options.
 
 Configuration errors include unknown fields, rule IDs, profiles, targets, and
 severity names.

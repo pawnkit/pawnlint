@@ -1,6 +1,4 @@
-// Package editor is the entry point for tools that lint a single open
-// buffer with pawnlint's normal config-discovery rules (an LSP server, an
-// editor plugin), without linking against pawnlint's internal packages.
+// Package editor lints open buffers for editor integrations.
 package editor
 
 import (
@@ -13,8 +11,7 @@ import (
 	"github.com/pawnkit/pawnlint/pkg/rules"
 )
 
-// Diagnose lints content as path, discovering and resolving pawnlint
-// configuration starting from workingDir (typically path's directory).
+// Diagnose lints content as path using configuration found from workingDir.
 func Diagnose(path string, content []byte, workingDir string) ([]diagnostic.Diagnostic, error) {
 	reg := rules.Default()
 
@@ -55,5 +52,7 @@ func Diagnose(path string, content []byte, workingDir string) ([]diagnostic.Diag
 	engine.Project = model
 	engine.API = resolved.API
 
-	return engine.LintFile(path, content, lint.ProjectAnalysis, resolved.Enabled, resolved.AllKnownRuleIDs, resolved.RuleConfig), nil
+	diagnostics := engine.LintFile(path, content, lint.ProjectAnalysis, resolved.Enabled, resolved.AllKnownRuleIDs, resolved.RuleConfig)
+	diagnostic.Sort(diagnostics)
+	return diagnostics, nil
 }

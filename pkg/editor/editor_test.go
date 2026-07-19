@@ -48,3 +48,45 @@ func TestDiagnoseUsesDiscoveredConfig(t *testing.T) {
 		t.Fatalf("Diagnose() error = %v", err)
 	}
 }
+
+func TestDiagnoseDeduplicatesSharedSemanticDiagnostics(t *testing.T) {
+	dir := t.TempDir()
+	diags, err := editor.Diagnose(
+		filepath.Join(dir, "gamemode.pwn"),
+		[]byte("main() { new value; value(); }"),
+		dir,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	count := 0
+	for _, item := range diags {
+		if item.RuleID == "non-callable-symbol" {
+			count++
+		}
+		if item.RuleID == "pawn-analysis:sema/not-callable" {
+			t.Fatalf("duplicate shared diagnostic: %+v", diags)
+		}
+	}
+	if count != 1 {
+		t.Fatalf("expected one non-callable diagnostic, got %+v", diags)
+	}
+}
+
+func TestDiagnoseIncludesSharedArgumentCount(t *testing.T) {
+	dir := t.TempDir()
+	diags, err := editor.Diagnose(
+		filepath.Join(dir, "gamemode.pwn"),
+		[]byte("Helper(a, b) {} main() { Helper(1); }"),
+		dir,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range diags {
+		if item.RuleID == "pawn-analysis:sema/argument-count" {
+			return
+		}
+	}
+	t.Fatalf("shared argument-count diagnostic missing: %+v", diags)
+}

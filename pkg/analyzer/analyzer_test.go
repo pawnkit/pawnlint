@@ -82,6 +82,31 @@ func TestAnalyzeUsesConfiguredBuildAndInMemoryEntry(t *testing.T) {
 	}
 }
 
+func TestAnalyzeUsesRequestIncludePaths(t *testing.T) {
+	dir := t.TempDir()
+	includeDir := filepath.Join(dir, "includes")
+	if err := os.Mkdir(includeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(includeDir, "helper.inc"), []byte("stock Helper() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	result, err := analyzer.Analyze(context.Background(), analyzer.Request{
+		WorkingDirectory: dir,
+		IncludePaths:     []string{includeDir},
+		Sources: []analyzer.Source{{
+			Path:    "main.pwn",
+			Content: []byte("#include <helper>\nmain() {}\n"),
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diagnosticIndex(result.Diagnostics, "missing-include") >= 0 {
+		t.Fatalf("diagnostics = %+v", result.Diagnostics)
+	}
+}
+
 func TestAnalyzeRejectsUnknownBuild(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "pawnlint.toml")

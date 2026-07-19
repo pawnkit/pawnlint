@@ -68,10 +68,7 @@ func (e *Engine) LintProjectFile(projectFile *project.File, maxLevel AnalysisLev
 	return e.lintFileSafe(projectFile.Path, projectFile.Source, projectFile, maxLevel, ruleSet, known, perRule)
 }
 
-// lintFileSafe isolates a panic anywhere in the analysis pipeline (parsing,
-// semantics, control flow, or rules) to this one file, matching the
-// per-rule recovery inside lintFile: one bad file must not crash a
-// concurrent multi-file lint run.
+// lintFileSafe keeps one bad file from stopping a multi-file run.
 func (e *Engine) lintFileSafe(path string, src []byte, contextFile *project.File, maxLevel AnalysisLevel, ruleSet map[string]diagnostic.Severity, known map[string]struct{}, perRule map[string]map[string]any) (diagnostics []diagnostic.Diagnostic) {
 	defer func() {
 		if failed := recover(); failed != nil {
@@ -262,6 +259,9 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 			}
 			raw = append(raw, d)
 		}
+	}
+	if maxLevel >= SemanticAnalysis {
+		raw = appendSharedDiagnostics(raw, path, src)
 	}
 
 	var out []diagnostic.Diagnostic

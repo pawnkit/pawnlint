@@ -16,7 +16,7 @@ import (
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 )
 
-const Version = 1
+const Version = 2
 
 type Source struct {
 	Path    string
@@ -42,13 +42,14 @@ type sourceDigest struct {
 }
 
 type keyDocument struct {
-	Version       int            `json:"version"`
-	Context       string         `json:"context"`
-	Config        any            `json:"config"`
-	API           any            `json:"api"`
-	Sources       []sourceDigest `json:"sources"`
-	ParserVersion string         `json:"parserVersion"`
-	RuleVersion   string         `json:"ruleVersion"`
+	Version         int            `json:"version"`
+	Context         string         `json:"context"`
+	Config          any            `json:"config"`
+	API             any            `json:"api"`
+	Sources         []sourceDigest `json:"sources"`
+	ParserVersion   string         `json:"parserVersion"`
+	AnalysisVersion string         `json:"analysisVersion"`
+	RuleVersion     string         `json:"ruleVersion"`
 }
 
 func Key(input KeyInput) (string, error) {
@@ -59,13 +60,14 @@ func Key(input KeyInput) (string, error) {
 	}
 	sort.Slice(sources, func(i, j int) bool { return sources[i].Path < sources[j].Path })
 	document := keyDocument{
-		Version:       Version,
-		Context:       input.Context,
-		Config:        input.Config,
-		API:           input.API,
-		Sources:       sources,
-		ParserVersion: parserVersion(),
-		RuleVersion:   ruleVersion(),
+		Version:         Version,
+		Context:         input.Context,
+		Config:          input.Config,
+		API:             input.API,
+		Sources:         sources,
+		ParserVersion:   parserVersion(),
+		AnalysisVersion: analysisVersion(),
+		RuleVersion:     ruleVersion(),
 	}
 	data, err := json.Marshal(document)
 	if err != nil {
@@ -182,8 +184,9 @@ func Write(directory, slot, key string, diagnostics []diagnostic.Diagnostic) err
 
 var versions struct {
 	sync.Once
-	parser string
-	rules  string
+	parser   string
+	analysis string
+	rules    string
 }
 
 func parserVersion() string {
@@ -196,9 +199,15 @@ func ruleVersion() string {
 	return versions.rules
 }
 
+func analysisVersion() string {
+	loadVersions()
+	return versions.analysis
+}
+
 func loadVersions() {
 	versions.Do(func() {
 		versions.parser = "unknown"
+		versions.analysis = "unknown"
 		versions.rules = executableHash()
 		if info, ok := debug.ReadBuildInfo(); ok {
 			for _, dependency := range info.Deps {
@@ -206,6 +215,12 @@ func loadVersions() {
 					versions.parser = dependency.Version + ":" + dependency.Sum
 					if dependency.Replace != nil {
 						versions.parser += ":" + dependency.Replace.Path + ":" + dependency.Replace.Version + ":" + dependency.Replace.Sum
+					}
+				}
+				if dependency.Path == "github.com/pawnkit/pawn-analysis" {
+					versions.analysis = dependency.Version + ":" + dependency.Sum
+					if dependency.Replace != nil {
+						versions.analysis += ":" + dependency.Replace.Path + ":" + dependency.Replace.Version + ":" + dependency.Replace.Sum
 					}
 				}
 			}
