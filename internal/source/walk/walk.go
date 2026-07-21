@@ -18,6 +18,7 @@ type Model struct {
 	defines   *DefineContext
 	snapshots []DefineSnapshot
 	complete  bool
+	endinput  int
 }
 
 type Index struct {
@@ -124,6 +125,7 @@ func newWithContext(path string, pf *parser.File, defines *DefineContext, snapsh
 	}
 	if pf != nil && pf.Root != nil {
 		m.indexConditionalStates()
+		m.indexEndinput()
 		m.indexNodeStates()
 	}
 	return m

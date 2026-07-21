@@ -505,6 +505,30 @@ func TestContextualIncludeDoesNotDuplicatePhysicalDefinitions(t *testing.T) {
 	}
 }
 
+func TestEndinputGuardSkipsFallbackIncludeDefinitions(t *testing.T) {
+	dir := t.TempDir()
+	first := "#if defined SHARED_INC\n#endinput\n#endif\n#define SHARED_INC\nShared() {}\nnew shared_value;\n"
+	fallback := "#if defined SHARED_INC\n#endinput\n#endif\n#define SHARED_INC\nShared() {}\nnew shared_value;\n"
+	if err := os.WriteFile(filepath.Join(dir, "first.inc"), []byte(first), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "fallback.inc"), []byte(fallback), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	rootPath := filepath.Join(dir, "main.pwn")
+	root := []byte("#tryinclude \"first.inc\"\n#tryinclude \"fallback.inc\"\nmain() {}\n")
+	model, err := Build([]Source{{Path: rootPath, Content: root}}, Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if duplicates := model.DuplicateFunctions(); len(duplicates) != 0 {
+		t.Fatalf("functions = %#v", duplicates)
+	}
+	if duplicates := model.DuplicateGlobals(); len(duplicates) != 0 {
+		t.Fatalf("globals = %#v", duplicates)
+	}
+}
+
 func TestBuildResolvesCrossFileReferences(t *testing.T) {
 	dir := t.TempDir()
 	includePath := filepath.Join(dir, "shared.inc")

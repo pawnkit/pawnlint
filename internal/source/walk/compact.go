@@ -18,6 +18,7 @@ type CompactModel struct {
 	defines    *DefineContext
 	snapshots  []DefineSnapshot
 	complete   bool
+	endinput   int
 }
 
 const (
@@ -77,6 +78,7 @@ func newCompactWithContext(path string, file *parser.CompactFile, defines *Defin
 	})
 	if tree.Valid(tree.Root()) {
 		model.indexCompactConditionalStates()
+		model.indexCompactEndinput()
 		model.indexCompactNodeStates()
 	}
 	return model

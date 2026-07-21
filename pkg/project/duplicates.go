@@ -29,7 +29,7 @@ func (m *Model) buildDuplicateFunctions() []DuplicateFunction {
 		for _, file := range unit.Files {
 			defines := file.Syntax.NewDefineCursor()
 			for _, node := range file.Syntax.OfKind(parser.KindFunctionDefinition) {
-				if file.Syntax.Uncertain(node) || node.Field("state").Valid() || node.Field("generic").Valid() || insideErroredDeclaration(file, node) || insideFunction(file, node) {
+				if file.Syntax.Inactive(node) || file.Syntax.Uncertain(node) || node.Field("state").Valid() || node.Field("generic").Valid() || insideErroredDeclaration(file, node) || insideFunction(file, node) {
 					continue
 				}
 				storage := node.Field("storage").Text()
@@ -118,7 +118,7 @@ func (m *Model) buildDuplicateGlobals() []DuplicateGlobal {
 				}
 				node := declarationSyntax(declaration)
 				parent := file.Syntax.Parent(node)
-				if node.Field("state").Valid() || parent.Valid() && (parent.Field("state").Valid() || parent.HasError() || file.Syntax.Uncertain(parent)) {
+				if file.Syntax.Inactive(node) || node.Field("state").Valid() || parent.Valid() && (parent.Field("state").Valid() || parent.HasError() || file.Syntax.Inactive(parent) || file.Syntax.Uncertain(parent)) {
 					return true
 				}
 				storage := parent.Field("storage").Text()

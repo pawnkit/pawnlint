@@ -8,6 +8,7 @@
 #define MAX_HP (100 + 50)
 #define VERSION 5
 #define GREETING "hello"
+#define INVALID_ID -1
 
 main()
 {

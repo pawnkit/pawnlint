@@ -2,6 +2,7 @@ package walk_test
 
 import (
 	"reflect"
+	"slices"
 	"testing"
 
 	parser "github.com/pawnkit/pawn-parser"
@@ -53,6 +54,23 @@ func TestCompactModelMatchesPointerModel(t *testing.T) {
 		if len(pointer.OfKind(kind)) != len(compact.OfKind(kind)) {
 			t.Fatalf("kind %v count differs", kind)
 		}
+	}
+}
+
+func TestEndinputStopsPointerAndCompactModels(t *testing.T) {
+	source := []byte("#if defined GUARD\n#endinput\n#endif\n#define AFTER\nnew value;\n")
+	pointer := walk.NewWithDefineContext("x.inc", parser.Parse(source), []string{"GUARD"}, nil, true)
+	compact := walk.NewCompactWithDefineContext("x.inc", parser.ParseForLinter(source), []string{"GUARD"}, nil, true)
+	pointerValue := pointer.OfKind(parser.KindVariableDeclarator)
+	compactValue := compact.OfKind(parser.KindVariableDeclarator)
+	if len(pointerValue) != 1 || !pointer.Inactive(pointerValue[0]) {
+		t.Fatalf("pointer declaration is active: %#v", pointerValue)
+	}
+	if len(compactValue) != 1 || !compact.Inactive(compactValue[0]) {
+		t.Fatalf("compact declaration is active: %#v", compactValue)
+	}
+	if slices.Contains(pointer.KnownDefinesAt(len(source)+1), "AFTER") || slices.Contains(compact.KnownDefinesAt(len(source)+1), "AFTER") {
+		t.Fatal("define after #endinput became active")
 	}
 }
 

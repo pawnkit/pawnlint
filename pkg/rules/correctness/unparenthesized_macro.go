@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pawnkit/pawn-parser"
+	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 )
@@ -47,7 +48,7 @@ func (UnparenthesizedMacro) Run(ctx *lint.Context) {
 		}
 		macroName := ctx.Walk.Text(define.Field("name"))
 
-		if macroOperandNeedsParens(value.Kind) {
+		if macroOperandNeedsParens(value.Kind) && !signedLiteral(value) {
 			ctx.Report(diagnostic.Diagnostic{
 				Message:  fmt.Sprintf("replacement list of macro %q should be parenthesized to avoid operator-precedence surprises at call sites", macroName),
 				Filename: ctx.File.Path,
@@ -89,6 +90,13 @@ func (UnparenthesizedMacro) Run(ctx *lint.Context) {
 			})
 		})
 	})
+}
+
+func signedLiteral(node *parser.Node) bool {
+	if node.Kind != parser.KindUnaryExpression || len(node.Children) != 1 {
+		return false
+	}
+	return (node.Tok.Kind == token.Plus || node.Tok.Kind == token.Minus) && node.Children[0].Kind == parser.KindLiteral
 }
 
 func macroOperandNeedsParens(kind parser.Kind) bool {

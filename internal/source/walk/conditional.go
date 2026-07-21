@@ -12,6 +12,9 @@ import (
 func (m *Model) indexNodeStates() {
 	var index func(*parser.Node, bool, bool, bool)
 	index = func(node *parser.Node, conditionalUncertain, inactive, ancestorError bool) {
+		if node.Kind != parser.KindSourceFile && m.endinput != 0 && node.Start >= m.endinput {
+			inactive = true
+		}
 		if node.HasError || conditionalUncertain || ancestorError {
 			m.states[node] |= nodeUncertain
 		}
@@ -37,6 +40,14 @@ func (m *Model) indexNodeStates() {
 		}
 	}
 	index(m.File.Root, false, false, false)
+}
+
+func (m *Model) indexEndinput() {
+	for _, node := range m.index.byKind[parser.KindDirectiveEndinput] {
+		if m.directiveActive(node) && (m.endinput == 0 || node.End < m.endinput) {
+			m.endinput = node.End
+		}
+	}
 }
 
 func (m *Model) indexConditionalStates() {
@@ -179,8 +190,8 @@ func (c *DefineCursor) advance(offset int) {
 	}
 	m := c.model
 	for {
-		directiveReady := c.directiveIndex < len(m.index.directives) && m.index.directives[c.directiveIndex].Start < offset
-		snapshotReady := c.snapshotIndex < len(m.snapshots) && m.snapshots[c.snapshotIndex].Offset < offset
+		directiveReady := c.directiveIndex < len(m.index.directives) && m.index.directives[c.directiveIndex].Start < offset && (m.endinput == 0 || m.index.directives[c.directiveIndex].Start < m.endinput)
+		snapshotReady := c.snapshotIndex < len(m.snapshots) && m.snapshots[c.snapshotIndex].Offset < offset && (m.endinput == 0 || m.snapshots[c.snapshotIndex].Offset < m.endinput)
 		if !directiveReady && !snapshotReady {
 			break
 		}

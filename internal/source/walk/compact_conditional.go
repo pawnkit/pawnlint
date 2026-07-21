@@ -13,6 +13,9 @@ import (
 func (m *CompactModel) indexCompactNodeStates() {
 	var index func(syntax.NodeID, bool, bool, bool)
 	index = func(node syntax.NodeID, conditionalUncertain, inactive, ancestorError bool) {
+		if m.Tree.Kind(node) != parser.KindSourceFile && m.endinput != 0 && m.Tree.Start(node) >= m.endinput {
+			inactive = true
+		}
 		if m.Tree.HasError(node) || conditionalUncertain || ancestorError {
 			m.states[node] |= compactUncertain
 		}
@@ -37,6 +40,14 @@ func (m *CompactModel) indexCompactNodeStates() {
 		}
 	}
 	index(m.Root(), false, false, false)
+}
+
+func (m *CompactModel) indexCompactEndinput() {
+	for _, node := range m.Tree.OfKind(parser.KindDirectiveEndinput) {
+		if m.compactDirectiveActive(node) && (m.endinput == 0 || m.Tree.End(node) < m.endinput) {
+			m.endinput = m.Tree.End(node)
+		}
+	}
 }
 
 func (m *CompactModel) indexCompactConditionalStates() {
@@ -167,8 +178,8 @@ func (c *CompactDefineCursor) advance(offset int) {
 	}
 	model := c.model
 	for {
-		directiveReady := c.directiveIndex < len(model.directives) && model.Tree.Start(model.directives[c.directiveIndex]) < offset
-		snapshotReady := c.snapshotIndex < len(model.snapshots) && model.snapshots[c.snapshotIndex].Offset < offset
+		directiveReady := c.directiveIndex < len(model.directives) && model.Tree.Start(model.directives[c.directiveIndex]) < offset && (model.endinput == 0 || model.Tree.Start(model.directives[c.directiveIndex]) < model.endinput)
+		snapshotReady := c.snapshotIndex < len(model.snapshots) && model.snapshots[c.snapshotIndex].Offset < offset && (model.endinput == 0 || model.snapshots[c.snapshotIndex].Offset < model.endinput)
 		if !directiveReady && !snapshotReady {
 			break
 		}
