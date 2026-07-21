@@ -2,6 +2,7 @@ package project
 
 import (
 	"bytes"
+	"slices"
 	"sort"
 	"strings"
 
@@ -26,6 +27,7 @@ func (m *Model) buildDuplicateFunctions() []DuplicateFunction {
 		macroQualifiers := functionMacroQualifiers(unit)
 		byName := make(map[string][]Declaration)
 		for _, file := range unit.Files {
+			defines := file.Syntax.NewDefineCursor()
 			for _, node := range file.Syntax.OfKind(parser.KindFunctionDefinition) {
 				if file.Syntax.Uncertain(node) || node.Field("state").Valid() || node.Field("generic").Valid() || insideErroredDeclaration(file, node) || insideFunction(file, node) {
 					continue
@@ -44,6 +46,9 @@ func (m *Model) buildDuplicateFunctions() []DuplicateFunction {
 				nameNode := node.Field("name")
 				name := nameNode.Text()
 				if name == "" || strings.HasPrefix(name, "operator") {
+					continue
+				}
+				if slices.Contains(defines.KnownDefinesAt(node.Start()), name) {
 					continue
 				}
 				key := name

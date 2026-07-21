@@ -303,6 +303,23 @@ func TestDuplicateMacroQualifiedFunctionsAreIgnored(t *testing.T) {
 	}
 }
 
+func TestDuplicateFunctionMacroInvocationsAreIgnored(t *testing.T) {
+	dir := t.TempDir()
+	rootPath := filepath.Join(dir, "main.pwn")
+	includePath := filepath.Join(dir, "pawntest.inc")
+	if err := os.WriteFile(includePath, []byte("#define TEST(%0) forward test_%0(); public test_%0()\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	source := []byte("#include <pawntest>\nTEST(one) {}\nTEST(two) {}\n")
+	model, err := Build([]Source{{Path: rootPath, Content: source}}, Options{WorkingDir: dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if duplicates := model.DuplicateFunctions(); len(duplicates) != 0 {
+		t.Fatalf("duplicates = %#v", duplicates)
+	}
+}
+
 func TestDuplicateMacroQualifiedFunctionsAreIgnoredWithAnalysisSyntax(t *testing.T) {
 	dir := t.TempDir()
 	rootPath := filepath.Join(dir, "main.pwn")
