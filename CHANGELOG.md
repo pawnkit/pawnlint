@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.7 - 2026-07-21
+
+### Fixed
+
+- Accepted Pawn macro patterns used by YSI and other existing includes.
+
 ## 1.0.6 - 2026-07-21
 
 ### Fixed
