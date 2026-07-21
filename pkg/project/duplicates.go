@@ -21,7 +21,7 @@ func (m *Model) DuplicateFunctions() []DuplicateFunction {
 }
 
 func (m *Model) buildDuplicateFunctions() []DuplicateFunction {
-	seen := make(map[declarationPair]struct{})
+	seen := make(map[physicalDeclarationPair]struct{})
 	var result []DuplicateFunction
 	for _, unit := range m.Units {
 		macroQualifiers := functionMacroQualifiers(unit)
@@ -68,7 +68,7 @@ func (m *Model) buildDuplicateFunctions() []DuplicateFunction {
 				if first.File.canonical == duplicate.File.canonical && declarationSyntaxOffset(first) == declarationSyntaxOffset(duplicate) {
 					continue
 				}
-				key := declarationPair{first: declarationKey(first), second: declarationKey(duplicate)}
+				key := physicalPair(first, duplicate)
 				if _, exists := seen[key]; exists {
 					continue
 				}
@@ -104,7 +104,7 @@ func (m *Model) DuplicateGlobals() []DuplicateGlobal {
 }
 
 func (m *Model) buildDuplicateGlobals() []DuplicateGlobal {
-	seen := make(map[declarationPair]struct{})
+	seen := make(map[physicalDeclarationPair]struct{})
 	var result []DuplicateGlobal
 	for _, unit := range m.Units {
 		byName := make(map[string][]Declaration)
@@ -143,7 +143,7 @@ func (m *Model) buildDuplicateGlobals() []DuplicateGlobal {
 				if first.File.canonical == duplicate.File.canonical && declarationSyntaxOffset(first) == declarationSyntaxOffset(duplicate) {
 					continue
 				}
-				key := declarationPair{first: declarationKey(first), second: declarationKey(duplicate)}
+				key := physicalPair(first, duplicate)
 				if _, exists := seen[key]; exists {
 					continue
 				}
@@ -166,6 +166,23 @@ func (m *Model) buildDuplicateGlobals() []DuplicateGlobal {
 		return result[i].Name < result[j].Name
 	})
 	return result
+}
+
+type physicalDeclaration struct {
+	path   string
+	offset int
+}
+
+type physicalDeclarationPair struct {
+	first  physicalDeclaration
+	second physicalDeclaration
+}
+
+func physicalPair(first, second Declaration) physicalDeclarationPair {
+	return physicalDeclarationPair{
+		first:  physicalDeclaration{path: first.File.canonical, offset: declarationSyntaxOffset(first)},
+		second: physicalDeclaration{path: second.File.canonical, offset: declarationSyntaxOffset(second)},
+	}
 }
 
 func insideErroredDeclaration(file *File, node cst.Node) bool {

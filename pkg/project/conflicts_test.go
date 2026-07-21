@@ -57,6 +57,32 @@ func TestConflictingIncludeSymbolsExcludeExistingDuplicateRules(t *testing.T) {
 	}
 }
 
+func TestDuplicateDefinitionsReportedOnceAcrossEntryPoints(t *testing.T) {
+	dir := t.TempDir()
+	first := filepath.Join(dir, "first.inc")
+	second := filepath.Join(dir, "second.inc")
+	if err := os.WriteFile(first, []byte("stock Shared() {}\nnew shared_global;\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(second, []byte("stock Shared() {}\nnew shared_global;\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	source := []byte("#include \"first.inc\"\n#include \"second.inc\"\n")
+	model, err := project.Build([]project.Source{
+		{Path: filepath.Join(dir, "main.pwn"), Content: source},
+		{Path: filepath.Join(dir, "other.pwn"), Content: source},
+	}, project.Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := len(model.DuplicateFunctions()); got != 1 {
+		t.Fatalf("duplicate functions = %d", got)
+	}
+	if got := len(model.DuplicateGlobals()); got != 1 {
+		t.Fatalf("duplicate globals = %d", got)
+	}
+}
+
 func TestConflictingIncludeSymbolsExposeKinds(t *testing.T) {
 	dir := t.TempDir()
 	include := filepath.Join(dir, "values.inc")

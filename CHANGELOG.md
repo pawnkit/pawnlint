@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.6 - 2026-07-21
+
+### Fixed
+
+- Reported each duplicate definition once across entry points.
+
 ## 1.0.5 - 2026-07-21
 
 ### Fixed
