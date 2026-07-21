@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.5 - 2026-07-21
+
+### Fixed
+
+- Expanded macro-defined tags before checking argument compatibility.
+- Resolved nested quoted includes from the entry file's directory.
+
 ## 1.0.4 - 2026-07-21
 
 ### Fixed

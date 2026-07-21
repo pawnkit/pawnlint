@@ -20,12 +20,15 @@ import (
 
 const compactTargetThreshold = 512 << 10
 
-func (m *Model) addFile(path string, source []byte, provided bool, defines *defineEnvironment) (*File, error) {
+func (m *Model) addFile(path string, source []byte, provided bool, defines *defineEnvironment, includeRoot string) (*File, error) {
 	canonical, err := canonicalPath(path, m.options.WorkingDir)
 	if err != nil {
 		return nil, err
 	}
-	instance := fileContextKey{canonical: canonical, environment: defines.id}
+	if includeRoot == "" {
+		includeRoot = filepath.Dir(canonical)
+	}
+	instance := fileContextKey{canonical: canonical, environment: defines.id, includeRoot: includeRoot}
 	if existing := m.byContext[instance]; existing != nil {
 		existing.Provided = existing.Provided || provided
 		if provided {
@@ -82,7 +85,7 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	if !provided {
 		display = canonical
 	}
-	file := &File{Path: display, Source: physical.source, Parsed: parsed, CompactParsed: compact, Provided: provided, canonical: canonical, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1), syntaxIndex: physical.syntaxIndex}
+	file := &File{Path: display, Source: physical.source, Parsed: parsed, CompactParsed: compact, Provided: provided, canonical: canonical, includeRoot: includeRoot, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1), syntaxIndex: physical.syntaxIndex}
 	if parsed != nil {
 		file.Walk = walk.NewWithContext(display, parsed, defines.walk, nil, m.options.DefinesComplete, physical.lineTable, physical.syntaxIndex)
 		file.Syntax = cst.Pointer(file.Walk)
@@ -122,14 +125,15 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		if file.Syntax.Inactive(node) {
 			continue
 		}
-		path := includePath(node.Field("path").Text())
+		rawPath := strings.TrimSpace(node.Field("path").Text())
+		path := includePath(rawPath)
 		include := &Include{Node: node.Pointer(), Path: path, Optional: node.Kind() == parser.KindDirectiveTryInclude, Uncertain: file.Syntax.Uncertain(node), syntax: node}
 		file.Includes = append(file.Includes, include)
 		if path == "" || include.Uncertain {
 			continue
 		}
 		defines := m.internDefines(defineCursor.KnownDefinesViewAt(node.Start()))
-		resolved, candidates, err := m.resolveInclude(file, path, defines)
+		resolved, candidates, err := m.resolveInclude(file, path, strings.HasPrefix(rawPath, `"`), defines)
 		if err != nil {
 			return err
 		}
@@ -265,12 +269,15 @@ func (m *Model) observe(event TimingEvent) {
 	}
 }
 
-func (m *Model) resolveInclude(from *File, path string, defines *defineEnvironment) (*File, []string, error) {
+func (m *Model) resolveInclude(from *File, path string, quoted bool, defines *defineEnvironment) (*File, []string, error) {
 	path = filepath.FromSlash(strings.ReplaceAll(path, "\\", "/"))
 	var bases []string
 	if filepath.IsAbs(path) {
 		bases = []string{""}
 	} else {
+		if quoted {
+			bases = append(bases, from.includeRoot)
+		}
 		bases = append(bases, filepath.Dir(from.canonical))
 		bases = append(bases, m.options.IncludePaths...)
 		bases = append(bases, m.options.WorkingDir)
@@ -312,7 +319,7 @@ func (m *Model) resolveInclude(from *File, path string, defines *defineEnvironme
 		return nil, nil, nil
 	}
 	chosen := candidates[0]
-	if existing := m.byContext[fileContextKey{canonical: chosen, environment: defines.id}]; existing != nil {
+	if existing := m.byContext[fileContextKey{canonical: chosen, environment: defines.id, includeRoot: from.includeRoot}]; existing != nil {
 		return existing, candidates, nil
 	}
 	var source []byte
@@ -325,7 +332,7 @@ func (m *Model) resolveInclude(from *File, path string, defines *defineEnvironme
 			return nil, nil, err
 		}
 	}
-	resolved, err := m.addFile(chosen, source, false, defines)
+	resolved, err := m.addFile(chosen, source, false, defines, from.includeRoot)
 	return resolved, candidates, err
 }
 

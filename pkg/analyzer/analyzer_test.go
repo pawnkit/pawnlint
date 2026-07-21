@@ -107,6 +107,37 @@ func TestAnalyzeUsesRequestIncludePaths(t *testing.T) {
 	}
 }
 
+func TestAnalyzeCommonIncludeMacrosAndEmit(t *testing.T) {
+	dir := t.TempDir()
+	includeDir := filepath.Join(dir, "include")
+	if err := os.Mkdir(includeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	includes := map[string]string{
+		"open.mp.inc":          "#define _INC_open_mp\n",
+		"streamer.inc":         "#define _streamer_included\n",
+		"PawnPlus.inc":         "#define _PawnPlus_included\n#define __TAG(%0) %0\n",
+		"vehicle-streamer.inc": "#if !defined _PawnPlus_included\n#error PawnPlus must be included first.\n#endif\n#if !defined _streamer_included\n#error Streamer must be included first.\n#endif\nenum E_STATUS { __TAG(VEHICLE_PANEL_STATUS):panel_status };\nforward Handle(__TAG(WEAPON):weaponid);\n",
+	}
+	for name, content := range includes {
+		if err := os.WriteFile(filepath.Join(includeDir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	source := "#include <open.mp>\n#include <streamer>\n#include <PawnPlus>\n#include <vehicle-streamer>\nmain() {\n#emit NOP\n}\n"
+	result, err := analyzer.Analyze(context.Background(), analyzer.Request{
+		WorkingDirectory: dir,
+		IncludePaths:     []string{includeDir},
+		Sources:          []analyzer.Source{{Path: filepath.Join(dir, "main.pwn"), Content: []byte(source)}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Diagnostics) != 0 {
+		t.Fatalf("diagnostics = %+v", result.Diagnostics)
+	}
+}
+
 func TestAnalyzeRejectsUnknownBuild(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "pawnlint.toml")

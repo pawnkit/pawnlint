@@ -64,6 +64,7 @@ type File struct {
 	Includes          []*Include
 	Provided          bool
 	canonical         string
+	includeRoot       string
 	defines           *defineEnvironment
 	final             *defineEnvironment
 	resolving         bool
@@ -72,6 +73,7 @@ type File struct {
 	sourceID          uint32
 	syntaxIndex       *walk.Index
 	expansionState    *preprocess.State
+	tagAliases        map[string][]string
 	runtimeCalls      []runtimeCallFact
 	expansionOrigins  map[*parser.Node][]expansionOriginFact
 	snapshots         []walk.DefineSnapshot
@@ -177,6 +179,7 @@ type nodeLocation struct {
 type fileContextKey struct {
 	canonical   string
 	environment uint32
+	includeRoot string
 }
 
 type defineEnvironment struct {
@@ -226,7 +229,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 	}
 	rootEnvironment := model.internDefines(options.Defines)
 	for _, source := range sources {
-		file, err := model.addFile(source.Path, source.Content, true, rootEnvironment)
+		file, err := model.addFile(source.Path, source.Content, true, rootEnvironment, "")
 		if err != nil {
 			return nil, err
 		}
@@ -240,6 +243,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 		}
 	}
 	for _, file := range model.Files {
+		file.buildTagAliases()
 		file.expansionState = nil
 	}
 	model.orderDefineEnvironments()

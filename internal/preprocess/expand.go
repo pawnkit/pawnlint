@@ -3,6 +3,7 @@ package preprocess
 import (
 	"sort"
 	"strconv"
+	"strings"
 
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
@@ -37,6 +38,27 @@ type renderedExpansion struct {
 type State struct {
 	definitions map[string]definition
 	undefined   map[string]struct{}
+}
+
+// ExpandIdentifier expands an object-like macro without changing the state.
+func (s *State) ExpandIdentifier(name string) (string, bool) {
+	if s == nil {
+		return "", false
+	}
+	definition, ok := s.definitions[name]
+	if !ok || definition.function {
+		return "", false
+	}
+	expander := &expander{definitions: s.definitions, undefined: s.undefined, complete: true}
+	pieces := expander.expandPieces([]piece{{kind: token.Identifier, text: name}}, 0, nil)
+	if !expander.complete || !expander.changed {
+		return "", false
+	}
+	var result strings.Builder
+	for _, current := range pieces {
+		result.WriteString(current.text)
+	}
+	return result.String(), true
 }
 
 type definition struct {

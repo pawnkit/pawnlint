@@ -55,7 +55,7 @@ func (d Declaration) Constant() bool {
 }
 
 func (d Declaration) Tags() []string {
-	return append([]string(nil), declarationSymbolTags(d)...)
+	return d.File.normalizeTags(declarationSymbolTags(d))
 }
 
 func (d Declaration) HasToken(kind token.Kind) bool {
@@ -115,7 +115,7 @@ func (d Declaration) FunctionParameters() []FunctionParameter {
 				if !symbol.Ambiguous {
 					item.Known = true
 					if len(symbol.Tags) != 0 {
-						item.Tags = append([]string(nil), symbol.Tags...)
+						item.Tags = d.File.normalizeTags(symbol.Tags)
 					}
 				}
 				break
@@ -128,7 +128,7 @@ func (d Declaration) FunctionParameters() []FunctionParameter {
 				if !symbol.Ambiguous {
 					item.Known = true
 					if len(symbol.Tags) != 0 {
-						item.Tags = append([]string(nil), symbol.Tags...)
+						item.Tags = d.File.normalizeTags(symbol.Tags)
 					}
 				}
 				break

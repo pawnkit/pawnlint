@@ -155,7 +155,7 @@ func (m *Model) ExpressionTags(file *File, node *parser.Node) []string {
 		return nil
 	}
 	if tags := file.Semantic.ExpressionTags(node); len(tags) != 0 {
-		return tags
+		return file.normalizeTags(tags)
 	}
 	switch node.Kind {
 	case parser.KindIdentifier:

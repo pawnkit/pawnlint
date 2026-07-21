@@ -30,3 +30,29 @@ func TestArgumentTagMismatchAcrossInclude(t *testing.T) {
 		t.Fatalf("diagnostics = %#v", diagnostics)
 	}
 }
+
+func TestArgumentTagMismatchExpandsTagAliases(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	include := `#define ConstString String@Const
+#define StringTags String
+#define ConstStringTags ConstString,StringTags
+#define ConstStringTag {ConstStringTags}
+native str_get(ConstStringTag:value, output[]);
+`
+	if err := os.WriteFile(filepath.Join(dir, "types.inc"), []byte(include), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	source := `#include "types.inc"
+new ConstString:commandName;
+new command[65];
+main() { str_get(commandName, command); }
+`
+	model, err := project.Build([]project.Source{{Path: path, Content: []byte(source)}}, project.Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diagnostics := lintProjectRule(t, model, nil, path, "argument-tag-mismatch"); len(diagnostics) != 0 {
+		t.Fatalf("diagnostics = %#v", diagnostics)
+	}
+}

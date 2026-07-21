@@ -74,6 +74,16 @@ new second = LIMIT;
 	}
 }
 
+func TestStateExpandsNestedObjectMacro(t *testing.T) {
+	source := []byte("#define First Second\n#define Second Third@Const\n")
+	parsed := parser.Parse(source)
+	_, state := ExpandWithState(parsed, walk.New("test.pwn", parsed), 1, nil, nil)
+	value, ok := state.ExpandIdentifier("First")
+	if !ok || value != "Third@Const" {
+		t.Fatalf("expansion = %q, %v", value, ok)
+	}
+}
+
 func TestCompactInputExpansionMatchesPointerInput(t *testing.T) {
 	source := []byte(`#define ADD(%0,%1) ((%0) + (%1))
 #define VALUE 2

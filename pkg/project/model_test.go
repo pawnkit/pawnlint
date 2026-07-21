@@ -47,6 +47,33 @@ func TestBuildResolvesIncludesAndIndexesDeclarations(t *testing.T) {
 	}
 }
 
+func TestQuotedIncludeUsesEntryDirectory(t *testing.T) {
+	dir := t.TempDir()
+	gamemodes := filepath.Join(dir, "gamemodes")
+	parts := filepath.Join(gamemodes, "parts")
+	if err := os.MkdirAll(filepath.Join(parts, "parts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(parts, "first.inc"), []byte("#include \"parts/second\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(parts, "second.inc"), []byte("stock RootResolved() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(parts, "parts", "second.inc"), []byte("stock WrongResolved() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(gamemodes, "main.pwn")
+	source := []byte("#include \"parts/first\"\nmain() {}\n")
+	model, err := Build([]Source{{Path: path, Content: source}}, Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(model.Declarations["RootResolved"]) != 1 || len(model.Declarations["WrongResolved"]) != 0 {
+		t.Fatalf("declarations resolved from the wrong include directory")
+	}
+}
+
 func TestBuildResolvesDottedIncludeWithIncSuffix(t *testing.T) {
 	dir := t.TempDir()
 	includeDir := filepath.Join(dir, "include")
