@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.8 - 2026-07-21
+
+### Fixed
+
+- Recognised command macros aliased from another function macro.
+
 ## 1.0.7 - 2026-07-21
 
 ### Fixed

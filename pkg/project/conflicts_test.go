@@ -100,3 +100,21 @@ func TestConflictingIncludeSymbolsExposeKinds(t *testing.T) {
 		t.Fatalf("conflicts = %+v", conflicts)
 	}
 }
+
+func TestConflictingIncludeSymbolsIgnoreAliasedFunctionMacros(t *testing.T) {
+	dir := t.TempDir()
+	include := filepath.Join(dir, "commands.inc")
+	source := "#define command:%0(%1) public command_%0(%1)\n#define CMD command\n"
+	if err := os.WriteFile(include, []byte(source), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	root := filepath.Join(dir, "main.pwn")
+	main := []byte("#include \"commands.inc\"\nnew vehicle;\nCMD:vehicle(playerid) {}\nmain() {}\n")
+	model, err := project.Build([]project.Source{{Path: root, Content: main}}, project.Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conflicts := model.ConflictingIncludeSymbols(); len(conflicts) != 0 {
+		t.Fatalf("conflicts = %+v", conflicts)
+	}
+}

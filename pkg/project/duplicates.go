@@ -5,6 +5,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/lexer"
@@ -205,13 +206,35 @@ func insideFunction(file *File, node cst.Node) bool {
 
 func functionMacroQualifiers(unit *Unit) map[string]struct{} {
 	qualifiers := make(map[string]struct{})
+	aliases := make(map[string]string)
 	for _, file := range unit.Files {
 		for _, directive := range file.Syntax.OfKind(parser.KindDirectiveDefine) {
 			name := directive.Field("name")
-			if !name.Valid() || !nextSourceByte(file.Source, name.End(), directive.End(), ':') {
+			if !name.Valid() {
 				continue
 			}
-			qualifiers[name.Text()] = struct{}{}
+			if nextSourceByte(file.Source, name.End(), directive.End(), ':') {
+				qualifiers[name.Text()] = struct{}{}
+				continue
+			}
+			value := strings.TrimSpace(directive.Field("value").Text())
+			if value != "" && strings.IndexFunc(value, func(r rune) bool {
+				return r != '_' && !unicode.IsLetter(r) && !unicode.IsDigit(r)
+			}) == -1 {
+				aliases[name.Text()] = value
+			}
+		}
+	}
+	for changed := true; changed; {
+		changed = false
+		for alias, target := range aliases {
+			if _, known := qualifiers[alias]; known {
+				continue
+			}
+			if _, known := qualifiers[target]; known {
+				qualifiers[alias] = struct{}{}
+				changed = true
+			}
 		}
 	}
 	return qualifiers
