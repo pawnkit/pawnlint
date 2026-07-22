@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.10 - 2026-07-22
+
+### Fixed
+
+- Resolve angle-bracket includes through compiler include paths only.
+
 ## 1.0.9 - 2026-07-22
 
 ### Fixed

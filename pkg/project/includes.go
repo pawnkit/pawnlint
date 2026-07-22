@@ -277,8 +277,8 @@ func (m *Model) resolveInclude(from *File, path string, quoted bool, defines *de
 	} else {
 		if quoted {
 			bases = append(bases, from.includeRoot)
+			bases = append(bases, filepath.Dir(from.canonical))
 		}
-		bases = append(bases, filepath.Dir(from.canonical))
 		bases = append(bases, m.options.IncludePaths...)
 		bases = append(bases, m.options.WorkingDir)
 	}
