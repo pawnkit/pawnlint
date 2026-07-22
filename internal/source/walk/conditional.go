@@ -93,6 +93,8 @@ func (m *Model) directiveValue(cursor *DefineCursor, node *parser.Node, offset i
 		return 0, false
 	}
 	switch node.Kind {
+	case parser.KindIdentifier:
+		return compilerConstant(m.Text(node))
 	case parser.KindParenthesizedExpression:
 		return m.directiveValue(cursor, node.Field("expression"), offset)
 	case parser.KindDefinedExpression:
@@ -139,9 +141,72 @@ func (m *Model) directiveValue(cursor *DefineCursor, node *parser.Node, offset i
 		default:
 			return 0, false
 		}
+	case parser.KindBinaryExpression:
+		left, leftOK := m.directiveValue(cursor, node.Field("left"), offset)
+		right, rightOK := m.directiveValue(cursor, node.Field("right"), offset)
+		if !leftOK || !rightOK {
+			return 0, false
+		}
+		return directiveBinaryValue(node.Tok.Kind, left, right)
 	default:
 		return 0, false
 	}
+}
+
+func directiveBinaryValue(kind token.Kind, left, right int64) (int64, bool) {
+	switch kind {
+	case token.Plus:
+		return left + right, true
+	case token.Minus:
+		return left - right, true
+	case token.Star:
+		return left * right, true
+	case token.Slash:
+		if right == 0 {
+			return 0, false
+		}
+		return left / right, true
+	case token.Percent:
+		if right == 0 {
+			return 0, false
+		}
+		return left % right, true
+	case token.Shl:
+		return left << uint64(right), true
+	case token.Shr, token.Ushr:
+		return left >> uint64(right), true
+	case token.Amp:
+		return left & right, true
+	case token.Pipe:
+		return left | right, true
+	case token.Caret:
+		return left ^ right, true
+	case token.Eq:
+		return boolValue(left == right), true
+	case token.NotEq:
+		return boolValue(left != right), true
+	case token.Lt:
+		return boolValue(left < right), true
+	case token.LtEq:
+		return boolValue(left <= right), true
+	case token.Gt:
+		return boolValue(left > right), true
+	case token.GtEq:
+		return boolValue(left >= right), true
+	case token.AndAnd:
+		return boolValue(left != 0 && right != 0), true
+	case token.OrOr:
+		return boolValue(left != 0 || right != 0), true
+	default:
+		return 0, false
+	}
+}
+
+func boolValue(value bool) int64 {
+	if value {
+		return 1
+	}
+	return 0
 }
 
 type DefineCursor struct {

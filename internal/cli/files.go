@@ -307,6 +307,32 @@ func projectTimingObserver(timings *runTimings) func(projectmodel.TimingEvent) {
 	return timings.observeProject
 }
 
+func checkBuildIncludes(r *config.Resolved, projectDir string, build config.Build, entry, workingDir string) error {
+	content, err := os.ReadFile(entry)
+	if err != nil {
+		return fmt.Errorf("build %q entry: %w", build.Name, err)
+	}
+	includePaths := resolveConfiguredPaths(projectDir, r.Source.IncludePaths)
+	includePaths = appendUniquePaths(includePaths, resolveConfiguredPaths(workingDir, build.IncludePaths)...)
+	defines := appendUniqueStrings(r.Source.Defines, build.Defines...)
+	features := projectmodel.NewFeatures(projectmodel.FeatureIncludeIssues)
+	model, err := projectmodel.Build([]projectmodel.Source{{Path: entry, Content: content}}, projectmodel.Options{
+		WorkingDir:      workingDir,
+		IncludePaths:    includePaths,
+		Defines:         defines,
+		DefinesComplete: true,
+		Features:        &features,
+	})
+	if err != nil {
+		return fmt.Errorf("build %q project: %w", build.Name, err)
+	}
+	if missing := model.MissingIncludes(); len(missing) != 0 {
+		issue := missing[0]
+		return fmt.Errorf("build %q: %s includes missing target %q", build.Name, issue.File.Path, issue.Include.Path)
+	}
+	return nil
+}
+
 func configuredBuildFiles(model *projectmodel.Model, entry, workingDir string, patterns, excludes []string) []*projectmodel.File {
 	files := make([]*projectmodel.File, 0, len(model.Files))
 	for _, file := range model.Files {

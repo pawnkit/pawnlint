@@ -37,6 +37,7 @@ The default profile is `recommended`. Use `--profile strict` for more checks.
 | `pawnlint --list-rules` | List every rule |
 | `pawnlint --explain rule-id` | Explain a rule |
 | `pawnlint --init-config` | Write a default `pawnlint.toml` |
+| `pawnlint --check-config` | Validate config paths, entries, and includes |
 | `pawnlint --enable id --disable id paths...` | Toggle specific rules |
 | `pawnlint --format text\|compact\|json\|jsonl\|sarif\|github paths...` | Choose an output format |
 | `pawnlint --diff paths...` | Preview available fixes |

@@ -74,6 +74,20 @@ func TestEndinputStopsPointerAndCompactModels(t *testing.T) {
 	}
 }
 
+func TestCompilerConstantsMatchPointerAndCompactModels(t *testing.T) {
+	source := []byte("#if cellbits == 32 && charbits == 8\nnew active;\n#else\nnew inactive;\n#endif\n")
+	pointer := walk.New("x.inc", parser.Parse(source))
+	compact := walk.NewCompact("x.inc", parser.ParseForLinter(source))
+	pointerValues := pointer.OfKind(parser.KindVariableDeclarator)
+	compactValues := compact.OfKind(parser.KindVariableDeclarator)
+	if len(pointerValues) != 2 || pointer.Inactive(pointerValues[0]) || !pointer.Inactive(pointerValues[1]) {
+		t.Fatalf("pointer branch state is wrong")
+	}
+	if len(compactValues) != 2 || compact.Inactive(compactValues[0]) || !compact.Inactive(compactValues[1]) {
+		t.Fatalf("compact branch state is wrong")
+	}
+}
+
 func compareCompactRelation(t *testing.T, pointerNodes []*parser.Node, compactNodes []syntax.NodeID, pointer *parser.Node, compact syntax.NodeID, relation string) {
 	t.Helper()
 	if pointer == nil {

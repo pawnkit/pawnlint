@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0 - 2026-07-22
+
+### Added
+
+- Added `--check-config` for validating configured paths, entries, and includes.
+
+### Fixed
+
+- Evaluate Pawn compiler constants in conditional directives.
+
 ## 1.0.10 - 2026-07-22
 
 ### Fixed

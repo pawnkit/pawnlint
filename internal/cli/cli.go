@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/alecthomas/kong"
@@ -34,6 +35,7 @@ type cli struct {
 	ListRules        bool             `help:"list all rules and exit"`
 	Explain          string           `help:"print documentation for a rule and exit"`
 	InitConfig       bool             `help:"write a commented pawnlint.toml with defaults and exit"`
+	CheckConfig      bool             `help:"validate configuration paths and build includes, then exit"`
 	Stdin            bool             `help:"read source from stdin"`
 	StdinName        string           `name:"stdin-filename" help:"virtual filename for stdin input"`
 	Fix              bool             `help:"apply machine-safe fixes"`
@@ -121,6 +123,14 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 	for _, migration := range resolved.RuleMigrations {
 		writeRuleMigration(stderr, migration)
 	}
+	if opts.CheckConfig {
+		if err := checkConfig(resolved); err != nil {
+			_, _ = fmt.Fprintf(stderr, "pawnlint: %v\n", err)
+			return exitUsage
+		}
+		_, _ = fmt.Fprintf(stdout, "pawnlint: configuration is valid: %s\n", configDisplayPath(resolved))
+		return exitOK
+	}
 	if (opts.GenerateBaseline || opts.PruneBaseline) && baselineSetting(opts, resolved) == "" {
 		_, _ = fmt.Fprintln(stderr, "pawnlint: baseline update requires --baseline or a configured baseline")
 		return exitUsage
@@ -137,6 +147,67 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 		return exitUsage
 	}
 	return runFiles(opts, stdout, stderr, reg, resolved, timings)
+}
+
+func configDisplayPath(r *config.Resolved) string {
+	if r.SourcePath == "" {
+		return "built-in defaults"
+	}
+	path, err := filepath.Abs(r.SourcePath)
+	if err != nil {
+		return filepath.Clean(r.SourcePath)
+	}
+	return filepath.Clean(path)
+}
+
+func checkConfig(r *config.Resolved) error {
+	projectDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	if r.SourcePath != "" {
+		projectDir = filepath.Dir(r.SourcePath)
+	}
+	for _, path := range r.Source.IncludePaths {
+		if err := checkConfiguredDirectory("include path", resolveBuildPath(projectDir, path)); err != nil {
+			return err
+		}
+	}
+	for _, build := range r.Source.Builds {
+		workingDir := resolveBuildPath(projectDir, build.WorkingDirectory)
+		if err := checkConfiguredDirectory(fmt.Sprintf("build %q working directory", build.Name), workingDir); err != nil {
+			return err
+		}
+		entry := resolveBuildPath(workingDir, build.Entry)
+		info, err := os.Stat(entry)
+		if err != nil {
+			return fmt.Errorf("build %q entry: %w", build.Name, err)
+		}
+		if info.IsDir() {
+			return fmt.Errorf("build %q entry is a directory: %s", build.Name, entry)
+		}
+		for _, path := range build.IncludePaths {
+			label := fmt.Sprintf("build %q include path", build.Name)
+			if err := checkConfiguredDirectory(label, resolveBuildPath(workingDir, path)); err != nil {
+				return err
+			}
+		}
+		if err := checkBuildIncludes(r, projectDir, build, entry, workingDir); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func checkConfiguredDirectory(label, path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("%s: %w", label, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("%s is not a directory: %s", label, path)
+	}
+	return nil
 }
 
 func writeRuleMigration(w io.Writer, migration config.RuleMigration) {

@@ -41,9 +41,32 @@ type branchState uint8
 type nodeState uint8
 
 var compilerDefines = []string{
-	"true", "false", "EOS", "cellbits", "cellmax", "cellmin", "charbits",
+	"true", "false", "EOS", "cellbits", "cellbytes", "cellmax", "cellmin", "charbits",
 	"charmin", "charmax", "ucharmax", "__Pawn", "__PawnBuild", "__line",
 	"__compat", "debug",
+}
+
+func compilerConstant(name string) (int64, bool) {
+	switch name {
+	case "true":
+		return 1, true
+	case "false", "EOS", "charmin":
+		return 0, true
+	case "cellbits":
+		return 32, true
+	case "cellbytes":
+		return 4, true
+	case "cellmax":
+		return 2_147_483_647, true
+	case "cellmin":
+		return -2_147_483_648, true
+	case "charbits":
+		return 8, true
+	case "charmax", "ucharmax":
+		return 255, true
+	default:
+		return 0, false
+	}
 }
 
 const (

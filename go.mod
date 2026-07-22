@@ -11,7 +11,7 @@ require (
 require golang.org/x/sync v0.22.0
 
 require (
-	github.com/pawnkit/pawn-analysis v0.1.9
+	github.com/pawnkit/pawn-analysis v0.1.10
 	github.com/pawnkit/pawnkit-core v0.1.0
 	github.com/posener/complete v1.2.3
 	github.com/willabides/kongplete v0.4.0

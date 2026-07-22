@@ -264,6 +264,28 @@ func TestDuplicateFunctionsAcrossIncludes(t *testing.T) {
 	}
 }
 
+func TestCompilerConstantSelectsOneIncludeBranch(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"cell32.inc", "cell64.inc"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("stock CellBits() {}\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rootPath := filepath.Join(dir, "main.pwn")
+	source := []byte("#if cellbits == 32\n#include \"cell32\"\n#else\n#include \"cell64\"\n#endif\nmain() {}\n")
+	model, err := Build([]Source{{Path: rootPath, Content: source}}, Options{WorkingDir: dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if duplicates := model.DuplicateFunctions(); len(duplicates) != 0 {
+		t.Fatalf("duplicates = %#v", duplicates)
+	}
+	root := model.File(rootPath)
+	if root == nil || len(root.Includes) != 1 || root.Includes[0].Path != "cell32" {
+		t.Fatalf("includes = %#v", root)
+	}
+}
+
 func TestStaticFunctionsAcrossIncludesAreFileLocal(t *testing.T) {
 	dir := t.TempDir()
 	rootPath := filepath.Join(dir, "main.pwn")

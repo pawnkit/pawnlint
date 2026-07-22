@@ -185,7 +185,7 @@ func hasString(values []string, wanted string) bool {
 }
 
 func TestCompilerPredefinedState(t *testing.T) {
-	src := "#if defined __PawnBuild\nnew active;\n#endif\n"
+	src := "#if defined __PawnBuild && cellbits == 32 && cellbytes == 4\nnew active;\n#endif\n"
 	f := mustParse(t, src)
 	m := walk.New("x.pwn", f)
 	declarations := m.OfKind(parser.KindVariableDeclarator)

@@ -80,6 +80,76 @@ func TestCLIInitConfigRefusesOverwrite(t *testing.T) {
 	}
 }
 
+func TestCLICheckConfigValidatesBuildEntry(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "pawnlint.toml")
+	configSource := "[[builds]]\nname = \"main\"\nentry = \"main.pwn\"\n"
+	if err := os.WriteFile(configPath, []byte(configSource), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, stderr, code := runCLI(t, []string{"--config", configPath, "--check-config"}, "")
+	if code != 2 || out != "" || !strings.Contains(stderr, "build \"main\" entry") {
+		t.Fatalf("missing entry: code=%d stdout=%q stderr=%q", code, out, stderr)
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, "main.pwn"), []byte("main() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, stderr, code = runCLI(t, []string{"--config", configPath, "--check-config"}, "")
+	want := "pawnlint: configuration is valid: " + configPath + "\n"
+	if code != 0 || stderr != "" || out != want {
+		t.Fatalf("valid config: code=%d stdout=%q stderr=%q", code, out, stderr)
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, "main.pwn"), []byte("#include \"missing.inc\"\nmain() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, stderr, code = runCLI(t, []string{"--config", configPath, "--check-config"}, "")
+	if code != 2 || out != "" || !strings.Contains(stderr, "includes missing target \"missing.inc\"") {
+		t.Fatalf("missing include: code=%d stdout=%q stderr=%q", code, out, stderr)
+	}
+}
+
+func TestCLICheckConfigValidatesIncludePaths(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "pawnlint.toml")
+	if err := os.WriteFile(configPath, []byte("include-paths = [\"missing\"]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, stderr, code := runCLI(t, []string{"--config", configPath, "--check-config"}, "")
+	if code != 2 || out != "" || !strings.Contains(stderr, "include path") {
+		t.Fatalf("missing include path: code=%d stdout=%q stderr=%q", code, out, stderr)
+	}
+
+	if err := os.Mkdir(filepath.Join(dir, "missing"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	out, stderr, code = runCLI(t, []string{"--config", configPath, "--check-config"}, "")
+	want := "pawnlint: configuration is valid: " + configPath + "\n"
+	if code != 0 || stderr != "" || out != want {
+		t.Fatalf("valid include path: code=%d stdout=%q stderr=%q", code, out, stderr)
+	}
+}
+
+func TestCLICheckConfigReportsBuiltInDefaults(t *testing.T) {
+	dir := t.TempDir()
+	previous, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(previous) })
+
+	out, stderr, code := runCLI(t, []string{"--check-config"}, "")
+	if code != 0 || stderr != "" || out != "pawnlint: configuration is valid: built-in defaults\n" {
+		t.Fatalf("defaults: code=%d stdout=%q stderr=%q", code, out, stderr)
+	}
+}
+
 func TestCLIBadFormat(t *testing.T) {
 	_, _, code := runCLI(t, []string{"--format", "xml", "x.pwn"}, "")
 	if code != 2 {

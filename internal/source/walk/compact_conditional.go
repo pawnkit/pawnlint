@@ -94,6 +94,8 @@ func (m *CompactModel) compactDirectiveValue(cursor *CompactDefineCursor, node s
 		return 0, false
 	}
 	switch m.Tree.Kind(node) {
+	case parser.KindIdentifier:
+		return compilerConstant(m.Text(node))
 	case parser.KindParenthesizedExpression:
 		return m.compactDirectiveValue(cursor, m.Tree.Field(node, "expression"), offset)
 	case parser.KindDefinedExpression:
@@ -141,6 +143,13 @@ func (m *CompactModel) compactDirectiveValue(cursor *CompactDefineCursor, node s
 		default:
 			return 0, false
 		}
+	case parser.KindBinaryExpression:
+		left, leftOK := m.compactDirectiveValue(cursor, m.Tree.Field(node, "left"), offset)
+		right, rightOK := m.compactDirectiveValue(cursor, m.Tree.Field(node, "right"), offset)
+		if !leftOK || !rightOK {
+			return 0, false
+		}
+		return directiveBinaryValue(m.Tree.TokenKind(node), left, right)
 	default:
 		return 0, false
 	}
