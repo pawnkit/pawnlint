@@ -53,7 +53,7 @@ func (m *Model) buildDuplicateFunctions() []DuplicateFunction {
 					continue
 				}
 				key := name
-				if storage == "public" {
+				if storage == "public" || storage == "static" {
 					key = file.canonical + "\x00" + name
 				}
 				byName[key] = append(byName[key], Declaration{Name: name, Kind: semantic.SymbolFunction, File: file, Node: node.Pointer(), syntax: node})
@@ -119,7 +119,7 @@ func (m *Model) buildDuplicateGlobals() []DuplicateGlobal {
 				}
 				node := declarationSyntax(declaration)
 				parent := file.Syntax.Parent(node)
-				if file.Syntax.Inactive(node) || node.Field("state").Valid() || parent.Valid() && (parent.Field("state").Valid() || parent.HasError() || file.Syntax.Inactive(parent) || file.Syntax.Uncertain(parent)) {
+				if file.Syntax.Inactive(node) || node.Field("state").Valid() || node.Field("capacity").Valid() || parent.Valid() && (parent.Field("state").Valid() || parent.HasError() || file.Syntax.Inactive(parent) || file.Syntax.Uncertain(parent)) {
 					return true
 				}
 				storage := parent.Field("storage").Text()

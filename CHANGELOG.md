@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.9 - 2026-07-22
+
+### Fixed
+
+- Keep static functions local when checking include graphs.
+- Ignore YSI iterator declarations when checking backing arrays for duplicate globals.
+- Accept YSI variadic functions through updated analysis support.
+
 ## 1.0.8 - 2026-07-21
 
 ### Fixed

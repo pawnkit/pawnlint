@@ -264,6 +264,24 @@ func TestDuplicateFunctionsAcrossIncludes(t *testing.T) {
 	}
 }
 
+func TestStaticFunctionsAcrossIncludesAreFileLocal(t *testing.T) {
+	dir := t.TempDir()
+	rootPath := filepath.Join(dir, "main.pwn")
+	for _, name := range []string{"first.inc", "second.inc"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("static createTable() {}\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	source := []byte("#include \"first.inc\"\n#include \"second.inc\"\nmain() {}\n")
+	model, err := Build([]Source{{Path: rootPath, Content: source}}, Options{WorkingDir: dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if duplicates := model.DuplicateFunctions(); len(duplicates) != 0 {
+		t.Fatalf("duplicates = %#v", duplicates)
+	}
+}
+
 func TestDuplicateHookFunctionsAreIgnored(t *testing.T) {
 	dir := t.TempDir()
 	rootPath := filepath.Join(dir, "main.pwn")
@@ -409,6 +427,19 @@ func TestDuplicateGlobalsAcrossIncludes(t *testing.T) {
 	}
 	duplicates := model.DuplicateGlobals()
 	if len(duplicates) != 1 || duplicates[0].Name != "shared_value" || duplicates[0].Owner.Path != rootPath {
+		t.Fatalf("duplicates = %#v", duplicates)
+	}
+}
+
+func TestIteratorCapacityDeclarationDoesNotConflictWithBackingArray(t *testing.T) {
+	dir := t.TempDir()
+	rootPath := filepath.Join(dir, "main.pwn")
+	source := []byte("new PlayerVehicles[MAX_PLAYERS][MAX_VEHICLES];\nnew Iterator:PlayerVehicles<MAX_VEHICLES>;\nmain() {}\n")
+	model, err := Build([]Source{{Path: rootPath, Content: source}}, Options{WorkingDir: dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if duplicates := model.DuplicateGlobals(); len(duplicates) != 0 {
 		t.Fatalf("duplicates = %#v", duplicates)
 	}
 }
