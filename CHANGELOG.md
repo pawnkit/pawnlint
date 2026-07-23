@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 - 2026-07-23
+
+### Fixed
+
+- Updated analysis for current macro and include syntax.
+
 ## 1.1.0 - 2026-07-22
 
 ### Added
