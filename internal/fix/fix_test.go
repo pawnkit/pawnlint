@@ -3,6 +3,7 @@ package fix_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -55,7 +56,7 @@ func TestWriteAndDiff(t *testing.T) {
 		t.Fatalf("written = %q, %v", got, err)
 	}
 	info, err := os.Stat(path)
-	if err != nil || info.Mode().Perm() != 0o640 {
+	if err != nil || runtime.GOOS != "windows" && info.Mode().Perm() != 0o640 {
 		t.Fatalf("mode = %v, %v", info.Mode().Perm(), err)
 	}
 }

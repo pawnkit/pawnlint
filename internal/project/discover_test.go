@@ -69,7 +69,7 @@ func TestDiscoverDir(t *testing.T) {
 	names := make([]string, 0, len(files))
 	for _, f := range files {
 		rel, _ := filepath.Rel(root, f.Path)
-		names = append(names, rel)
+		names = append(names, filepath.ToSlash(rel))
 	}
 	sort.Strings(names)
 	want := []string{"gamemodes/main.pwn", "gamemodes/sub/extra.pwn", "includes/util.inc"}
