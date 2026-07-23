@@ -15,6 +15,11 @@ tasks:
     cmds:
       - go test -v ./...
 
+  corpus:
+    desc: Run tests against pawn-corpus
+    cmds:
+      - PAWN_CORPUS_DIR="$(cd "${PAWN_CORPUS_DIR:-../pawn-corpus}" && pwd)" go test -count=1 ./...
+
   race:
     desc: Run unit tests with the race detector
     cmds:

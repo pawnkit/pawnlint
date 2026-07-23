@@ -38,6 +38,29 @@ jobs:
         with:
           version: v2.12.2
 
+  corpus:
+    name: Corpus conformance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out pawnlint
+        uses: actions/checkout@v7
+        with:
+          path: pawnlint
+      - name: Check out pawn-corpus
+        uses: actions/checkout@v7
+        with:
+          repository: pawnkit/pawn-corpus
+          ref: ff6369e0060edb8667379abd35207d7d893ea12b
+          path: pawn-corpus
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: pawnlint/go.mod
+      - name: Run corpus-backed tests
+        working-directory: pawnlint
+        env:
+          PAWN_CORPUS_DIR: ${{ github.workspace }}/pawn-corpus
+        run: go test -count=1 ./...
+
   build:
     name: Cross-compile (${{ matrix.goos }}/${{ matrix.goarch }})
     runs-on: ubuntu-latest
