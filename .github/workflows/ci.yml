@@ -26,6 +26,19 @@ jobs:
       - run: go vet ./...
       - run: go mod tidy && git diff --exit-code go.mod go.sum
       - run: go test -shuffle=on ./...
+        if: runner.os != 'Windows'
+      - name: Run tests
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $output = (& go test -shuffle=on ./... 2>&1 | Out-String)
+          $exitCode = $LASTEXITCODE
+          Write-Output $output
+          if ($exitCode -ne 0) {
+            $annotation = $output.Replace("%", "%25").Replace("`r", "").Replace("`n", "%0A")
+            Write-Output "::error title=Windows tests::$annotation"
+            exit $exitCode
+          }
       - run: CGO_ENABLED=1 go test -race -shuffle=on ./...
         if: runner.os != 'Windows'
 
