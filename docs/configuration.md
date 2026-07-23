@@ -35,6 +35,8 @@ discarded-expression = "off"
 
 - `max-diagnostics = 0` means unlimited.
 - `defines` names are treated as present by `defined(NAME)` conditions.
+- `pawn.json` or `pawn.yaml` supplies the project include paths. Any
+  `include-paths` listed here are added afterward.
 - Relative `include-paths` entries resolve from the configuration file.
 - Relative `api-metadata` entries resolve the same way; later files override
   earlier entries for the same key.

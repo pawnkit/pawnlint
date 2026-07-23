@@ -160,6 +160,7 @@ type Model struct {
 	effectsOnce        sync.Once
 	definedNames       map[string]struct{}
 	sourceFiles        map[uint32]*File
+	includeResolver    *includeResolution
 	options            Options
 }
 
@@ -227,6 +228,7 @@ func Build(sources []Source, options Options) (*Model, error) {
 		options:            options,
 		functionEffects:    features.Has(FeatureFunctionEffects),
 	}
+	model.includeResolver = newIncludeResolver(sources, options)
 	rootEnvironment := model.internDefines(options.Defines)
 	for _, source := range sources {
 		file, err := model.addFile(source.Path, source.Content, true, rootEnvironment, "")

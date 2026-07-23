@@ -11,6 +11,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/pawnkit/pawnlint/internal/config"
 	"github.com/pawnkit/pawnlint/internal/output"
+	projectcontext "github.com/pawnkit/pawnlint/internal/project"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 	"github.com/pawnkit/pawnlint/pkg/rules"
 	"github.com/posener/complete"
@@ -143,8 +144,22 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 		return runStdin(opts, stdin, stdout, stderr, reg, resolved, timings)
 	}
 	if len(opts.Paths) == 0 && len(resolved.Source.Builds) == 0 {
-		_, _ = fmt.Fprintln(stderr, "pawnlint: no input; pass file/directory paths or use --stdin")
-		return exitUsage
+		projectDir, _ := os.Getwd()
+		if resolved.SourcePath != "" {
+			projectDir = filepath.Dir(resolved.SourcePath)
+		}
+		managed := resolveConfiguredPaths(projectDir, resolved.Source.IncludePaths)
+		canonical, err := projectcontext.Canonical(projectDir, managed)
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "pawnlint: load project: %v\n", err)
+			return exitUsage
+		}
+		if canonical != nil && canonical.Paths().Entry != "" {
+			opts.Paths = []string{filepath.FromSlash(canonical.Paths().Entry)}
+		} else {
+			_, _ = fmt.Fprintln(stderr, "pawnlint: no input; pass file/directory paths or use --stdin")
+			return exitUsage
+		}
 	}
 	return runFiles(opts, stdout, stderr, reg, resolved, timings)
 }

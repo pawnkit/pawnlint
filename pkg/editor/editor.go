@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/pawnkit/pawnlint/internal/config"
+	projectcontext "github.com/pawnkit/pawnlint/internal/project"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 	"github.com/pawnkit/pawnlint/pkg/project"
@@ -36,6 +37,14 @@ func Diagnose(path string, content []byte, workingDir string) ([]diagnostic.Diag
 			p = filepath.Join(base, p)
 		}
 		includePaths[i] = p
+	}
+	canonical, err := projectcontext.Canonical(workingDir, includePaths)
+	if err != nil {
+		return nil, err
+	}
+	if canonical != nil {
+		includePaths = projectcontext.IncludeRoots(canonical)
+		workingDir = filepath.FromSlash(canonical.Root())
 	}
 
 	model, err := project.Build(

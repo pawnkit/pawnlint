@@ -79,6 +79,21 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 		}
 		includePaths[i] = path
 	}
+	canonicalStart := projectDir
+	if len(files) != 0 {
+		canonicalStart = files[0].Path
+	}
+	canonical, err := discovery.Canonical(canonicalStart, includePaths)
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "pawnlint: load project: %v\n", err)
+		return exitUsage
+	}
+	workingDir := cwd
+	if canonical != nil {
+		includePaths = discovery.IncludeRoots(canonical)
+		workingDir = filepath.FromSlash(canonical.Root())
+		projectDir = workingDir
+	}
 
 	variants := r.Source.Variants
 	if len(variants) == 0 {
@@ -95,7 +110,7 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 			started = time.Now()
 		}
 		model, err := projectmodel.Build(projectSources, projectmodel.Options{
-			WorkingDir:      cwd,
+			WorkingDir:      workingDir,
 			IncludePaths:    includePaths,
 			Defines:         variant.Defines,
 			ReleaseExpanded: true,
@@ -193,6 +208,14 @@ func runConfiguredBuilds(opts *cli, stdout, stderr io.Writer, reg *lint.Registra
 		}
 		includePaths := resolveConfiguredPaths(projectDir, r.Source.IncludePaths)
 		includePaths = appendUniquePaths(includePaths, resolveConfiguredPaths(workingDir, build.IncludePaths)...)
+		canonical, err := discovery.Canonical(projectDir, includePaths)
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "pawnlint: build %q project: %v\n", build.Name, err)
+			return exitUsage
+		}
+		if canonical != nil {
+			includePaths = discovery.IncludeRoots(canonical)
+		}
 		defines := appendUniqueStrings(r.Source.Defines, build.Defines...)
 		target := r.Target
 		if build.Target != "" {
@@ -314,6 +337,13 @@ func checkBuildIncludes(r *config.Resolved, projectDir string, build config.Buil
 	}
 	includePaths := resolveConfiguredPaths(projectDir, r.Source.IncludePaths)
 	includePaths = appendUniquePaths(includePaths, resolveConfiguredPaths(workingDir, build.IncludePaths)...)
+	canonical, err := discovery.Canonical(projectDir, includePaths)
+	if err != nil {
+		return fmt.Errorf("build %q project: %w", build.Name, err)
+	}
+	if canonical != nil {
+		includePaths = discovery.IncludeRoots(canonical)
+	}
 	defines := appendUniqueStrings(r.Source.Defines, build.Defines...)
 	features := projectmodel.NewFeatures(projectmodel.FeatureIncludeIssues)
 	model, err := projectmodel.Build([]projectmodel.Source{{Path: entry, Content: content}}, projectmodel.Options{

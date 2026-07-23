@@ -1,6 +1,6 @@
 module github.com/pawnkit/pawnlint
 
-go 1.26.4
+go 1.26.5
 
 require (
 	github.com/BurntSushi/toml v1.6.0
@@ -12,6 +12,7 @@ require golang.org/x/sync v0.22.0
 
 require (
 	github.com/pawnkit/pawn-analysis v0.1.14
+	github.com/pawnkit/pawn-project v0.1.9
 	github.com/pawnkit/pawnkit-core v0.1.0
 	github.com/posener/complete v1.2.3
 	github.com/willabides/kongplete v0.4.0

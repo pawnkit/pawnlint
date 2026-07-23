@@ -107,6 +107,35 @@ func TestAnalyzeUsesRequestIncludePaths(t *testing.T) {
 	}
 }
 
+func TestAnalyzeUsesManifestIncludePaths(t *testing.T) {
+	dir := t.TempDir()
+	includeDir := filepath.Join(dir, "includes")
+	if err := os.Mkdir(includeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(includeDir, "helper.inc"), []byte("stock Helper() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	manifest := `{"entry":"main.pwn","pawnkit":{"schemaVersion":1,"profile":"openmp","includePaths":["includes"]}}`
+	if err := os.WriteFile(filepath.Join(dir, "pawn.json"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := analyzer.Analyze(context.Background(), analyzer.Request{
+		WorkingDirectory: dir,
+		Sources: []analyzer.Source{{
+			Path:    "main.pwn",
+			Content: []byte("#include <helper>\nmain() { Helper(); }\n"),
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diagnosticIndex(result.Diagnostics, "missing-include") >= 0 {
+		t.Fatalf("diagnostics = %+v", result.Diagnostics)
+	}
+}
+
 func TestAnalyzeCommonIncludeMacrosAndEmit(t *testing.T) {
 	dir := t.TempDir()
 	includeDir := filepath.Join(dir, "include")

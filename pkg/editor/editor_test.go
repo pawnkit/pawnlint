@@ -49,6 +49,35 @@ func TestDiagnoseUsesDiscoveredConfig(t *testing.T) {
 	}
 }
 
+func TestDiagnoseUsesManifestIncludePaths(t *testing.T) {
+	dir := t.TempDir()
+	includeDir := filepath.Join(dir, "includes")
+	if err := os.Mkdir(includeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(includeDir, "helper.inc"), []byte("stock Helper() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	manifest := `{"entry":"main.pwn","pawnkit":{"schemaVersion":1,"profile":"openmp","includePaths":["includes"]}}`
+	if err := os.WriteFile(filepath.Join(dir, "pawn.json"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	diags, err := editor.Diagnose(
+		filepath.Join(dir, "main.pwn"),
+		[]byte("#include <helper>\nmain() { Helper(); }\n"),
+		dir,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range diags {
+		if item.RuleID == "missing-include" {
+			t.Fatalf("diagnostics = %+v", diags)
+		}
+	}
+}
+
 func TestDiagnoseDeduplicatesSharedSemanticDiagnostics(t *testing.T) {
 	dir := t.TempDir()
 	diags, err := editor.Diagnose(

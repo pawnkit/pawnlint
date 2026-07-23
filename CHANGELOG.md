@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.4 - 2026-07-23
+
+### Changed
+
+- Project manifests now provide the include paths used by the CLI, analyzer,
+  and editor API.
+
+### Fixed
+
+- Kept nested quoted includes relative to their entry directory.
+
 ## 1.1.3 - 2026-07-23
 
 ### Fixed

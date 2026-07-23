@@ -31,6 +31,8 @@ cat main.pwn | pawnlint --stdin --stdin-filename main.pwn
 ```
 
 The default profile is `recommended`. Use `--profile strict` for more checks.
+From a project directory, `pawnlint` uses the manifest entry and include paths
+when no file arguments are given.
 
 | Command | Purpose |
 | --- | --- |

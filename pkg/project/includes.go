@@ -270,48 +270,11 @@ func (m *Model) observe(event TimingEvent) {
 }
 
 func (m *Model) resolveInclude(from *File, path string, quoted bool, defines *defineEnvironment) (*File, []string, error) {
-	path = filepath.FromSlash(strings.ReplaceAll(path, "\\", "/"))
-	var bases []string
-	if filepath.IsAbs(path) {
-		bases = []string{""}
-	} else {
-		if quoted {
-			bases = append(bases, from.includeRoot)
-			bases = append(bases, filepath.Dir(from.canonical))
-		}
-		bases = append(bases, m.options.IncludePaths...)
-		bases = append(bases, m.options.WorkingDir)
-	}
-	seen := make(map[string]struct{})
-	var candidates []string
-	for _, base := range bases {
-		candidate := path
-		if base != "" {
-			candidate = filepath.Join(base, path)
-		}
-		for _, name := range includeCandidates(candidate) {
-			canonical, err := canonicalPath(name, m.options.WorkingDir)
-			if err != nil {
-				continue
-			}
-			if _, tried := seen[canonical]; tried {
-				continue
-			}
-			seen[canonical] = struct{}{}
-			if m.physical[canonical] != nil {
-				candidates = append(candidates, canonical)
-				continue
-			}
-			info, err := os.Stat(canonical)
-			if err != nil {
-				if os.IsNotExist(err) {
-					continue
-				}
-				return nil, nil, err
-			}
-			if !info.Mode().IsRegular() {
-				continue
-			}
+	resolvedPaths := m.includeResolver.ResolveAll(from.canonical, path, quoted, from.includeRoot)
+	candidates := make([]string, 0, len(resolvedPaths))
+	for _, resolvedPath := range resolvedPaths {
+		canonical, err := canonicalPath(filepath.FromSlash(resolvedPath), m.options.WorkingDir)
+		if err == nil {
 			candidates = append(candidates, canonical)
 		}
 	}
@@ -448,12 +411,4 @@ func includePath(raw string) string {
 		return raw[1 : len(raw)-1]
 	}
 	return raw
-}
-
-func includeCandidates(path string) []string {
-	extension := strings.ToLower(filepath.Ext(path))
-	if extension == ".inc" || extension == ".pwn" {
-		return []string{path}
-	}
-	return []string{path, path + ".inc"}
 }

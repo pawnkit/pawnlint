@@ -11,8 +11,12 @@ permissions:
 
 jobs:
   test:
-    name: Build, vet, and test
-    runs-on: ubuntu-latest
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v6
@@ -23,6 +27,7 @@ jobs:
       - run: go mod tidy && git diff --exit-code go.mod go.sum
       - run: go test -shuffle=on ./...
       - run: CGO_ENABLED=1 go test -race -shuffle=on ./...
+        if: runner.os != 'Windows'
 
   lint:
     name: Lint

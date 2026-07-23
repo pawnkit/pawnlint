@@ -13,6 +13,7 @@ import (
 	"github.com/pawnkit/pawnlint/internal/cache"
 	"github.com/pawnkit/pawnlint/internal/config"
 	"github.com/pawnkit/pawnlint/internal/external"
+	projectcontext "github.com/pawnkit/pawnlint/internal/project"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
 	"github.com/pawnkit/pawnlint/pkg/project"
@@ -52,6 +53,14 @@ func analyze(ctx context.Context, request Request, parseCache *project.ParseCach
 	}
 	for index := range contexts {
 		contexts[index].includePaths = appendUniqueAnalyzerPaths(contexts[index].includePaths, resolveAnalyzerPaths(request.WorkingDirectory, request.IncludePaths)...)
+		canonical, loadErr := projectcontext.Canonical(projectDir, contexts[index].includePaths)
+		if loadErr != nil {
+			return Result{}, fmt.Errorf("analyzer: load project: %w", loadErr)
+		}
+		if canonical != nil {
+			contexts[index].includePaths = projectcontext.IncludeRoots(canonical)
+			contexts[index].workingDir = filepath.FromSlash(canonical.Root())
+		}
 		contexts[index].defines = appendUniqueAnalyzerStrings(contexts[index].defines, request.Defines...)
 		contexts[index].definesComplete = contexts[index].definesComplete || request.DefinesComplete
 	}

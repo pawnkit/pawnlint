@@ -74,6 +74,34 @@ func TestQuotedIncludeUsesEntryDirectory(t *testing.T) {
 	}
 }
 
+func TestQuotedIncludesKeepSeparateEntryDirectories(t *testing.T) {
+	dir := t.TempDir()
+	firstDir := filepath.Join(dir, "first")
+	secondDir := filepath.Join(dir, "second")
+	for _, entryDir := range []string{firstDir, secondDir} {
+		if err := os.MkdirAll(filepath.Join(entryDir, "parts"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(firstDir, "parts", "shared.inc"), []byte("stock FirstShared() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(secondDir, "parts", "shared.inc"), []byte("stock SecondShared() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	model, err := Build([]Source{
+		{Path: filepath.Join(firstDir, "main.pwn"), Content: []byte("#include \"parts/shared\"\n")},
+		{Path: filepath.Join(secondDir, "main.pwn"), Content: []byte("#include \"parts/shared\"\n")},
+	}, Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(model.Declarations["FirstShared"]) != 1 || len(model.Declarations["SecondShared"]) != 1 {
+		t.Fatalf("entry roots crossed: declarations = %v", model.Declarations)
+	}
+}
+
 func TestBuildResolvesDottedIncludeWithIncSuffix(t *testing.T) {
 	dir := t.TempDir()
 	includeDir := filepath.Join(dir, "include")

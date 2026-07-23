@@ -448,6 +448,30 @@ func TestCLINoInput(t *testing.T) {
 	}
 }
 
+func TestCLIUsesManifestEntryWithoutArguments(t *testing.T) {
+	dir := t.TempDir()
+	manifest := `{"entry":"main.pwn","pawnkit":{"schemaVersion":1,"profile":"openmp"}}`
+	if err := os.WriteFile(filepath.Join(dir, "pawn.json"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "main.pwn"), []byte("main() { new value; value = value; }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	previous, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(previous) })
+
+	out, stderr, code := runCLI(t, []string{"--format", "compact"}, "")
+	if code != 0 || !strings.Contains(out, "self-assignment") {
+		t.Fatalf("code=%d output=%q stderr=%q", code, out, stderr)
+	}
+}
+
 func TestCLIMissingPath(t *testing.T) {
 	_, _, code := runCLI(t, []string{filepath.Join(t.TempDir(), "missing.pwn")}, "")
 	if code != 2 {
@@ -614,6 +638,30 @@ func TestCLIRunsProjectRulesAcrossIncludes(t *testing.T) {
 	out, stderr, code := runCLI(t, []string{"--config", configPath, "--format", "compact", mainPath}, "")
 	if code != 1 || !strings.Contains(out, "duplicate-function-definition") {
 		t.Fatalf("project rule did not run: code=%d output=%q stderr=%q", code, out, stderr)
+	}
+}
+
+func TestCLIUsesManifestIncludePaths(t *testing.T) {
+	dir := t.TempDir()
+	includeDir := filepath.Join(dir, "includes")
+	if err := os.Mkdir(includeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(includeDir, "helper.inc"), []byte("stock Helper() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	manifest := `{"entry":"main.pwn","pawnkit":{"schemaVersion":1,"profile":"openmp","includePaths":["includes"]}}`
+	if err := os.WriteFile(filepath.Join(dir, "pawn.json"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	mainPath := filepath.Join(dir, "main.pwn")
+	if err := os.WriteFile(mainPath, []byte("#include <helper>\nmain() { Helper(); }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, stderr, code := runCLI(t, []string{"--format", "compact", mainPath}, "")
+	if code != 0 || strings.Contains(out, "missing-include") {
+		t.Fatalf("code=%d output=%q stderr=%q", code, out, stderr)
 	}
 }
 
