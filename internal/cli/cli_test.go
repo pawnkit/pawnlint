@@ -3,8 +3,10 @@ package cli_test
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -187,14 +189,14 @@ func TestCLIUsesPreset(t *testing.T) {
 func TestCLIRunsConfiguredExternalRules(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "pawnlint.toml")
-	scriptPath := filepath.Join(dir, "external.sh")
 	sourcePath := filepath.Join(dir, "main.pwn")
-	config := "[[external-rules]]\nname = \"custom\"\ncommand = \"./external.sh\"\n"
-	script := "#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' '{\"protocolVersion\":1,\"diagnostics\":[{\"ruleId\":\"example\",\"severity\":\"warning\",\"category\":\"style\",\"message\":\"external finding\",\"path\":\"main.pwn\",\"startOffset\":0,\"endOffset\":4}]}'\n"
-	if err := os.WriteFile(configPath, []byte(config), 0o644); err != nil {
+	command, err := filepath.Abs(os.Args[0])
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(scriptPath, []byte(script), 0o755); err != nil {
+	config := "[[external-rules]]\nname = \"custom\"\ncommand = " + strconv.Quote(filepath.ToSlash(command)) +
+		"\narguments = [\"-test.run=^TestCLIExternalRuleProcess$\", \"--\", \"pawnlint-external-helper\"]\n"
+	if err := os.WriteFile(configPath, []byte(config), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(sourcePath, []byte("main() {}\n"), 0o644); err != nil {
@@ -204,6 +206,15 @@ func TestCLIRunsConfiguredExternalRules(t *testing.T) {
 	if code != 0 || stderr != "" || !strings.Contains(out, "external/custom/example") || !strings.Contains(out, "external finding") {
 		t.Fatalf("code=%d output=%q stderr=%q", code, out, stderr)
 	}
+}
+
+func TestCLIExternalRuleProcess(t *testing.T) {
+	if len(os.Args) == 0 || os.Args[len(os.Args)-1] != "pawnlint-external-helper" {
+		return
+	}
+	_, _ = io.Copy(io.Discard, os.Stdin)
+	_, _ = fmt.Fprintln(os.Stdout, `{"protocolVersion":1,"diagnostics":[{"ruleId":"example","severity":"warning","category":"style","message":"external finding","path":"main.pwn","startOffset":0,"endOffset":4}]}`)
+	os.Exit(0)
 }
 
 func TestCLITimings(t *testing.T) {
