@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2 - 2026-07-23
+
+### Changed
+
+- Updated to the current Pawn analysis release.
+
 ## 1.1.1 - 2026-07-23
 
 ### Fixed
