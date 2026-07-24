@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.6 - 2026-07-24
+
+### Added
+
+- Added `editor.DiagnoseWithCache`, which reuses a parse cache across calls
+  so unchanged includes are not re-parsed on every call. `Diagnose` is
+  unchanged and calls it with no cache.
+
+### Changed
+
+- Made `editor.Diagnose` request only the project features its enabled
+  rules need, instead of always resolving runtime calls and function
+  effects for every include.
+
 ## 1.1.5 - 2026-07-24
 
 ### Changed

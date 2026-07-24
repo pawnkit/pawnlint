@@ -14,6 +14,13 @@ import (
 
 // Diagnose lints content as path using configuration found from workingDir.
 func Diagnose(path string, content []byte, workingDir string) ([]diagnostic.Diagnostic, error) {
+	return DiagnoseWithCache(path, content, workingDir, nil)
+}
+
+// DiagnoseWithCache lints content as path using configuration found from
+// workingDir, reusing cache across calls so unchanged includes are not
+// re-parsed on every call. A nil cache behaves exactly like [Diagnose].
+func DiagnoseWithCache(path string, content []byte, workingDir string, cache *project.ParseCache) ([]diagnostic.Diagnostic, error) {
 	reg := rules.Default()
 
 	configPath, file, err := config.Discover(workingDir)
@@ -47,9 +54,13 @@ func Diagnose(path string, content []byte, workingDir string) ([]diagnostic.Diag
 		workingDir = filepath.FromSlash(canonical.Root())
 	}
 
+	features := resolved.ProjectFeatures(reg)
 	model, err := project.Build(
 		[]project.Source{{Path: path, Content: content}},
-		project.Options{WorkingDir: workingDir, IncludePaths: includePaths, Defines: resolved.Source.Defines},
+		project.Options{
+			WorkingDir: workingDir, IncludePaths: includePaths, Defines: resolved.Source.Defines,
+			ParseCache: cache, Features: &features,
+		},
 	)
 	if err != nil {
 		return nil, err
