@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.7 - 2026-07-24
+
+### Changed
+
+- `DiagnoseWithCache` now also reuses each include's CST walk and semantic
+  model when its content and active `#define` set haven't changed, instead
+  of rebuilding them on every call.
+
 ## 1.1.6 - 2026-07-24
 
 ### Added

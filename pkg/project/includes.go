@@ -72,7 +72,12 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 				parsed = parser.ParseWithOptions(source, parser.ParseOptions{DiscardTrivia: discardTrivia})
 				m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
 			}
-			physical = &physicalFile{source: source, parsed: parsed, lineTable: sourceinfo.NewLineTable(source), syntaxIndex: walk.NewIndex(parsed)}
+			syntaxIndex := m.options.ParseCache.getIndex(canonical, source)
+			if syntaxIndex == nil {
+				syntaxIndex = walk.NewIndex(parsed)
+				m.options.ParseCache.putIndex(canonical, source, syntaxIndex)
+			}
+			physical = &physicalFile{source: source, parsed: parsed, lineTable: sourceinfo.NewLineTable(source), syntaxIndex: syntaxIndex}
 			m.physical[canonical] = physical
 		}
 	}
@@ -87,7 +92,12 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	}
 	file := &File{Path: display, Source: physical.source, Parsed: parsed, CompactParsed: compact, Provided: provided, canonical: canonical, includeRoot: includeRoot, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1), syntaxIndex: physical.syntaxIndex}
 	if parsed != nil {
-		file.Walk = walk.NewWithContext(display, parsed, defines.walk, nil, m.options.DefinesComplete, physical.lineTable, physical.syntaxIndex)
+		walkModel := m.options.ParseCache.getWalk(canonical, source, defines.names, m.options.DefinesComplete)
+		if walkModel == nil {
+			walkModel = walk.NewWithContext(display, parsed, defines.walk, nil, m.options.DefinesComplete, physical.lineTable, physical.syntaxIndex)
+			m.options.ParseCache.putWalk(canonical, source, defines.names, m.options.DefinesComplete, walkModel)
+		}
+		file.Walk = walkModel
 		file.Syntax = cst.Pointer(file.Walk)
 	} else {
 		file.CompactWalk = walk.NewCompactWithContext(display, compact, defines.walk, nil, m.options.DefinesComplete, physical.lineTable)
@@ -155,19 +165,24 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		defineCursor = file.Syntax.NewDefineCursor()
 	}
 	file.final = m.internDefines(defineCursor.KnownDefinesViewAt(len(file.Source) + 1))
-	if m.options.ObserveTiming == nil {
-		if file.Parsed != nil {
-			file.Semantic = semantic.Build(file.Parsed, file.Walk)
+	if file.Parsed != nil {
+		// file.Semantic is a pure function of (content, active defines), so a
+		// cache hit is exact even though rebuildWalk above may have run.
+		if cached := m.options.ParseCache.getSemantic(file.canonical, file.Source, file.defines.names, file.complete); cached != nil {
+			file.Semantic = cached
 		} else {
-			file.CompactSemantic = semantic.BuildCompact(file.CompactParsed, file.CompactWalk)
+			started := time.Now()
+			file.Semantic = semantic.Build(file.Parsed, file.Walk)
+			if m.options.ObserveTiming != nil {
+				m.observe(TimingEvent{Stage: TimingSemantic, Duration: time.Since(started)})
+			}
+			m.options.ParseCache.putSemantic(file.canonical, file.Source, file.defines.names, file.complete, file.Semantic)
 		}
+	} else if m.options.ObserveTiming == nil {
+		file.CompactSemantic = semantic.BuildCompact(file.CompactParsed, file.CompactWalk)
 	} else {
 		started := time.Now()
-		if file.Parsed != nil {
-			file.Semantic = semantic.Build(file.Parsed, file.Walk)
-		} else {
-			file.CompactSemantic = semantic.BuildCompact(file.CompactParsed, file.CompactWalk)
-		}
+		file.CompactSemantic = semantic.BuildCompact(file.CompactParsed, file.CompactWalk)
 		m.observe(TimingEvent{Stage: TimingSemantic, Duration: time.Since(started)})
 	}
 	if m.options.Features != nil && !m.options.Features.Has(FeatureRuntimeCalls) {
