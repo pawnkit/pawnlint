@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.10 - 2026-07-25
+
+### Changed
+
+- The walk/semantic cache now builds each `#define` set's cache-key text
+  once per environment instead of rebuilding it for every include that
+  shares it.
+
 ## 1.1.9 - 2026-07-25
 
 ### Added

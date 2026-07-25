@@ -187,10 +187,11 @@ type fileContextKey struct {
 }
 
 type defineEnvironment struct {
-	id    uint32
-	order uint32
-	names []string
-	walk  *walk.DefineContext
+	id         uint32
+	order      uint32
+	names      []string
+	definesKey string
+	walk       *walk.DefineContext
 }
 
 func Build(sources []Source, options Options) (*Model, error) {

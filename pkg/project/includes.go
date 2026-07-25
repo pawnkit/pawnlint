@@ -98,10 +98,10 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	}
 	file := &File{Path: display, Source: physical.source, Parsed: parsed, CompactParsed: compact, Provided: provided, canonical: canonical, includeRoot: includeRoot, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1), syntaxIndex: physical.syntaxIndex}
 	if parsed != nil {
-		walkModel := m.options.ParseCache.getWalk(canonical, source, defines.names, m.options.DefinesComplete)
+		walkModel := m.options.ParseCache.getWalk(canonical, source, defines.definesKey, m.options.DefinesComplete)
 		if walkModel == nil {
 			walkModel = walk.NewWithContext(display, parsed, defines.walk, nil, m.options.DefinesComplete, physical.lineTable, physical.syntaxIndex)
-			m.options.ParseCache.putWalk(canonical, source, defines.names, m.options.DefinesComplete, walkModel)
+			m.options.ParseCache.putWalk(canonical, source, defines.definesKey, m.options.DefinesComplete, walkModel)
 		}
 		file.Walk = walkModel
 		file.Syntax = cst.Pointer(file.Walk)
@@ -179,7 +179,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	}
 	file.final = m.internDefines(defineCursor.KnownDefinesViewAt(len(file.Source) + 1))
 	if file.Parsed != nil {
-		if cached := m.options.ParseCache.getSemantic(file.canonical, file.Source, file.defines.names, file.complete); cached != nil {
+		if cached := m.options.ParseCache.getSemantic(file.canonical, file.Source, file.defines.definesKey, file.complete); cached != nil {
 			file.Semantic = cached
 		} else {
 			started := time.Now()
@@ -187,7 +187,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 			if m.options.ObserveTiming != nil {
 				m.observe(TimingEvent{Stage: TimingSemantic, Duration: time.Since(started)})
 			}
-			m.options.ParseCache.putSemantic(file.canonical, file.Source, file.defines.names, file.complete, file.Semantic)
+			m.options.ParseCache.putSemantic(file.canonical, file.Source, file.defines.definesKey, file.complete, file.Semantic)
 		}
 	} else if m.options.ObserveTiming == nil {
 		file.CompactSemantic = semantic.BuildCompact(file.CompactParsed, file.CompactWalk)
@@ -345,7 +345,9 @@ func (m *Model) internDefines(defines []string) *defineEnvironment {
 	}
 	m.nextEnvironmentID++
 	names := append([]string(nil), defines...)
-	environment := &defineEnvironment{id: m.nextEnvironmentID, names: names, walk: walk.NewDefineContext(names)}
+	environment := &defineEnvironment{
+		id: m.nextEnvironmentID, names: names, definesKey: definesCacheKey(names), walk: walk.NewDefineContext(names),
+	}
 	m.defineEnvironments[hash] = append(m.defineEnvironments[hash], environment)
 	return environment
 }

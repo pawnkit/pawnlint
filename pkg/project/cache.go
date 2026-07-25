@@ -42,7 +42,16 @@ type semanticCacheEntry struct {
 	semantic *semantic.Model
 }
 
-func analysisCacheKey(path string, defines []string, complete bool) string {
+func definesCacheKey(defines []string) string {
+	var b strings.Builder
+	for _, define := range defines {
+		b.WriteString(define)
+		b.WriteByte('\x00')
+	}
+	return b.String()
+}
+
+func analysisCacheKey(path, definesKey string, complete bool) string {
 	var b strings.Builder
 	b.WriteString(path)
 	b.WriteByte('\x00')
@@ -52,10 +61,7 @@ func analysisCacheKey(path string, defines []string, complete bool) string {
 		b.WriteByte('0')
 	}
 	b.WriteByte('\x00')
-	for _, define := range defines {
-		b.WriteString(define)
-		b.WriteByte('\x00')
-	}
+	b.WriteString(definesKey)
 	return b.String()
 }
 
@@ -114,12 +120,12 @@ func (c *ParseCache) putIndex(path string, source []byte, index *walk.Index) {
 	c.analysisMu.Unlock()
 }
 
-func (c *ParseCache) getWalk(path string, source []byte, defines []string, complete bool) *walk.Model {
+func (c *ParseCache) getWalk(path string, source []byte, definesKey string, complete bool) *walk.Model {
 	if c == nil {
 		return nil
 	}
 	hash := sha256.Sum256(source)
-	key := analysisCacheKey(path, defines, complete)
+	key := analysisCacheKey(path, definesKey, complete)
 	c.analysisMu.RLock()
 	entry, ok := c.walks[key]
 	c.analysisMu.RUnlock()
@@ -129,11 +135,11 @@ func (c *ParseCache) getWalk(path string, source []byte, defines []string, compl
 	return nil
 }
 
-func (c *ParseCache) putWalk(path string, source []byte, defines []string, complete bool, model *walk.Model) {
+func (c *ParseCache) putWalk(path string, source []byte, definesKey string, complete bool, model *walk.Model) {
 	if c == nil {
 		return
 	}
-	key := analysisCacheKey(path, defines, complete)
+	key := analysisCacheKey(path, definesKey, complete)
 	c.analysisMu.Lock()
 	if c.walks == nil {
 		c.walks = make(map[string]walkCacheEntry)
@@ -142,12 +148,12 @@ func (c *ParseCache) putWalk(path string, source []byte, defines []string, compl
 	c.analysisMu.Unlock()
 }
 
-func (c *ParseCache) getSemantic(path string, source []byte, defines []string, complete bool) *semantic.Model {
+func (c *ParseCache) getSemantic(path string, source []byte, definesKey string, complete bool) *semantic.Model {
 	if c == nil {
 		return nil
 	}
 	hash := sha256.Sum256(source)
-	key := analysisCacheKey(path, defines, complete)
+	key := analysisCacheKey(path, definesKey, complete)
 	c.analysisMu.RLock()
 	entry, ok := c.semantics[key]
 	c.analysisMu.RUnlock()
@@ -157,11 +163,11 @@ func (c *ParseCache) getSemantic(path string, source []byte, defines []string, c
 	return nil
 }
 
-func (c *ParseCache) putSemantic(path string, source []byte, defines []string, complete bool, model *semantic.Model) {
+func (c *ParseCache) putSemantic(path string, source []byte, definesKey string, complete bool, model *semantic.Model) {
 	if c == nil {
 		return
 	}
-	key := analysisCacheKey(path, defines, complete)
+	key := analysisCacheKey(path, definesKey, complete)
 	c.analysisMu.Lock()
 	if c.semantics == nil {
 		c.semantics = make(map[string]semanticCacheEntry)
