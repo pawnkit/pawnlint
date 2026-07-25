@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/pawnkit/pawn-parser"
+	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
 )
@@ -62,9 +63,9 @@ func NewParseCache() *ParseCache {
 	return &ParseCache{entries: make(map[string]parseCacheEntry)}
 }
 
-func (c *ParseCache) parse(path string, source []byte, discardTrivia bool) (*parser.File, bool) {
+func (c *ParseCache) parse(path string, source []byte, discardTrivia bool, tokens []token.Token) (*parser.File, bool) {
 	if c == nil {
-		return parser.ParseWithOptions(source, parser.ParseOptions{DiscardTrivia: discardTrivia}), false
+		return parseSource(source, discardTrivia, tokens), false
 	}
 	hash := sha256.Sum256(source)
 	c.mu.RLock()
@@ -73,7 +74,7 @@ func (c *ParseCache) parse(path string, source []byte, discardTrivia bool) (*par
 	if entry.file != nil && entry.hash == hash && entry.discardTrivia == discardTrivia {
 		return entry.file, true
 	}
-	parsed := parser.ParseWithOptions(source, parser.ParseOptions{DiscardTrivia: discardTrivia})
+	parsed := parseSource(source, discardTrivia, tokens)
 	c.mu.Lock()
 	if c.entries == nil {
 		c.entries = make(map[string]parseCacheEntry)

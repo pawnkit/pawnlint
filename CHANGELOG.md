@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.9 - 2026-07-25
+
+### Added
+
+- `project.Options.RootTokens` lets a caller supply the entry file's already
+  tokenized form, so `DiagnoseWithCache` can pass through the tokens
+  pawn-analysis already computed instead of tokenizing the file again.
+
 ## 1.1.8 - 2026-07-25
 
 ### Added

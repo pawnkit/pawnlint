@@ -3,8 +3,10 @@ package project_test
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
+	"github.com/pawnkit/pawn-parser/lexer"
 	"github.com/pawnkit/pawnlint/pkg/project"
 )
 
@@ -168,5 +170,63 @@ func TestParseCacheSeparatesTriviaProfiles(t *testing.T) {
 	}
 	if parseEvents != 2 {
 		t.Fatalf("parse events = %d, want 2", parseEvents)
+	}
+}
+
+func TestRootTokensProduceIdenticalParseToNormalPath(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	content := []byte("#define MAX 10\nnew values[MAX];\nmain() { new x = values[0]; }\n")
+	source := project.Source{Path: path, Content: content}
+
+	without, err := project.Build([]project.Source{source}, project.Options{WorkingDir: dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	with, err := project.Build([]project.Source{source}, project.Options{
+		WorkingDir: dir, RootTokens: lexer.Tokenize(content),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := with.File(path).Parsed
+	want := without.File(path).Parsed
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("parse with RootTokens diverged from the normal path:\ngot:  %+v\nwant: %+v", got, want)
+	}
+}
+
+func TestRootTokensIgnoredForIncludes(t *testing.T) {
+	dir := t.TempDir()
+	includeDir := filepath.Join(dir, "include")
+	if err := os.Mkdir(includeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	includeContent := []byte("stock Shared() {}\n")
+	if err := os.WriteFile(filepath.Join(includeDir, "shared.inc"), includeContent, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	rootPath := filepath.Join(dir, "main.pwn")
+	rootContent := []byte("#include <shared>\nmain() { Shared(); }\n")
+
+	model, err := project.Build([]project.Source{{Path: rootPath, Content: rootContent}}, project.Options{
+		WorkingDir: dir, IncludePaths: []string{"include"}, RootTokens: lexer.Tokenize(rootContent),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := model.File(rootPath)
+	if root == nil || len(root.Includes) != 1 || root.Includes[0].Resolved == nil {
+		t.Fatalf("include was not resolved: %#v", root)
+	}
+	includeFile := root.Includes[0].Resolved
+	want := project.Options{WorkingDir: dir, IncludePaths: []string{"include"}}
+	reference, err := project.Build([]project.Source{{Path: rootPath, Content: rootContent}}, want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(includeFile.Parsed, reference.File(rootPath).Includes[0].Resolved.Parsed) {
+		t.Fatal("RootTokens incorrectly affected the include's own parse")
 	}
 }

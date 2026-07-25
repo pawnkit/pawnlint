@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pawnkit/pawn-parser"
+	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/preprocess"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	sourceinfo "github.com/pawnkit/pawnlint/internal/source"
@@ -31,6 +32,7 @@ type Options struct {
 	Features        *Features
 	ParseCache      *ParseCache
 	ObserveTiming   func(TimingEvent)
+	RootTokens      []token.Token
 }
 
 type TimingStage string
@@ -162,6 +164,7 @@ type Model struct {
 	sourceFiles        map[uint32]*File
 	includeResolver    *includeResolution
 	options            Options
+	rootTokensUsed     bool
 }
 
 type physicalFile struct {

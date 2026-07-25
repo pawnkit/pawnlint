@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/pawnkit/pawn-parser"
+	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/preprocess"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	sourceinfo "github.com/pawnkit/pawnlint/internal/source"
@@ -57,19 +58,24 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 			m.physical[canonical] = physical
 		} else {
 			discardTrivia := !retainTrivia
+			var rootTokens []token.Token
+			if provided && !m.rootTokensUsed && m.options.RootTokens != nil {
+				rootTokens = m.options.RootTokens
+				m.rootTokensUsed = true
+			}
 			var parsed *parser.File
 			if m.options.ParseCache != nil {
 				started := time.Now()
 				var cached bool
-				parsed, cached = m.options.ParseCache.parse(canonical, source, discardTrivia)
+				parsed, cached = m.options.ParseCache.parse(canonical, source, discardTrivia, rootTokens)
 				if !cached && m.options.ObserveTiming != nil {
 					m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
 				}
 			} else if m.options.ObserveTiming == nil {
-				parsed = parser.ParseWithOptions(source, parser.ParseOptions{DiscardTrivia: discardTrivia})
+				parsed = parseSource(source, discardTrivia, rootTokens)
 			} else {
 				started := time.Now()
-				parsed = parser.ParseWithOptions(source, parser.ParseOptions{DiscardTrivia: discardTrivia})
+				parsed = parseSource(source, discardTrivia, rootTokens)
 				m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
 			}
 			syntaxIndex := m.options.ParseCache.getIndex(canonical, source)
@@ -110,6 +116,13 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 		m.byCanonical[canonical] = file
 	}
 	return file, nil
+}
+
+func parseSource(source []byte, discardTrivia bool, tokens []token.Token) *parser.File {
+	if tokens != nil {
+		return parser.ParseTokensWithOptions(source, tokens, parser.ParseOptions{DiscardTrivia: discardTrivia})
+	}
+	return parser.ParseWithOptions(source, parser.ParseOptions{DiscardTrivia: discardTrivia})
 }
 
 func (m *Model) resolveFileIncludes(file *File) error {
