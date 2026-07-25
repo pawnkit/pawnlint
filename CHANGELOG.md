@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.8 - 2026-07-25
+
+### Added
+
+- `DiagnoseWithCache` takes an optional, already-computed pawn-analysis
+  result and reuses it instead of analyzing the file again for
+  `pawn-analysis:sema/*` diagnostics.
+
 ## 1.1.7 - 2026-07-24
 
 ### Changed

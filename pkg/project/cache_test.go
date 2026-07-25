@@ -69,8 +69,6 @@ func TestParseCacheReusesAnalysisForUnchangedIncludes(t *testing.T) {
 		t.Fatalf("first build semantic events = %d, want 2 (root + include)", semanticEvents)
 	}
 
-	// Editing the root file leaves the include's content and its active
-	// defines unchanged, so only the root should be rebuilt.
 	semanticEvents = 0
 	edited := []byte("#include <shared>\nmain() { print(\"x\"); }\n")
 	model, err := project.Build([]project.Source{{Path: rootPath, Content: edited}}, options)

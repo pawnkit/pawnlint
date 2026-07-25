@@ -26,14 +26,6 @@ type parseCacheEntry struct {
 	file          *parser.File
 }
 
-// indexCacheEntry, walkCacheEntry, and semanticCacheEntry reuse the
-// directive index, CST walk, and semantic model built for a file whose
-// content and active #define set have not changed since the last build.
-// Each is a pure function of those inputs, so a cache hit is exact, not an
-// approximation. walks and semantics are keyed by (path, defines, complete)
-// together, not path alone: the same include is commonly resolved under
-// several different #define environments within one project, and a
-// path-only slot would just thrash between them.
 type indexCacheEntry struct {
 	hash  [sha256.Size]byte
 	index *walk.Index

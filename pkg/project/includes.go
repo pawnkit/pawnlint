@@ -166,8 +166,6 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	}
 	file.final = m.internDefines(defineCursor.KnownDefinesViewAt(len(file.Source) + 1))
 	if file.Parsed != nil {
-		// file.Semantic is a pure function of (content, active defines), so a
-		// cache hit is exact even though rebuildWalk above may have run.
 		if cached := m.options.ParseCache.getSemantic(file.canonical, file.Source, file.defines.names, file.complete); cached != nil {
 			file.Semantic = cached
 		} else {

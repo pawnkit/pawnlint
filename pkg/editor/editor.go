@@ -4,6 +4,7 @@ package editor
 import (
 	"path/filepath"
 
+	analysis "github.com/pawnkit/pawn-analysis"
 	"github.com/pawnkit/pawnlint/internal/config"
 	projectcontext "github.com/pawnkit/pawnlint/internal/project"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
@@ -14,13 +15,15 @@ import (
 
 // Diagnose lints content as path using configuration found from workingDir.
 func Diagnose(path string, content []byte, workingDir string) ([]diagnostic.Diagnostic, error) {
-	return DiagnoseWithCache(path, content, workingDir, nil)
+	return DiagnoseWithCache(path, content, workingDir, nil, nil)
 }
 
 // DiagnoseWithCache lints content as path using configuration found from
 // workingDir, reusing cache across calls so unchanged includes are not
-// re-parsed on every call. A nil cache behaves exactly like [Diagnose].
-func DiagnoseWithCache(path string, content []byte, workingDir string, cache *project.ParseCache) ([]diagnostic.Diagnostic, error) {
+// re-parsed on every call, and shared (if non-nil) instead of analyzing the
+// file again for pawn-analysis:sema/* diagnostics. Nil arguments behave
+// exactly like [Diagnose].
+func DiagnoseWithCache(path string, content []byte, workingDir string, cache *project.ParseCache, shared *analysis.Result) ([]diagnostic.Diagnostic, error) {
 	reg := rules.Default()
 
 	configPath, file, err := config.Discover(workingDir)
@@ -71,6 +74,7 @@ func DiagnoseWithCache(path string, content []byte, workingDir string, cache *pr
 	engine.Target = string(resolved.Target)
 	engine.Project = model
 	engine.API = resolved.API
+	engine.SharedAnalysis = shared
 
 	diagnostics := engine.LintFile(path, content, lint.ProjectAnalysis, resolved.Enabled, resolved.AllKnownRuleIDs, resolved.RuleConfig)
 	diagnostic.Sort(diagnostics)

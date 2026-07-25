@@ -5,6 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	analysis "github.com/pawnkit/pawn-analysis"
+	"github.com/pawnkit/pawn-analysis/preprocess"
+	coresource "github.com/pawnkit/pawnkit-core/source"
 	"github.com/pawnkit/pawnlint/pkg/editor"
 )
 
@@ -118,4 +121,34 @@ func TestDiagnoseIncludesSharedArgumentCount(t *testing.T) {
 		}
 	}
 	t.Fatalf("shared argument-count diagnostic missing: %+v", diags)
+}
+
+func TestDiagnoseWithCacheUsesSharedAnalysisForOwnFileOnly(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "gamemode.pwn")
+	content := []byte("#include \"bad.inc\"\nHelper(a, b) {}\nmain() { Helper(1); }\n")
+	resolver := preprocess.MapResolver{"bad.inc": []byte("new value;\nvalue();\n")}
+
+	shared := analysis.Analyze(content, analysis.Options{
+		URI: coresource.FileURI(path), Includes: resolver, RetainExpanded: true,
+	})
+	diags, err := editor.DiagnoseWithCache(path, content, dir, nil, shared)
+	if err != nil {
+		t.Fatal(err)
+	}
+	foundArgCount := false
+	for _, item := range diags {
+		if item.Filename != path {
+			t.Fatalf("diagnostic attributed to a file other than %q: %+v", path, item)
+		}
+		if item.RuleID == "pawn-analysis:sema/argument-count" {
+			foundArgCount = true
+		}
+		if item.RuleID == "pawn-analysis:sema/not-callable" {
+			t.Fatalf("include's own diagnostic leaked into the root file's results: %+v", diags)
+		}
+	}
+	if !foundArgCount {
+		t.Fatalf("expected the root file's own shared diagnostic, got %+v", diags)
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	analysis "github.com/pawnkit/pawn-analysis"
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/api"
@@ -18,12 +19,13 @@ import (
 )
 
 type Engine struct {
-	Reg           *Registrar
-	Defines       []string
-	Target        string
-	Project       *project.Model
-	API           *api.Metadata
-	ObserveTiming func(TimingEvent)
+	Reg            *Registrar
+	Defines        []string
+	Target         string
+	Project        *project.Model
+	API            *api.Metadata
+	SharedAnalysis *analysis.Result
+	ObserveTiming  func(TimingEvent)
 }
 
 type TimingStage string
@@ -261,7 +263,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 		}
 	}
 	if maxLevel >= SemanticAnalysis {
-		raw = appendSharedDiagnostics(raw, path, src)
+		raw = appendSharedDiagnostics(raw, path, src, e.SharedAnalysis)
 	}
 
 	var out []diagnostic.Diagnostic

@@ -10,11 +10,14 @@ import (
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 )
 
-func appendSharedDiagnostics(dst []diagnostic.Diagnostic, path string, content []byte) []diagnostic.Diagnostic {
-	result := analysis.Analyze(content, analysis.Options{URI: coresource.FileURI(path)})
+func appendSharedDiagnostics(dst []diagnostic.Diagnostic, path string, content []byte, shared *analysis.Result) []diagnostic.Diagnostic {
+	result := shared
+	if result == nil {
+		result = analysis.Analyze(content, analysis.Options{URI: coresource.FileURI(path)})
+	}
 	lines := source.NewLineTable(content)
 	for _, item := range result.Diagnostics {
-		if !strings.HasPrefix(item.Code, "pawn-analysis:sema/") {
+		if item.Primary.File != result.File || !strings.HasPrefix(item.Code, "pawn-analysis:sema/") {
 			continue
 		}
 		start, end := int(item.Primary.Start), int(item.Primary.End)
