@@ -16,6 +16,15 @@ func (m *CompactModel) Equivalent(left, right syntax.NodeID) bool {
 	if !m.compactCertainSubtree(left) || !m.compactCertainSubtree(right) {
 		return false
 	}
+	return m.equivalentCertain(left, right)
+}
+
+func (m *CompactModel) equivalentCertain(left, right syntax.NodeID) bool {
+	left = m.compactUnwrap(left)
+	right = m.compactUnwrap(right)
+	if !m.Walk.Tree.Valid(left) || !m.Walk.Tree.Valid(right) || m.Walk.Tree.Kind(left) != m.Walk.Tree.Kind(right) || m.Walk.Tree.HasError(left) || m.Walk.Tree.HasError(right) {
+		return false
+	}
 	switch m.Walk.Tree.Kind(left) {
 	case parser.KindIdentifier:
 		leftSymbol := m.Resolve(left)
@@ -27,7 +36,7 @@ func (m *CompactModel) Equivalent(left, right syntax.NodeID) bool {
 		return false
 	}
 	for index := 0; index < m.Walk.Tree.ChildCount(left); index++ {
-		if !m.Equivalent(m.Walk.Tree.Child(left, index), m.Walk.Tree.Child(right, index)) {
+		if !m.equivalentCertain(m.Walk.Tree.Child(left, index), m.Walk.Tree.Child(right, index)) {
 			return false
 		}
 	}

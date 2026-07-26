@@ -1,6 +1,8 @@
 package semantic
 
 import (
+	"sort"
+
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 )
@@ -14,6 +16,15 @@ func (m *Model) Equivalent(left, right *parser.Node) bool {
 	if !m.certainSubtree(left) || !m.certainSubtree(right) {
 		return false
 	}
+	return m.equivalentCertain(left, right)
+}
+
+func (m *Model) equivalentCertain(left, right *parser.Node) bool {
+	left = unwrap(left)
+	right = unwrap(right)
+	if left == nil || right == nil || left.Kind != right.Kind || left.HasError || right.HasError {
+		return false
+	}
 	switch left.Kind {
 	case parser.KindIdentifier:
 		leftSymbol := m.Resolve(left)
@@ -25,7 +36,7 @@ func (m *Model) Equivalent(left, right *parser.Node) bool {
 		return false
 	}
 	for i := range left.Children {
-		if !m.Equivalent(left.Children[i], right.Children[i]) {
+		if !m.equivalentCertain(left.Children[i], right.Children[i]) {
 			return false
 		}
 	}
@@ -65,13 +76,14 @@ func (m *Model) EquivalentSyntax(left, right *parser.Node) bool {
 }
 
 func (m *Model) tokensWithin(node *parser.Node) []token.Token {
-	var result []token.Token
-	for _, tok := range m.File.Tokens {
-		if tok.Start.Offset >= node.Start && tok.End.Offset <= node.End {
-			result = append(result, tok)
-		}
+	start := sort.Search(len(m.File.Tokens), func(index int) bool {
+		return m.File.Tokens[index].Start.Offset >= node.Start
+	})
+	end := start
+	for end < len(m.File.Tokens) && m.File.Tokens[end].End.Offset <= node.End {
+		end++
 	}
-	return result
+	return m.File.Tokens[start:end]
 }
 
 func (m *Model) Pure(node *parser.Node) bool {

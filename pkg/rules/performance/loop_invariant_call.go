@@ -31,14 +31,18 @@ func (LoopInvariantCall) Run(ctx *lint.Context) {
 	if ctx.Semantic == nil {
 		return
 	}
-	calls := ctx.Walk.OfKind(parser.KindCallExpression)
+	calls := make(map[*parser.Node][]*parser.Node)
+	for _, call := range ctx.Walk.OfKind(parser.KindCallExpression) {
+		loop := loopInvariantNearestLoop(ctx, call)
+		calls[loop] = append(calls[loop], call)
+	}
 	for _, kind := range []parser.Kind{parser.KindWhileStatement, parser.KindDoWhileStatement, parser.KindForStatement} {
 		for _, loop := range ctx.Walk.OfKind(kind) {
 			if loop.HasError || ctx.Walk.Inactive(loop) || ctx.Walk.Uncertain(loop) || loopInvariantUncertain(ctx, loop) {
 				continue
 			}
-			for _, call := range calls {
-				if loopInvariantNearestLoop(ctx, call) != loop || !loopInvariantRepeatedRegion(loop, call) || call.HasError || call.Tok.Origin != nil || ctx.Walk.Uncertain(call) {
+			for _, call := range calls[loop] {
+				if !loopInvariantRepeatedRegion(loop, call) || call.HasError || call.Tok.Origin != nil || ctx.Walk.Uncertain(call) {
 					continue
 				}
 				name, pure := loopInvariantPureCall(ctx, call)

@@ -39,11 +39,16 @@ func (RequiredCallOrder) Run(ctx *lint.Context) {
 	if ctx.Flow == nil || ctx.Semantic == nil {
 		return
 	}
+	calls := make(map[*parser.Node][]*parser.Node)
+	for _, call := range ctx.Walk.OfKind(parser.KindCallExpression) {
+		function := ctx.Walk.EnclosingFunction(call)
+		calls[function] = append(calls[function], call)
+	}
 	for _, function := range ctx.Flow.Functions {
 		if function.Uncertain {
 			continue
 		}
-		events := callOrderEvents(ctx, function)
+		events := callOrderEvents(ctx, function, calls[function.Node])
 		requirements := callOrderRequirements(events)
 		available := make(map[string]map[*controlflow.Block]bool, len(requirements))
 		for requirement := range requirements {
@@ -74,10 +79,10 @@ func (RequiredCallOrder) Run(ctx *lint.Context) {
 	}
 }
 
-func callOrderEvents(ctx *lint.Context, function *controlflow.Function) map[*controlflow.Block][]callOrderEvent {
+func callOrderEvents(ctx *lint.Context, function *controlflow.Function, calls []*parser.Node) map[*controlflow.Block][]callOrderEvent {
 	events := make(map[*controlflow.Block][]callOrderEvent)
-	for _, call := range ctx.Walk.OfKind(parser.KindCallExpression) {
-		if ctx.Walk.EnclosingFunction(call) != function.Node || !safeCallOrderPosition(ctx, call) {
+	for _, call := range calls {
+		if !safeCallOrderPosition(ctx, call) {
 			continue
 		}
 		native, name, ok := calledNative(ctx, call)

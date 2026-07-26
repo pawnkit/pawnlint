@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.2 - 2026-07-26
+
+### Changed
+
+- Updated to pawn-analysis v0.4.2 to reduce preprocessing allocations.
+- Grouped calls by their function or loop before running call-order and
+  loop-invariance checks.
+- Used indexed token ranges when comparing conditional branches.
+
+### Performance
+
+- Reduced `required-call-order` from about 468 ms to 5 ms on the San Fierro
+  Faction Wars fixture.
+- Reduced `loop-invariant-call` from about 117 ms to 2 ms on the same fixture.
+- Reduced `identical-branches` from about 113 ms to under 1 ms.
+
 ## 1.2.1 - 2026-07-26
 
 ### Changed
