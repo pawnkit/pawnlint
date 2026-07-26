@@ -33,6 +33,7 @@ type Options struct {
 	ParseCache      *ParseCache
 	ObserveTiming   func(TimingEvent)
 	RootTokens      []token.Token
+	RootParsed      *parser.File
 }
 
 type TimingStage string
@@ -165,6 +166,7 @@ type Model struct {
 	includeResolver    *includeResolution
 	options            Options
 	rootTokensUsed     bool
+	rootParsedUsed     bool
 }
 
 type physicalFile struct {

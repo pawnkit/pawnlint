@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.12 - 2026-07-26
+
+### Changed
+
+- Editor diagnostics now expand pawn-analysis's prepared syntax instead of
+  parsing the open buffer again.
+
 ## 1.1.11 - 2026-07-25
 
 ### Changed

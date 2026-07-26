@@ -9,6 +9,22 @@ import (
 	"github.com/pawnkit/pawnlint/internal/semantic"
 )
 
+func TestBuildUsesPreparedRootParse(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	content := []byte("main() { return; }\n")
+	prepared := parser.ParseCompact(content, parser.ParseOptions{}).Expand()
+	model, err := Build([]Source{{Path: path, Content: content}}, Options{
+		WorkingDir: dir, RootParsed: prepared,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := model.File(path); got == nil || got.Parsed != prepared {
+		t.Fatal("prepared root parse was not reused")
+	}
+}
+
 func TestBuildResolvesIncludesAndIndexesDeclarations(t *testing.T) {
 	dir := t.TempDir()
 	includeDir := filepath.Join(dir, "include")

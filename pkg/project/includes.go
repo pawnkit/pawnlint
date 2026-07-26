@@ -64,7 +64,11 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 				m.rootTokensUsed = true
 			}
 			var parsed *parser.File
-			if m.options.ParseCache != nil {
+			if provided && !m.rootParsedUsed && m.options.RootParsed != nil &&
+				bytes.Equal(m.options.RootParsed.Source, source) {
+				parsed = m.options.RootParsed
+				m.rootParsedUsed = true
+			} else if m.options.ParseCache != nil {
 				started := time.Now()
 				var cached bool
 				parsed, cached = m.options.ParseCache.parse(canonical, source, discardTrivia, rootTokens)
