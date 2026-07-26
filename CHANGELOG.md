@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.4 - 2026-07-26
+
+### Changed
+
+- Updated analysis dependencies for declaration-level reuse tracking.
+
 ## 1.3.3 - 2026-07-26
 
 ### Changed
