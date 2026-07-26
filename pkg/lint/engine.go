@@ -182,6 +182,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 		}
 		return out
 	}
+	facts := newFileFacts(m, semantics)
 
 	for _, id := range e.Reg.IDs() {
 		sev, enabled := ruleSet[id]
@@ -210,6 +211,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 			ProjectFile: contextFile,
 			Target:      e.Target,
 			API:         e.API,
+			facts:       facts,
 		}
 		collected := make([]diagnostic.Diagnostic, 0, 8)
 		ctx.Report = func(d diagnostic.Diagnostic) {

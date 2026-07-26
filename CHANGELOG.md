@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.0 - 2026-07-26
+
+### Added
+
+- Added cached function assignments and symbols to rule contexts.
+
+### Performance
+
+- Reduced `redundant-initialization` from about 90 ms to 2 ms on the San
+  Fierro Faction Wars fixture.
+- Reduced `dead-write` from about 83 ms to under 1 ms on the same fixture.
+
 ## 1.2.3 - 2026-07-26
 
 ### Changed

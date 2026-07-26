@@ -65,8 +65,8 @@ func (RedundantInitialization) Run(ctx *lint.Context) {
 
 func redundantInitializerCandidates(ctx *lint.Context, function *controlflow.Function) []initializerCandidate {
 	var result []initializerCandidate
-	for _, symbol := range ctx.Semantic.Symbols {
-		if symbol == nil || symbol.Ambiguous || symbol.Kind != semantic.SymbolLocal || symbol.Function != function.Node || symbol.Decl == nil {
+	for _, symbol := range ctx.FunctionSymbols(function.Node) {
+		if symbol.Ambiguous || symbol.Kind != semantic.SymbolLocal || symbol.Decl == nil {
 			continue
 		}
 		initializer := symbol.Decl.Field("initializer")

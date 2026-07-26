@@ -68,8 +68,8 @@ func (DeadWrite) Run(ctx *lint.Context) {
 
 func deadWriteCandidates(ctx *lint.Context, function *controlflow.Function) []writeCandidate {
 	var result []writeCandidate
-	for _, assignment := range ctx.Walk.OfKind(parser.KindAssignmentExpression) {
-		if assignment.Tok.Kind != token.Assign || ctx.Walk.EnclosingFunction(assignment) != function.Node {
+	for _, assignment := range ctx.Assignments(function.Node) {
+		if assignment.Tok.Kind != token.Assign {
 			continue
 		}
 		statement := ctx.Walk.Parent(assignment)
@@ -92,8 +92,8 @@ func deadWriteCandidates(ctx *lint.Context, function *controlflow.Function) []wr
 
 func deadWriteUses(ctx *lint.Context, function *controlflow.Function, candidates map[*controlflow.Block]writeCandidate) map[*controlflow.Block]map[*semantic.Symbol]struct{} {
 	uses := make(map[*controlflow.Block]map[*semantic.Symbol]struct{})
-	for _, symbol := range ctx.Semantic.Symbols {
-		if symbol.Function != function.Node || symbol.Kind != semantic.SymbolLocal {
+	for _, symbol := range ctx.FunctionSymbols(function.Node) {
+		if symbol.Kind != semantic.SymbolLocal {
 			continue
 		}
 		for _, reference := range ctx.Semantic.References(symbol) {

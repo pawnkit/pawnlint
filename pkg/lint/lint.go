@@ -110,6 +110,65 @@ type Context struct {
 	ProjectFile *project.File
 	Target      string
 	API         *api.Metadata
+	facts       *fileFacts
+}
+
+type fileFacts struct {
+	assignments map[*parser.Node][]*parser.Node
+	symbols     map[*parser.Node][]*semantic.Symbol
+}
+
+func newFileFacts(tree *walk.Model, model *semantic.Model) *fileFacts {
+	facts := &fileFacts{
+		assignments: make(map[*parser.Node][]*parser.Node),
+		symbols:     make(map[*parser.Node][]*semantic.Symbol),
+	}
+	if tree != nil {
+		for _, assignment := range tree.OfKind(parser.KindAssignmentExpression) {
+			function := tree.EnclosingFunction(assignment)
+			facts.assignments[function] = append(facts.assignments[function], assignment)
+		}
+	}
+	if model != nil {
+		for _, symbol := range model.Symbols {
+			if symbol != nil {
+				facts.symbols[symbol.Function] = append(facts.symbols[symbol.Function], symbol)
+			}
+		}
+	}
+	return facts
+}
+
+func (ctx *Context) Assignments(function *parser.Node) []*parser.Node {
+	if ctx == nil || ctx.Walk == nil {
+		return nil
+	}
+	if ctx.facts != nil {
+		return ctx.facts.assignments[function]
+	}
+	var result []*parser.Node
+	for _, assignment := range ctx.Walk.OfKind(parser.KindAssignmentExpression) {
+		if ctx.Walk.EnclosingFunction(assignment) == function {
+			result = append(result, assignment)
+		}
+	}
+	return result
+}
+
+func (ctx *Context) FunctionSymbols(function *parser.Node) []*semantic.Symbol {
+	if ctx == nil || ctx.Semantic == nil {
+		return nil
+	}
+	if ctx.facts != nil {
+		return ctx.facts.symbols[function]
+	}
+	var result []*semantic.Symbol
+	for _, symbol := range ctx.Semantic.Symbols {
+		if symbol != nil && symbol.Function == function {
+			result = append(result, symbol)
+		}
+	}
+	return result
 }
 
 func (ctx *Context) Eval(node *parser.Node) (int64, bool) {
