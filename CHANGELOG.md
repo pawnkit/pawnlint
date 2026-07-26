@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.3 - 2026-07-26
+
+### Changed
+
+- Updated to pawn-analysis v0.5.2 to avoid unused tag-cache setup.
+
 ## 1.3.2 - 2026-07-26
 
 ### Changed
