@@ -252,6 +252,21 @@ func TestRegistryRejectsDuplicate(t *testing.T) {
 	}
 }
 
+func TestRegistryDerivesRequirementsAndScope(t *testing.T) {
+	reg := lint.NewRegistrar()
+	reg.MustRegister(&controlFlowProbe{})
+	meta, ok := reg.Lookup("control-flow-probe")
+	if !ok {
+		t.Fatal("rule was not registered")
+	}
+	if !meta.Requirements.Has(lint.NeedSyntax | lint.NeedLocalSymbols | lint.NeedControlFlow) {
+		t.Fatalf("requirements = %v", meta.Requirements)
+	}
+	if meta.Scope != lint.ScopeFile {
+		t.Fatalf("scope = %v, want file", meta.Scope)
+	}
+}
+
 func TestProfilesExcludePreviewRules(t *testing.T) {
 	reg := lint.NewRegistrar()
 	reg.MustRegister(previewRule{})

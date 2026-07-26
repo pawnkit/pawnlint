@@ -122,6 +122,12 @@ func (reg *Registrar) Register(r Rule) error {
 	if meta.Stability != StabilityStable && meta.Stability != StabilityPreview {
 		return fmt.Errorf("lint: rule %q has invalid stability", meta.ID)
 	}
+	if meta.Requirements == 0 {
+		meta.Requirements = requirementsForLevel(meta.AnalysisLevel)
+	}
+	if meta.Scope == 0 {
+		meta.Scope = scopeForLevel(meta.AnalysisLevel)
+	}
 	if err := validateOptions(meta.ID, meta.Options); err != nil {
 		return err
 	}
@@ -134,6 +140,27 @@ func (reg *Registrar) Register(r Rule) error {
 	reg.byID[meta.ID] = len(reg.entries)
 	reg.entries = append(reg.entries, entry{rule: r, meta: meta})
 	return nil
+}
+
+func requirementsForLevel(level AnalysisLevel) Requirements {
+	requirements := NeedSyntax
+	if level >= SemanticAnalysis {
+		requirements |= NeedLocalSymbols | NeedNames | NeedTags
+	}
+	if level >= ControlFlowAnalysis {
+		requirements |= NeedConstants | NeedControlFlow
+	}
+	if level >= ProjectAnalysis {
+		requirements |= NeedPreprocessor | NeedWorkspace
+	}
+	return requirements
+}
+
+func scopeForLevel(level AnalysisLevel) RuleScope {
+	if level >= ProjectAnalysis {
+		return ScopeWorkspace
+	}
+	return ScopeFile
 }
 
 func (reg *Registrar) RegisterAlias(deprecated, replacement string) error {

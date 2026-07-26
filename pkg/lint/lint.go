@@ -25,6 +25,36 @@ const (
 	ProjectAnalysis
 )
 
+type Requirements uint16
+
+const (
+	NeedSyntax Requirements = 1 << iota
+	NeedPreprocessor
+	NeedLocalSymbols
+	NeedNames
+	NeedTags
+	NeedConstants
+	NeedControlFlow
+	NeedAPI
+	NeedWorkspace
+)
+
+func (r Requirements) Has(requirement Requirements) bool {
+	return r&requirement != 0
+}
+
+type RuleScope uint8
+
+const (
+	ScopeToken RuleScope = iota + 1
+	ScopeSyntax
+	ScopeFunction
+	ScopeDeclaration
+	ScopeFile
+	ScopeWorkspace
+	ScopeExternal
+)
+
 type Stability uint8
 
 const (
@@ -47,6 +77,8 @@ type Metadata struct {
 	Category        diagnostic.Category
 	DefaultSeverity diagnostic.Severity
 	AnalysisLevel   AnalysisLevel
+	Requirements    Requirements
+	Scope           RuleScope
 	Stability       Stability
 	DefaultEnabled  bool
 	Fixable         bool

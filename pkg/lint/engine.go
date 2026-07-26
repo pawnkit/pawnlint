@@ -141,8 +141,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	var internalErrors []diagnostic.Diagnostic
 	file := &File{Path: path, Source: src, Parsed: pf, LineTable: lt}
 	var flow *controlflow.Model
-	needSemantics := false
-	needFlow := false
+	var requirements Requirements
 	for _, id := range e.Reg.IDs() {
 		if _, enabled := ruleSet[id]; !enabled {
 			continue
@@ -151,9 +150,10 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 		if !ok || !levelAllowed(meta.AnalysisLevel, maxLevel) {
 			continue
 		}
-		needSemantics = needSemantics || meta.AnalysisLevel >= SemanticAnalysis
-		needFlow = needFlow || meta.AnalysisLevel >= ControlFlowAnalysis
+		requirements |= meta.Requirements
 	}
+	needSemantics := requirements.Has(NeedLocalSymbols | NeedNames | NeedTags | NeedConstants | NeedControlFlow)
+	needFlow := requirements.Has(NeedControlFlow)
 	if needSemantics && semantics == nil {
 		if e.ObserveTiming == nil {
 			semantics = semantic.Build(pf, m)

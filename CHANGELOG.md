@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.0 - 2026-07-26
+
+### Added
+
+- Added rule requirements and scopes to lint metadata.
+
+### Changed
+
+- The engine now builds semantic and control-flow models from the enabled
+  rules' combined requirements.
+
 ## 1.1.13 - 2026-07-26
 
 ### Fixed
