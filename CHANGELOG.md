@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.2 - 2026-07-26
+
+### Changed
+
+- Updated to pawn-analysis v0.5.1 for bounded tag-result caching.
+
 ## 1.3.1 - 2026-07-26
 
 ### Changed
