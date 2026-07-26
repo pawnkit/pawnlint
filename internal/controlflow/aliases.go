@@ -50,6 +50,30 @@ func (m *Model) Aliases(node *parser.Node, symbol *semantic.Symbol) []*semantic.
 	return result
 }
 
+func (m *Model) Aliased(node *parser.Node, left, right *semantic.Symbol) bool {
+	if left == right {
+		return true
+	}
+	if m == nil || node == nil || left == nil || right == nil {
+		return false
+	}
+	function := m.byNode[m.tree.EnclosingFunction(node)]
+	if function == nil {
+		return false
+	}
+	function.aliasOnce.Do(func() {
+		buildAliasFlow(function, m.tree, m.semantics, m.options, function.flowNodes, function.flowSymbols)
+	})
+	block := function.Block(node)
+	if block == nil || function.Uncertain || !function.ReachableBlock(block) ||
+		function.aliasIndexes[left] == 0 || function.aliasIndexes[right] == 0 {
+		return false
+	}
+	state := copyAliasState(function.aliasIn[block])
+	applyAliasEvents(state, function.aliasEvents[block], node.Start, function.aliasIndexes)
+	return state[left] == state[right]
+}
+
 func buildAliasFlow(function *Function, tree *walk.Model, semantics *semantic.Model, options Options, nodes *functionNodes, symbols []*semantic.Symbol) {
 	function.aliasIn = make(map[*Block]aliasState)
 	function.aliasEvents = make(map[*Block][]aliasEvent)

@@ -21,6 +21,8 @@ func (ReadAfterRelease) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryCorrectness,
 		DefaultSeverity: diagnostic.SeverityError,
 		AnalysisLevel:   lint.ControlFlowAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedLocalSymbols | lint.NeedNames | lint.NeedControlFlow | lint.NeedAPI | lint.NeedWorkspace,
+		Scope:           lint.ScopeFunction,
 		DefaultEnabled:  true,
 		Fixable:         false,
 		Tags:            []string{"resource", "handle", "lifetime", "control-flow", "api"},
@@ -37,9 +39,10 @@ func (ReadAfterRelease) Run(ctx *lint.Context) {
 		if function == nil || function.Uncertain {
 			continue
 		}
+		references := resourceReferencesByBlock(ctx, function, symbol)
 		for _, acquisition := range acquisitions {
-			for _, release := range resourceReleases(ctx, function, symbol, acquisition) {
-				for _, use := range resourceUsesAfterRelease(ctx, function, symbol, release) {
+			for _, release := range resourceReleases(ctx, function, symbol, acquisition, references) {
+				for _, use := range resourceUsesAfterRelease(function, release, references) {
 					if reported[use] {
 						continue
 					}
@@ -60,8 +63,7 @@ type resourceRelease struct {
 	call      *parser.Node
 }
 
-func resourceReleases(ctx *lint.Context, function *controlflow.Function, symbol *semantic.Symbol, acquisition resourceAcquisition) []resourceRelease {
-	references := resourceReferencesByBlock(ctx, function, symbol)
+func resourceReleases(ctx *lint.Context, function *controlflow.Function, symbol *semantic.Symbol, acquisition resourceAcquisition, references map[*controlflow.Block][]semantic.Reference) []resourceRelease {
 	visited := make(map[*controlflow.Block]bool)
 	var releases []resourceRelease
 	var visit func(*controlflow.Block)
@@ -111,8 +113,7 @@ func resourceReleaseCall(ctx *lint.Context, reference *parser.Node, releaser str
 	return nil
 }
 
-func resourceUsesAfterRelease(ctx *lint.Context, function *controlflow.Function, symbol *semantic.Symbol, release resourceRelease) []*parser.Node {
-	references := resourceReferencesByBlock(ctx, function, symbol)
+func resourceUsesAfterRelease(function *controlflow.Function, release resourceRelease, references map[*controlflow.Block][]semantic.Reference) []*parser.Node {
 	start := function.Block(release.reference)
 	visited := make(map[*controlflow.Block]bool)
 	seen := make(map[*parser.Node]bool)

@@ -73,6 +73,32 @@ func TestCompactIncludeMaterializesPointerSyntaxOnDemand(t *testing.T) {
 	}
 }
 
+func TestCompactIncludeReturnsSingleCallWithoutMaterializing(t *testing.T) {
+	dir := t.TempDir()
+	includePath := filepath.Join(dir, "shared.inc")
+	if err := os.WriteFile(includePath, []byte("stock Shared() { return (OpenResource()); }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	entryPath := filepath.Join(dir, "main.pwn")
+	source := []byte("#include \"shared.inc\"\nmain() { return Shared(); }\n")
+	model, err := project.Build([]project.Source{{Path: entryPath, Content: source}}, project.Options{
+		WorkingDir: dir, DefinesComplete: true, ReleaseExpanded: true, ReleaseIncludes: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	declaration := model.Declarations["Shared"][0]
+	if name, ok := declaration.SingleReturnCallName(); !ok || name != "OpenResource" {
+		t.Fatalf("call = %q, %t", name, ok)
+	}
+	if declaration.File.Walk != nil || declaration.File.Semantic != nil {
+		t.Fatal("compact declaration was materialized")
+	}
+	if variants := model.FunctionVariantsNamed(model.File(entryPath), "Shared"); len(variants) != 1 {
+		t.Fatalf("variants = %d", len(variants))
+	}
+}
+
 func TestPointerTriviaFollowsFeatures(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "main.pwn")

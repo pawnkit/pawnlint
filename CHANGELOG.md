@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.1 - 2026-07-26
+
+### Changed
+
+- Kept resource wrapper inference on compact project syntax.
+- Added direct alias checks for resource lifetime rules.
+- Updated to pawn-analysis v0.4.1.
+
+### Performance
+
+- Reduced `read-after-release` from about 246 ms to under 2 ms on the
+  San Fierro Faction Wars fixture without changing its diagnostics.
+
 ## 1.2.0 - 2026-07-26
 
 ### Added

@@ -23,9 +23,15 @@ func TestAliasesTrackCopiesAndReassignment(t *testing.T) {
 	if !aliasNamesEqual(first, []string{"a", "b", "c"}) {
 		t.Fatalf("first aliases = %v", aliasNames(first))
 	}
+	if !model.Aliased(calls[0], c, first[0]) {
+		t.Fatal("c and a should be aliases before reassignment")
+	}
 	second := model.Aliases(calls[1], c)
 	if !aliasNamesEqual(second, []string{"a", "c"}) {
 		t.Fatalf("second aliases = %v", aliasNames(second))
+	}
+	if model.Aliased(calls[1], c, first[1]) {
+		t.Fatal("c and b should not be aliases after reassignment")
 	}
 }
 

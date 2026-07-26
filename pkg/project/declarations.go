@@ -70,14 +70,25 @@ func (m *Model) FunctionVariants(file *File, node *parser.Node) []Declaration {
 	if m == nil || file == nil || node == nil || node.Kind != parser.KindIdentifier {
 		return nil
 	}
-	return m.functionVariants(file, file.syntaxNode(node))
+	return m.functionVariantsNamed(file, file.syntaxNode(node).Text())
 }
 
 func (m *Model) functionVariants(file *File, node cst.Node) []Declaration {
 	if m == nil || file == nil || !node.Valid() || node.Kind() != parser.KindIdentifier {
 		return nil
 	}
-	name := node.Text()
+	return m.functionVariantsNamed(file, node.Text())
+}
+
+// FunctionVariantsNamed returns callable variants visible from file.
+func (m *Model) FunctionVariantsNamed(file *File, name string) []Declaration {
+	return m.functionVariantsNamed(file, name)
+}
+
+func (m *Model) functionVariantsNamed(file *File, name string) []Declaration {
+	if m == nil || file == nil || name == "" {
+		return nil
+	}
 	key := functionVariantKey{file: file, name: name}
 	m.functionVariantsMu.RLock()
 	cached, found := m.functionVariantMap[key]

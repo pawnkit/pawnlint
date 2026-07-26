@@ -98,33 +98,35 @@ func inferredResourceReturn(ctx *lint.Context, declaration project.Declaration, 
 	if declaration.File == nil || declaration.NodeKind() != parser.KindFunctionDefinition || declaration.Ambiguous() {
 		return resourceCallable{}, false
 	}
-	node := declaration.PointerNode()
-	if node == nil {
-		return resourceCallable{}, false
-	}
 	key := declaration.File.Path + ":" + strconv.Itoa(declaration.Start())
 	if visiting[key] {
 		return resourceCallable{}, false
 	}
 	visiting[key] = true
 	defer delete(visiting, key)
-	body := node.Field("body")
-	if body == nil || len(body.Children) != 1 {
+	name, ok := declaration.SingleReturnCallName()
+	if !ok || ctx.Project.DefinesName(name) {
 		return resourceCallable{}, false
 	}
-	statement := body.Children[0]
-	if statement.Kind != parser.KindReturnStatement {
-		return resourceCallable{}, false
+	variants := ctx.Project.FunctionVariantsNamed(declaration.File, name)
+	if len(variants) != 0 {
+		var inferred resourceCallable
+		for index, variant := range variants {
+			current, found := inferredResourceReturn(ctx, variant, visiting)
+			if !found || index != 0 && (current.release != inferred.release || current.returnTag != inferred.returnTag) {
+				return resourceCallable{}, false
+			}
+			inferred = current
+		}
+		return inferred, true
 	}
-	value := unwrapParentheses(statement.Field("value"))
-	if value == nil || value.Kind != parser.KindCallExpression {
-		return resourceCallable{}, false
+	if native, found := ctx.Natives()[name]; found && native.Release != "" {
+		return resourceCallable{returnTag: native.ReturnTag, release: native.Release}, true
 	}
-	callable, ok := calledResourceFunctionIn(ctx, declaration.File, declaration.File.Walk, declaration.File.Semantic, value, visiting)
-	if !ok || callable.release == "" {
-		return resourceCallable{}, false
+	if function, found := ctx.Functions()[name]; found && function.Release != "" {
+		return resourceCallable{returnTag: function.ReturnTag, release: function.Release}, true
 	}
-	return resourceCallable{returnTag: callable.returnTag, release: callable.release}, true
+	return resourceCallable{}, false
 }
 
 func resourceAcquisitions(ctx *lint.Context) map[*semantic.Symbol][]resourceAcquisition {
@@ -216,15 +218,7 @@ func resourceReferencesByBlock(ctx *lint.Context, function *controlflow.Function
 }
 
 func resourceAliasesAt(ctx *lint.Context, node *parser.Node, left, right *semantic.Symbol) bool {
-	if left == right {
-		return true
-	}
-	for _, alias := range ctx.Flow.Aliases(node, left) {
-		if alias == right {
-			return true
-		}
-	}
-	return false
+	return ctx.Flow.Aliased(node, left, right)
 }
 
 func resourceCallTransfers(ctx *lint.Context, call, reference *parser.Node, releaser string, visiting map[string]bool) bool {

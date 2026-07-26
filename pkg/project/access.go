@@ -139,6 +139,31 @@ func (d Declaration) FunctionParameters() []FunctionParameter {
 	return result
 }
 
+// SingleReturnCallName identifies wrappers that return one direct call.
+func (d Declaration) SingleReturnCallName() (string, bool) {
+	node := declarationSyntax(d)
+	body := node.Field("body")
+	if !body.Valid() || body.ChildCount() != 1 {
+		return "", false
+	}
+	statement := body.Child(0)
+	if statement.Kind() != parser.KindReturnStatement {
+		return "", false
+	}
+	value := statement.Field("value")
+	for value.Valid() && value.Kind() == parser.KindParenthesizedExpression {
+		value = value.Field("expression")
+	}
+	if !value.Valid() || value.Kind() != parser.KindCallExpression {
+		return "", false
+	}
+	callee := value.Field("function")
+	if !callee.Valid() || callee.Kind() != parser.KindIdentifier {
+		return "", false
+	}
+	return callee.Text(), true
+}
+
 func (i *Include) Valid() bool {
 	return i != nil && includeSyntax(i).Valid()
 }
