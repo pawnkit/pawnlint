@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.13 - 2026-07-26
+
+### Fixed
+
+- Reverted prepared-tree expansion in editor diagnostics because it increased
+  memory use. Root tokens remain shared with pawn-analysis.
+
 ## 1.1.12 - 2026-07-26
 
 ### Changed

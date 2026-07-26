@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	analysis "github.com/pawnkit/pawn-analysis"
-	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/config"
 	projectcontext "github.com/pawnkit/pawnlint/internal/project"
@@ -60,19 +59,15 @@ func DiagnoseWithCache(path string, content []byte, workingDir string, cache *pr
 	}
 
 	var rootTokens []token.Token
-	var rootParsed *parser.File
 	if shared != nil && shared.Preprocess != nil {
 		rootTokens = shared.Preprocess.OriginalTokens
-	}
-	if shared != nil && shared.Parse != nil {
-		rootParsed = shared.Parse.Expand()
 	}
 	features := resolved.ProjectFeatures(reg)
 	model, err := project.Build(
 		[]project.Source{{Path: path, Content: content}},
 		project.Options{
 			WorkingDir: workingDir, IncludePaths: includePaths, Defines: resolved.Source.Defines,
-			ParseCache: cache, Features: &features, RootTokens: rootTokens, RootParsed: rootParsed,
+			ParseCache: cache, Features: &features, RootTokens: rootTokens,
 		},
 	)
 	if err != nil {
