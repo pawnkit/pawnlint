@@ -1,5 +1,7 @@
 # pawnlint
 
+[![Maturity: preview](https://img.shields.io/badge/maturity-preview-blue)](.pawnkit/support.json)
+
 Static analysis and linting for Pawn v3 (SA-MP and open.mp).
 
 `pawnlint` parses with [`pawn-parser`](https://github.com/pawnkit/pawn-parser).

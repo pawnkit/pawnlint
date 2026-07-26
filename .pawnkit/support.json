@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "repository": "pawnkit/pawnlint",
+  "maturity": "preview",
+  "platforms": ["linux-amd64", "windows-amd64", "darwin-arm64"],
+  "profiles": ["samp-037", "openmp"],
+  "compilers": [],
+  "contracts": [
+    { "name": "pawnlint", "major": 1 },
+    { "name": "pawn-diagnostic", "major": 2 },
+    { "name": "pawn-project", "major": 1 }
+  ],
+  "limitations": [
+    "Real-project coverage uses pinned projects and cannot rule out every false positive."
+  ]
+}

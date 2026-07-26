@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.11 - 2026-07-25
+
+### Changed
+
+- Added the repository support record with CI validation.
+
 ## 1.1.10 - 2026-07-25
 
 ### Changed
