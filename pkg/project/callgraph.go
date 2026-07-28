@@ -36,6 +36,19 @@ type Call struct {
 	Kind           CallKind
 	ArgumentOffset int
 	syntax         cst.Node
+	order          callOrder
+}
+
+type callOrder struct {
+	caller uint32
+	callee uint32
+	offset int
+}
+
+type functionRange struct {
+	start       int
+	end         int
+	declaration Declaration
 }
 
 type EntryPoint struct {
@@ -78,20 +91,29 @@ func (m *Model) buildCallGraph() *CallGraph {
 		}
 	}
 	graph := &CallGraph{Calls: make([]Call, 0, callCapacity), outgoing: make(map[declarationID][]uint32), asyncOutgoing: make(map[declarationID][]uint32), asyncIncoming: make(map[declarationID][]uint32)}
-	byNode := make(map[*File]map[cst.Node]Declaration)
+	functionsByFile := make(map[*File][]functionRange)
 	for _, declarations := range m.Declarations {
 		for _, declaration := range declarations {
 			if declaration.Kind != semantic.SymbolFunction || declarationSyntax(declaration).Kind() != parser.KindFunctionDefinition || declarationSymbolAmbiguous(declaration) {
 				continue
 			}
 			graph.Functions = append(graph.Functions, declaration)
-			if byNode[declaration.File] == nil {
-				byNode[declaration.File] = make(map[cst.Node]Declaration)
-			}
-			byNode[declaration.File][declarationSyntax(declaration)] = declaration
+			node := declarationSyntax(declaration)
+			functionsByFile[declaration.File] = append(functionsByFile[declaration.File], functionRange{
+				start: node.Start(), end: node.End(), declaration: declaration,
+			})
 		}
 	}
+	for file := range functionsByFile {
+		sort.Slice(functionsByFile[file], func(i, j int) bool {
+			return functionsByFile[file][i].start < functionsByFile[file][j].start
+		})
+	}
 	sortDeclarations(graph.Functions)
+	functionOrder := make(map[declarationID]uint32, len(graph.Functions))
+	for index, function := range graph.Functions {
+		functionOrder[declarationKey(function)] = uint32(index)
+	}
 	for target, references := range m.references {
 		resolved := m.declarationsByID[target]
 		if resolved == nil || resolved.Kind != semantic.SymbolFunction {
@@ -106,7 +128,7 @@ func (m *Model) buildCallGraph() *CallGraph {
 				reference.File.Syntax.Uncertain(call) || reference.File.Syntax.Inactive(call) {
 				continue
 			}
-			caller := byNode[reference.File][reference.File.Syntax.EnclosingFunction(call)]
+			caller := enclosingFunction(functionsByFile[reference.File], call)
 			if !declarationSyntax(caller).Valid() {
 				continue
 			}
@@ -117,12 +139,27 @@ func (m *Model) buildCallGraph() *CallGraph {
 			graph.Calls = append(graph.Calls, Call{
 				Caller: caller, Callee: callee, File: reference.File,
 				Node: call.Pointer(), syntax: call,
+				order: callOrder{
+					caller: functionOrder[declarationKey(caller)],
+					callee: functionOrder[declarationKey(callee)],
+					offset: call.Start(),
+				},
 			})
 		}
 	}
-	graph.buildRuntimeEdges(m)
+	graph.buildRuntimeEdges(m, functionOrder)
 	graph.recursive = graph.findRecursiveComponents()
 	return graph
+}
+
+func enclosingFunction(functions []functionRange, node cst.Node) Declaration {
+	index := sort.Search(len(functions), func(index int) bool {
+		return functions[index].start > node.Start()
+	}) - 1
+	if index < 0 || node.End() > functions[index].end {
+		return Declaration{}
+	}
+	return functions[index].declaration
 }
 
 func (m *Model) captureRuntimeCalls(file *File) {
@@ -341,7 +378,7 @@ func (f *File) captureExpansionOrigins(parsed *parser.File, expanded, compact *p
 	}
 }
 
-func (g *CallGraph) buildRuntimeEdges(model *Model) {
+func (g *CallGraph) buildRuntimeEdges(model *Model, functionOrder map[declarationID]uint32) {
 	for _, function := range g.Functions {
 		if function.Name == "main" {
 			g.EntryPoints = append(g.EntryPoints, EntryPoint{Function: function, Kind: EntryMain})
@@ -356,7 +393,15 @@ func (g *CallGraph) buildRuntimeEdges(model *Model) {
 				continue
 			}
 			for _, targetFunction := range model.runtimeDefinitions(file, fact.target) {
-				resolved := Call{Caller: caller, Callee: targetFunction, File: file, Node: fact.node, Kind: fact.kind, ArgumentOffset: fact.argumentOffset, syntax: fact.syntax}
+				resolved := Call{
+					Caller: caller, Callee: targetFunction, File: file, Node: fact.node,
+					Kind: fact.kind, ArgumentOffset: fact.argumentOffset, syntax: fact.syntax,
+					order: callOrder{
+						caller: functionOrder[declarationKey(caller)],
+						callee: functionOrder[declarationKey(targetFunction)],
+					},
+				}
+				resolved.order.offset = callSyntaxOffset(resolved)
 				if fact.kind == CallDynamic {
 					g.Calls = append(g.Calls, resolved)
 				} else {
@@ -365,31 +410,28 @@ func (g *CallGraph) buildRuntimeEdges(model *Model) {
 			}
 		}
 	}
-	sort.SliceStable(g.EntryPoints, func(i, j int) bool {
-		return declarationLess(g.EntryPoints[i].Function, g.EntryPoints[j].Function)
-	})
 	sort.SliceStable(g.AsyncCalls, func(i, j int) bool {
 		left, right := g.AsyncCalls[i], g.AsyncCalls[j]
-		if declarationKey(left.Caller) != declarationKey(right.Caller) {
-			return declarationLess(left.Caller, right.Caller)
+		if left.order.caller != right.order.caller {
+			return left.order.caller < right.order.caller
 		}
-		if callSyntaxOffset(left) != callSyntaxOffset(right) {
-			return callSyntaxOffset(left) < callSyntaxOffset(right)
+		if left.order.offset != right.order.offset {
+			return left.order.offset < right.order.offset
 		}
-		return declarationLess(left.Callee, right.Callee)
+		return left.order.callee < right.order.callee
 	})
 	sort.Slice(g.Calls, func(i, j int) bool {
 		left, right := g.Calls[i], g.Calls[j]
-		if declarationKey(left.Caller) != declarationKey(right.Caller) {
-			return declarationLess(left.Caller, right.Caller)
+		if left.order.caller != right.order.caller {
+			return left.order.caller < right.order.caller
 		}
 		if left.File.canonical != right.File.canonical {
 			return left.File.canonical < right.File.canonical
 		}
-		if callSyntaxOffset(left) != callSyntaxOffset(right) {
-			return callSyntaxOffset(left) < callSyntaxOffset(right)
+		if left.order.offset != right.order.offset {
+			return left.order.offset < right.order.offset
 		}
-		return declarationLess(left.Callee, right.Callee)
+		return left.order.callee < right.order.callee
 	})
 	g.outgoing = make(map[declarationID][]uint32)
 	for index, call := range g.Calls {

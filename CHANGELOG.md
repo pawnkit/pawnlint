@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.15 - 2026-07-28
+
+### Performance
+
+- Cache call ordering keys while building the call graph.
+- Resolve enclosing functions through per-file ranges.
+- Reduced warm SAFW editor linting from about 205 ms to about 191 ms on the
+  reference machine.
+
 ## 1.7.14 - 2026-07-28
 
 ### Performance

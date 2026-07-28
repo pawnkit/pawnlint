@@ -50,6 +50,20 @@ func TestCallGraphFindsDirectRecursion(t *testing.T) {
 	}
 }
 
+func TestCallGraphSkipsCallsOutsideFunctions(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "main.pwn")
+	source := []byte("stock Work() {}\nnew value = Work();\nmain() {}\n")
+	model, err := project.Build([]project.Source{{Path: path, Content: source}}, project.Options{
+		WorkingDir: filepath.Dir(path),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calls := model.CallGraph.Calls; len(calls) != 0 {
+		t.Fatalf("calls = %#v", calls)
+	}
+}
+
 func TestCallGraphKeepsSharedCSTContextsIndependent(t *testing.T) {
 	dir := t.TempDir()
 	includePath := filepath.Join(dir, "shared.inc")
