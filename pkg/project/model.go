@@ -75,6 +75,7 @@ type File struct {
 	resolved          bool
 	complete          bool
 	sourceID          uint32
+	sourceHash        [sha256.Size]byte
 	syntaxIndex       *walk.Index
 	expansionState    *preprocess.State
 	tagAliases        map[string][]string
@@ -173,6 +174,7 @@ type Model struct {
 
 type physicalFile struct {
 	source      []byte
+	hash        [sha256.Size]byte
 	parsed      *parser.File
 	compact     *parser.CompactFile
 	lineTable   *sourceinfo.LineTable

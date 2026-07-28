@@ -129,10 +129,13 @@ func (c *ParseCache) PrepareContext(ctx context.Context, sources []PreparedSourc
 }
 
 func (c *ParseCache) parse(path string, source []byte, discardTrivia bool, tokens []token.Token) (*parser.File, bool) {
+	return c.parseHashed(path, source, sha256.Sum256(source), discardTrivia, tokens)
+}
+
+func (c *ParseCache) parseHashed(path string, source []byte, hash [sha256.Size]byte, discardTrivia bool, tokens []token.Token) (*parser.File, bool) {
 	if c == nil {
 		return parseSource(source, discardTrivia, tokens), false
 	}
-	hash := sha256.Sum256(source)
 	c.mu.RLock()
 	entry := c.entries[path]
 	c.mu.RUnlock()
@@ -153,11 +156,10 @@ func (c *ParseCache) parse(path string, source []byte, discardTrivia bool, token
 	return parsed, false
 }
 
-func (c *ParseCache) getIndex(path string, source []byte) *walk.Index {
+func (c *ParseCache) getIndex(path string, hash [sha256.Size]byte) *walk.Index {
 	if c == nil {
 		return nil
 	}
-	hash := sha256.Sum256(source)
 	c.analysisMu.RLock()
 	entry, ok := c.indexes[path]
 	c.analysisMu.RUnlock()
@@ -167,7 +169,7 @@ func (c *ParseCache) getIndex(path string, source []byte) *walk.Index {
 	return nil
 }
 
-func (c *ParseCache) putIndex(path string, source []byte, index *walk.Index) {
+func (c *ParseCache) putIndex(path string, hash [sha256.Size]byte, index *walk.Index) {
 	if c == nil {
 		return
 	}
@@ -175,15 +177,14 @@ func (c *ParseCache) putIndex(path string, source []byte, index *walk.Index) {
 	if c.indexes == nil {
 		c.indexes = make(map[string]indexCacheEntry)
 	}
-	c.indexes[path] = indexCacheEntry{hash: sha256.Sum256(source), index: index}
+	c.indexes[path] = indexCacheEntry{hash: hash, index: index}
 	c.analysisMu.Unlock()
 }
 
-func (c *ParseCache) getWalk(path string, source []byte, definesKey string, complete bool, snapshotsKey string) *walk.Model {
+func (c *ParseCache) getWalk(path string, hash [sha256.Size]byte, definesKey string, complete bool, snapshotsKey string) *walk.Model {
 	if c == nil {
 		return nil
 	}
-	hash := sha256.Sum256(source)
 	key := analysisCacheKey(path, definesKey, snapshotsKey, complete)
 	c.analysisMu.RLock()
 	entry, ok := c.walks[key]
@@ -194,7 +195,7 @@ func (c *ParseCache) getWalk(path string, source []byte, definesKey string, comp
 	return nil
 }
 
-func (c *ParseCache) putWalk(path string, source []byte, definesKey string, complete bool, snapshotsKey string, model *walk.Model) {
+func (c *ParseCache) putWalk(path string, hash [sha256.Size]byte, definesKey string, complete bool, snapshotsKey string, model *walk.Model) {
 	if c == nil {
 		return
 	}
@@ -203,15 +204,14 @@ func (c *ParseCache) putWalk(path string, source []byte, definesKey string, comp
 	if c.walks == nil {
 		c.walks = make(map[string]walkCacheEntry)
 	}
-	c.walks[key] = walkCacheEntry{hash: sha256.Sum256(source), walk: model}
+	c.walks[key] = walkCacheEntry{hash: hash, walk: model}
 	c.analysisMu.Unlock()
 }
 
-func (c *ParseCache) getSemantic(path string, source []byte, definesKey string, complete bool, snapshotsKey string) *semantic.Model {
+func (c *ParseCache) getSemantic(path string, hash [sha256.Size]byte, definesKey string, complete bool, snapshotsKey string) *semantic.Model {
 	if c == nil {
 		return nil
 	}
-	hash := sha256.Sum256(source)
 	key := analysisCacheKey(path, definesKey, snapshotsKey, complete)
 	c.analysisMu.RLock()
 	entry, ok := c.semantics[key]
@@ -222,7 +222,7 @@ func (c *ParseCache) getSemantic(path string, source []byte, definesKey string, 
 	return nil
 }
 
-func (c *ParseCache) putSemantic(path string, source []byte, definesKey string, complete bool, snapshotsKey string, model *semantic.Model) {
+func (c *ParseCache) putSemantic(path string, hash [sha256.Size]byte, definesKey string, complete bool, snapshotsKey string, model *semantic.Model) {
 	if c == nil {
 		return
 	}
@@ -231,6 +231,6 @@ func (c *ParseCache) putSemantic(path string, source []byte, definesKey string, 
 	if c.semantics == nil {
 		c.semantics = make(map[string]semanticCacheEntry)
 	}
-	c.semantics[key] = semanticCacheEntry{hash: sha256.Sum256(source), semantic: model}
+	c.semantics[key] = semanticCacheEntry{hash: hash, semantic: model}
 	c.analysisMu.Unlock()
 }

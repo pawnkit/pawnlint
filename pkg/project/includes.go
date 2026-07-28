@@ -43,6 +43,7 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	}
 	physical := m.physical[canonical]
 	if physical == nil {
+		sourceHash := sha256.Sum256(source)
 		retainTrivia := m.options.Features == nil || m.options.Features.Has(FeatureTrivia) || bytes.Contains(source, []byte("pawnlint-"))
 		if m.options.ReleaseIncludes && (!provided || len(source) >= compactTargetThreshold) {
 			started := time.Now()
@@ -58,7 +59,7 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 			if m.options.ObserveTiming != nil {
 				m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
 			}
-			physical = &physicalFile{source: source, compact: compact, lineTable: sourceinfo.NewLineTable(source)}
+			physical = &physicalFile{source: source, hash: sourceHash, compact: compact, lineTable: sourceinfo.NewLineTable(source)}
 			m.physical[canonical] = physical
 		} else {
 			discardTrivia := !retainTrivia
@@ -71,7 +72,7 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 			if m.options.ParseCache != nil {
 				started := time.Now()
 				var cached bool
-				parsed, cached = m.options.ParseCache.parse(canonical, source, discardTrivia, rootTokens)
+				parsed, cached = m.options.ParseCache.parseHashed(canonical, source, sourceHash, discardTrivia, rootTokens)
 				if !cached && m.options.ObserveTiming != nil {
 					m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
 				}
@@ -82,12 +83,12 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 				parsed = parseSource(source, discardTrivia, rootTokens)
 				m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
 			}
-			syntaxIndex := m.options.ParseCache.getIndex(canonical, source)
+			syntaxIndex := m.options.ParseCache.getIndex(canonical, sourceHash)
 			if syntaxIndex == nil {
 				syntaxIndex = walk.NewIndex(parsed)
-				m.options.ParseCache.putIndex(canonical, source, syntaxIndex)
+				m.options.ParseCache.putIndex(canonical, sourceHash, syntaxIndex)
 			}
-			physical = &physicalFile{source: source, parsed: parsed, lineTable: sourceinfo.NewLineTable(source), syntaxIndex: syntaxIndex}
+			physical = &physicalFile{source: source, hash: sourceHash, parsed: parsed, lineTable: sourceinfo.NewLineTable(source), syntaxIndex: syntaxIndex}
 			m.physical[canonical] = physical
 		}
 	}
@@ -100,12 +101,12 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	if !provided {
 		display = canonical
 	}
-	file := &File{Path: display, Source: physical.source, Parsed: parsed, CompactParsed: compact, Provided: provided, canonical: canonical, includeRoot: includeRoot, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1), syntaxIndex: physical.syntaxIndex}
+	file := &File{Path: display, Source: physical.source, Parsed: parsed, CompactParsed: compact, Provided: provided, canonical: canonical, includeRoot: includeRoot, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1), sourceHash: physical.hash, syntaxIndex: physical.syntaxIndex}
 	if parsed != nil {
-		walkModel := m.options.ParseCache.getWalk(canonical, source, defines.definesKey, m.options.DefinesComplete, "")
+		walkModel := m.options.ParseCache.getWalk(canonical, physical.hash, defines.definesKey, m.options.DefinesComplete, "")
 		if walkModel == nil {
 			walkModel = walk.NewWithContext(display, parsed, defines.walk, nil, m.options.DefinesComplete, physical.lineTable, physical.syntaxIndex)
-			m.options.ParseCache.putWalk(canonical, source, defines.definesKey, m.options.DefinesComplete, "", walkModel)
+			m.options.ParseCache.putWalk(canonical, physical.hash, defines.definesKey, m.options.DefinesComplete, "", walkModel)
 		}
 		file.Walk = walkModel
 		file.Syntax = cst.Pointer(file.Walk)
@@ -194,7 +195,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	}
 	file.final = m.internDefines(defineCursor.KnownDefinesViewAt(len(file.Source) + 1))
 	if file.Parsed != nil {
-		if cached := m.options.ParseCache.getSemantic(file.canonical, file.Source, file.defines.definesKey, file.complete, file.snapshotsKey); cached != nil {
+		if cached := m.options.ParseCache.getSemantic(file.canonical, file.sourceHash, file.defines.definesKey, file.complete, file.snapshotsKey); cached != nil {
 			file.Semantic = cached
 		} else {
 			started := time.Now()
@@ -202,7 +203,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 			if m.options.ObserveTiming != nil {
 				m.observe(TimingEvent{Stage: TimingSemantic, Duration: time.Since(started)})
 			}
-			m.options.ParseCache.putSemantic(file.canonical, file.Source, file.defines.definesKey, file.complete, file.snapshotsKey, file.Semantic)
+			m.options.ParseCache.putSemantic(file.canonical, file.sourceHash, file.defines.definesKey, file.complete, file.snapshotsKey, file.Semantic)
 		}
 	} else if m.options.ObserveTiming == nil {
 		file.CompactSemantic = semantic.BuildCompact(file.CompactParsed, file.CompactWalk)
@@ -345,10 +346,10 @@ func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot, snapshotsKey string,
 	f.snapshotsKey = snapshotsKey
 	if f.Parsed != nil {
 		lineTable := f.Walk.LineTable
-		cached := cache.getWalk(f.canonical, f.Source, f.defines.definesKey, f.complete, f.snapshotsKey)
+		cached := cache.getWalk(f.canonical, f.sourceHash, f.defines.definesKey, f.complete, f.snapshotsKey)
 		if cached == nil {
 			cached = walk.NewWithSharedContext(f.Path, f.Parsed, f.defines.walk, f.snapshots, f.complete, lineTable, f.syntaxIndex)
-			cache.putWalk(f.canonical, f.Source, f.defines.definesKey, f.complete, f.snapshotsKey, cached)
+			cache.putWalk(f.canonical, f.sourceHash, f.defines.definesKey, f.complete, f.snapshotsKey, cached)
 		}
 		f.Walk = cached
 		f.Syntax = cst.Pointer(f.Walk)

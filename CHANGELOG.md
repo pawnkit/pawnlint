@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.1 - 2026-07-28
+
+### Performance
+
+- Reuse one content hash across parse, syntax, walk, and semantic caches.
+- Reduced warm SAFW editor linting by about 11% on the reference machine.
+
 ## 1.7.0 - 2026-07-28
 
 ### Performance
