@@ -6,12 +6,43 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	analysis "github.com/pawnkit/pawn-analysis"
 	"github.com/pawnkit/pawn-analysis/preprocess"
 	coresource "github.com/pawnkit/pawnkit-core/source"
 	"github.com/pawnkit/pawnlint/pkg/editor"
+	"github.com/pawnkit/pawnlint/pkg/project"
 )
+
+func TestRealProjectEditorLatency(t *testing.T) {
+	root := os.Getenv("PAWN_REAL_PROJECT_DIR")
+	if root == "" {
+		t.Skip("PAWN_REAL_PROJECT_DIR is not set")
+	}
+	path := filepath.Join(root, "src", "safw.pwn")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cache := project.NewParseCache()
+
+	started := time.Now()
+	if _, err := editor.DiagnoseWithCache(path, content, root, cache, nil); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("cold editor lint took %s", time.Since(started))
+
+	started = time.Now()
+	if _, err := editor.DiagnoseWithCache(path, content, root, cache, nil); err != nil {
+		t.Fatal(err)
+	}
+	elapsed := time.Since(started)
+	t.Logf("warm editor lint took %s", elapsed)
+	if elapsed > time.Second {
+		t.Fatalf("warm editor lint exceeded one second: %s", elapsed)
+	}
+}
 
 func TestDiagnoseContextStopsWhenCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())

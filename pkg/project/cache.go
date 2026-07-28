@@ -2,6 +2,8 @@ package project
 
 import (
 	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
 	"strings"
 	"sync"
 
@@ -51,7 +53,7 @@ func definesCacheKey(defines []string) string {
 	return b.String()
 }
 
-func analysisCacheKey(path, definesKey string, complete bool) string {
+func analysisCacheKey(path, definesKey, snapshotsKey string, complete bool) string {
 	var b strings.Builder
 	b.WriteString(path)
 	b.WriteByte('\x00')
@@ -62,7 +64,28 @@ func analysisCacheKey(path, definesKey string, complete bool) string {
 	}
 	b.WriteByte('\x00')
 	b.WriteString(definesKey)
+	b.WriteByte('\x00')
+	b.WriteString(snapshotsKey)
 	return b.String()
+}
+
+type defineSnapshotIdentity struct {
+	offset int
+	hash   [sha256.Size]byte
+}
+
+func defineSnapshotsCacheKey(snapshots []defineSnapshotIdentity) string {
+	if len(snapshots) == 0 {
+		return ""
+	}
+	hash := sha256.New()
+	var offset [8]byte
+	for _, snapshot := range snapshots {
+		binary.LittleEndian.PutUint64(offset[:], uint64(snapshot.offset))
+		_, _ = hash.Write(offset[:])
+		_, _ = hash.Write(snapshot.hash[:])
+	}
+	return hex.EncodeToString(hash.Sum(nil))
 }
 
 func NewParseCache() *ParseCache {
@@ -120,12 +143,12 @@ func (c *ParseCache) putIndex(path string, source []byte, index *walk.Index) {
 	c.analysisMu.Unlock()
 }
 
-func (c *ParseCache) getWalk(path string, source []byte, definesKey string, complete bool) *walk.Model {
+func (c *ParseCache) getWalk(path string, source []byte, definesKey string, complete bool, snapshotsKey string) *walk.Model {
 	if c == nil {
 		return nil
 	}
 	hash := sha256.Sum256(source)
-	key := analysisCacheKey(path, definesKey, complete)
+	key := analysisCacheKey(path, definesKey, snapshotsKey, complete)
 	c.analysisMu.RLock()
 	entry, ok := c.walks[key]
 	c.analysisMu.RUnlock()
@@ -135,11 +158,11 @@ func (c *ParseCache) getWalk(path string, source []byte, definesKey string, comp
 	return nil
 }
 
-func (c *ParseCache) putWalk(path string, source []byte, definesKey string, complete bool, model *walk.Model) {
+func (c *ParseCache) putWalk(path string, source []byte, definesKey string, complete bool, snapshotsKey string, model *walk.Model) {
 	if c == nil {
 		return
 	}
-	key := analysisCacheKey(path, definesKey, complete)
+	key := analysisCacheKey(path, definesKey, snapshotsKey, complete)
 	c.analysisMu.Lock()
 	if c.walks == nil {
 		c.walks = make(map[string]walkCacheEntry)
@@ -148,12 +171,12 @@ func (c *ParseCache) putWalk(path string, source []byte, definesKey string, comp
 	c.analysisMu.Unlock()
 }
 
-func (c *ParseCache) getSemantic(path string, source []byte, definesKey string, complete bool) *semantic.Model {
+func (c *ParseCache) getSemantic(path string, source []byte, definesKey string, complete bool, snapshotsKey string) *semantic.Model {
 	if c == nil {
 		return nil
 	}
 	hash := sha256.Sum256(source)
-	key := analysisCacheKey(path, definesKey, complete)
+	key := analysisCacheKey(path, definesKey, snapshotsKey, complete)
 	c.analysisMu.RLock()
 	entry, ok := c.semantics[key]
 	c.analysisMu.RUnlock()
@@ -163,11 +186,11 @@ func (c *ParseCache) getSemantic(path string, source []byte, definesKey string, 
 	return nil
 }
 
-func (c *ParseCache) putSemantic(path string, source []byte, definesKey string, complete bool, model *semantic.Model) {
+func (c *ParseCache) putSemantic(path string, source []byte, definesKey string, complete bool, snapshotsKey string, model *semantic.Model) {
 	if c == nil {
 		return
 	}
-	key := analysisCacheKey(path, definesKey, complete)
+	key := analysisCacheKey(path, definesKey, snapshotsKey, complete)
 	c.analysisMu.Lock()
 	if c.semantics == nil {
 		c.semantics = make(map[string]semanticCacheEntry)

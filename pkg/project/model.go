@@ -3,6 +3,7 @@ package project
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -80,6 +81,7 @@ type File struct {
 	runtimeCalls      []runtimeCallFact
 	expansionOrigins  map[*parser.Node][]expansionOriginFact
 	snapshots         []walk.DefineSnapshot
+	snapshotsKey      string
 	pointerOnce       sync.Once
 	pointerNodes      map[nodeLocation]*parser.Node
 	compactNodeMu     sync.Mutex
@@ -194,6 +196,7 @@ type defineEnvironment struct {
 	names      []string
 	definesKey string
 	walk       *walk.DefineContext
+	cacheHash  [sha256.Size]byte
 }
 
 func Build(sources []Source, options Options) (*Model, error) {

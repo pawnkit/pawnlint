@@ -147,6 +147,46 @@ func TestParseCacheReusesFinalWalkAfterMidFileRedefinition(t *testing.T) {
 	if len(firstRoot.Semantic.Symbols) != len(secondRoot.Semantic.Symbols) {
 		t.Fatalf("symbol count changed across cached builds: %d vs %d", len(firstRoot.Semantic.Symbols), len(secondRoot.Semantic.Symbols))
 	}
+	if firstRoot.Walk != secondRoot.Walk {
+		t.Fatal("final define-aware walk was not reused")
+	}
+	if firstRoot.Semantic != secondRoot.Semantic {
+		t.Fatal("final semantic model was not reused")
+	}
+}
+
+func TestParseCacheInvalidatesFinalWalkWhenIncludedDefinesChange(t *testing.T) {
+	dir := t.TempDir()
+	includeDir := filepath.Join(dir, "include")
+	if err := os.Mkdir(includeDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	includePath := filepath.Join(includeDir, "feature.inc")
+	if err := os.WriteFile(includePath, []byte("#define FEATURE\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	rootPath := filepath.Join(dir, "main.pwn")
+	source := []byte("#include <feature>\n#if defined FEATURE\nstock Enabled() {}\n#endif\n")
+	cache := project.NewParseCache()
+	options := project.Options{WorkingDir: dir, IncludePaths: []string{"include"}, ParseCache: cache}
+
+	enabled, err := project.Build([]project.Source{{Path: rootPath, Content: source}}, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(enabled.Declarations["Enabled"]) != 1 {
+		t.Fatal("included define did not activate the declaration")
+	}
+	if err := os.WriteFile(includePath, []byte("#undef FEATURE\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	disabled, err := project.Build([]project.Source{{Path: rootPath, Content: source}}, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(disabled.Declarations["Enabled"]) != 0 {
+		t.Fatal("cached walk ignored the changed included define")
+	}
 }
 
 func TestParseCacheSeparatesTriviaProfiles(t *testing.T) {

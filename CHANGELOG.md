@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.4.1 - 2026-07-28
+
+### Performance
+
+- Reused define-aware syntax walks and semantic models for unchanged include
+  chains.
+- Reduced warm SAFW editor linting from about 670 ms to about 535 ms on the
+  reference machine.
+
 ## 1.4.0 - 2026-07-28
 
 ### Added

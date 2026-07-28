@@ -2,6 +2,7 @@ package project
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -101,10 +102,10 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	}
 	file := &File{Path: display, Source: physical.source, Parsed: parsed, CompactParsed: compact, Provided: provided, canonical: canonical, includeRoot: includeRoot, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1), syntaxIndex: physical.syntaxIndex}
 	if parsed != nil {
-		walkModel := m.options.ParseCache.getWalk(canonical, source, defines.definesKey, m.options.DefinesComplete)
+		walkModel := m.options.ParseCache.getWalk(canonical, source, defines.definesKey, m.options.DefinesComplete, "")
 		if walkModel == nil {
 			walkModel = walk.NewWithContext(display, parsed, defines.walk, nil, m.options.DefinesComplete, physical.lineTable, physical.syntaxIndex)
-			m.options.ParseCache.putWalk(canonical, source, defines.definesKey, m.options.DefinesComplete, walkModel)
+			m.options.ParseCache.putWalk(canonical, source, defines.definesKey, m.options.DefinesComplete, "", walkModel)
 		}
 		file.Walk = walkModel
 		file.Syntax = cst.Pointer(file.Walk)
@@ -143,6 +144,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	}
 	sort.SliceStable(nodes, func(i, j int) bool { return nodes[i].Start() < nodes[j].Start() })
 	var snapshots []walk.DefineSnapshot
+	var snapshotIdentities []defineSnapshotIdentity
 	dirty := false
 	defineCursor := file.Syntax.NewDefineCursor()
 	for _, node := range nodes {
@@ -150,7 +152,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 			return err
 		}
 		if dirty {
-			file.rebuildWalk(snapshots)
+			file.rebuildWalk(snapshots, defineSnapshotsCacheKey(snapshotIdentities), m.options.ParseCache)
 			defineCursor = file.Syntax.NewDefineCursor()
 			dirty = false
 		}
@@ -179,11 +181,12 @@ func (m *Model) resolveFileIncludes(file *File) error {
 		}
 		if resolved.final != nil && len(resolved.final.names) > 0 && defines != resolved.final {
 			snapshots = append(snapshots, walk.DefineSnapshot{Offset: node.End(), Defines: resolved.final.names})
+			snapshotIdentities = append(snapshotIdentities, defineSnapshotIdentity{offset: node.End(), hash: resolved.final.cacheHash})
 			dirty = true
 		}
 	}
 	if dirty {
-		file.rebuildWalk(snapshots)
+		file.rebuildWalk(snapshots, defineSnapshotsCacheKey(snapshotIdentities), m.options.ParseCache)
 		defineCursor = file.Syntax.NewDefineCursor()
 	}
 	if err := m.ctx.Err(); err != nil {
@@ -191,7 +194,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	}
 	file.final = m.internDefines(defineCursor.KnownDefinesViewAt(len(file.Source) + 1))
 	if file.Parsed != nil {
-		if cached := m.options.ParseCache.getSemantic(file.canonical, file.Source, file.defines.definesKey, file.complete); cached != nil {
+		if cached := m.options.ParseCache.getSemantic(file.canonical, file.Source, file.defines.definesKey, file.complete, file.snapshotsKey); cached != nil {
 			file.Semantic = cached
 		} else {
 			started := time.Now()
@@ -199,7 +202,7 @@ func (m *Model) resolveFileIncludes(file *File) error {
 			if m.options.ObserveTiming != nil {
 				m.observe(TimingEvent{Stage: TimingSemantic, Duration: time.Since(started)})
 			}
-			m.options.ParseCache.putSemantic(file.canonical, file.Source, file.defines.definesKey, file.complete, file.Semantic)
+			m.options.ParseCache.putSemantic(file.canonical, file.Source, file.defines.definesKey, file.complete, file.snapshotsKey, file.Semantic)
 		}
 	} else if m.options.ObserveTiming == nil {
 		file.CompactSemantic = semantic.BuildCompact(file.CompactParsed, file.CompactWalk)
@@ -337,10 +340,17 @@ func (m *Model) resolveInclude(from *File, path string, quoted bool, defines *de
 	return resolved, candidates, err
 }
 
-func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot) {
+func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot, snapshotsKey string, cache *ParseCache) {
 	f.snapshots = append(f.snapshots[:0], snapshots...)
+	f.snapshotsKey = snapshotsKey
 	if f.Parsed != nil {
-		f.Walk = walk.NewWithSharedContext(f.Path, f.Parsed, f.defines.walk, f.snapshots, f.complete, f.Walk.LineTable, f.syntaxIndex)
+		lineTable := f.Walk.LineTable
+		cached := cache.getWalk(f.canonical, f.Source, f.defines.definesKey, f.complete, f.snapshotsKey)
+		if cached == nil {
+			cached = walk.NewWithSharedContext(f.Path, f.Parsed, f.defines.walk, f.snapshots, f.complete, lineTable, f.syntaxIndex)
+			cache.putWalk(f.canonical, f.Source, f.defines.definesKey, f.complete, f.snapshotsKey, cached)
+		}
+		f.Walk = cached
 		f.Syntax = cst.Pointer(f.Walk)
 	} else {
 		f.CompactWalk = walk.NewCompactWithSharedContext(f.Path, f.CompactParsed, f.defines.walk, f.snapshots, f.complete, f.CompactWalk.LineTable)
@@ -357,8 +367,10 @@ func (m *Model) internDefines(defines []string) *defineEnvironment {
 	}
 	m.nextEnvironmentID++
 	names := append([]string(nil), defines...)
+	definesKey := definesCacheKey(names)
 	environment := &defineEnvironment{
-		id: m.nextEnvironmentID, names: names, definesKey: definesCacheKey(names), walk: walk.NewDefineContext(names),
+		id: m.nextEnvironmentID, names: names, definesKey: definesKey, walk: walk.NewDefineContext(names),
+		cacheHash: sha256.Sum256([]byte(definesKey)),
 	}
 	m.defineEnvironments[hash] = append(m.defineEnvironments[hash], environment)
 	return environment
