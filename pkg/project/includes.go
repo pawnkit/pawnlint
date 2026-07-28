@@ -22,6 +22,9 @@ import (
 const compactTargetThreshold = 512 << 10
 
 func (m *Model) addFile(path string, source []byte, provided bool, defines *defineEnvironment, includeRoot string) (*File, error) {
+	if err := m.ctx.Err(); err != nil {
+		return nil, err
+	}
 	canonical, err := canonicalPath(path, m.options.WorkingDir)
 	if err != nil {
 		return nil, err
@@ -126,6 +129,9 @@ func parseSource(source []byte, discardTrivia bool, tokens []token.Token) *parse
 }
 
 func (m *Model) resolveFileIncludes(file *File) error {
+	if err := m.ctx.Err(); err != nil {
+		return err
+	}
 	if file == nil || file.resolved || file.resolving {
 		return nil
 	}
@@ -140,6 +146,9 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	dirty := false
 	defineCursor := file.Syntax.NewDefineCursor()
 	for _, node := range nodes {
+		if err := m.ctx.Err(); err != nil {
+			return err
+		}
 		if dirty {
 			file.rebuildWalk(snapshots)
 			defineCursor = file.Syntax.NewDefineCursor()
@@ -176,6 +185,9 @@ func (m *Model) resolveFileIncludes(file *File) error {
 	if dirty {
 		file.rebuildWalk(snapshots)
 		defineCursor = file.Syntax.NewDefineCursor()
+	}
+	if err := m.ctx.Err(); err != nil {
+		return err
 	}
 	file.final = m.internDefines(defineCursor.KnownDefinesViewAt(len(file.Source) + 1))
 	if file.Parsed != nil {

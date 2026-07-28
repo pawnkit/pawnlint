@@ -1,6 +1,8 @@
 package editor_test
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,6 +12,16 @@ import (
 	coresource "github.com/pawnkit/pawnkit-core/source"
 	"github.com/pawnkit/pawnlint/pkg/editor"
 )
+
+func TestDiagnoseContextStopsWhenCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := editor.DiagnoseContextWithCache(ctx, "main.pwn", []byte("main() {}\n"), t.TempDir(), nil, nil)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("error = %v, want context.Canceled", err)
+	}
+}
 
 func TestDiagnoseNoConfig(t *testing.T) {
 	dir := t.TempDir()

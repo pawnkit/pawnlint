@@ -1,6 +1,8 @@
 package project
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -8,6 +10,16 @@ import (
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 )
+
+func TestBuildContextStopsWhenCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := BuildContext(ctx, []Source{{Path: "main.pwn", Content: []byte("main() {}\n")}}, Options{})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("error = %v, want context.Canceled", err)
+	}
+}
 
 func TestBuildResolvesIncludesAndIndexesDeclarations(t *testing.T) {
 	dir := t.TempDir()

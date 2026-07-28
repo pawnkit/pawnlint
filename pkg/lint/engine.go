@@ -2,6 +2,7 @@ package lint
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"time"
 
@@ -26,6 +27,7 @@ type Engine struct {
 	API            *api.Metadata
 	SharedAnalysis *analysis.Result
 	ObserveTiming  func(TimingEvent)
+	Context        context.Context
 }
 
 type TimingStage string
@@ -88,6 +90,9 @@ func (e *Engine) lintFileSafe(path string, src []byte, contextFile *project.File
 }
 
 func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, maxLevel AnalysisLevel, ruleSet map[string]diagnostic.Severity, known map[string]struct{}, perRule map[string]map[string]any) []diagnostic.Diagnostic {
+	if e.cancelled() {
+		return nil
+	}
 	var pf *parser.File
 	var m *walk.Model
 	var semantics *semantic.Model
@@ -143,6 +148,9 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	var flow *controlflow.Model
 	var requirements Requirements
 	for _, id := range e.Reg.IDs() {
+		if e.cancelled() {
+			return nil
+		}
 		if _, enabled := ruleSet[id]; !enabled {
 			continue
 		}
@@ -185,6 +193,9 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	facts := newFileFacts(m, semantics)
 
 	for _, id := range e.Reg.IDs() {
+		if e.cancelled() {
+			return nil
+		}
 		sev, enabled := ruleSet[id]
 		if !enabled || sev == diagnostic.SeverityOff {
 			continue
@@ -270,6 +281,9 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 
 	var out []diagnostic.Diagnostic
 	for _, d := range raw {
+		if e.cancelled() {
+			return nil
+		}
 		if d.Filename != path && e.Project != nil {
 			projectFile := e.Project.File(d.Filename)
 			if projectFile != nil {
@@ -310,6 +324,10 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 
 	diagnostic.Sort(out)
 	return out
+}
+
+func (e *Engine) cancelled() bool {
+	return e != nil && e.Context != nil && e.Context.Err() != nil
 }
 
 func (e *Engine) observe(event TimingEvent) {

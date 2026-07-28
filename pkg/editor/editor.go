@@ -2,6 +2,7 @@
 package editor
 
 import (
+	"context"
 	"path/filepath"
 
 	analysis "github.com/pawnkit/pawn-analysis"
@@ -25,6 +26,21 @@ func Diagnose(path string, content []byte, workingDir string) ([]diagnostic.Diag
 // file again for pawn-analysis:sema/* diagnostics. Nil arguments behave
 // exactly like [Diagnose].
 func DiagnoseWithCache(path string, content []byte, workingDir string, cache *project.ParseCache, shared *analysis.Result) ([]diagnostic.Diagnostic, error) {
+	return DiagnoseContextWithCache(context.Background(), path, content, workingDir, cache, shared)
+}
+
+// DiagnoseContextWithCache stops before lint rules when ctx is cancelled.
+func DiagnoseContextWithCache(
+	ctx context.Context,
+	path string,
+	content []byte,
+	workingDir string,
+	cache *project.ParseCache,
+	shared *analysis.Result,
+) ([]diagnostic.Diagnostic, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	reg := rules.Default()
 
 	configPath, file, err := config.Discover(workingDir)
@@ -63,7 +79,8 @@ func DiagnoseWithCache(path string, content []byte, workingDir string, cache *pr
 		rootTokens = shared.Preprocess.OriginalTokens
 	}
 	features := resolved.ProjectFeatures(reg)
-	model, err := project.Build(
+	model, err := project.BuildContext(
+		ctx,
 		[]project.Source{{Path: path, Content: content}},
 		project.Options{
 			WorkingDir: workingDir, IncludePaths: includePaths, Defines: resolved.Source.Defines,
@@ -73,6 +90,9 @@ func DiagnoseWithCache(path string, content []byte, workingDir string, cache *pr
 	if err != nil {
 		return nil, err
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 
 	engine := lint.NewEngine(reg)
 	engine.Defines = resolved.Source.Defines
@@ -80,8 +100,12 @@ func DiagnoseWithCache(path string, content []byte, workingDir string, cache *pr
 	engine.Project = model
 	engine.API = resolved.API
 	engine.SharedAnalysis = shared
+	engine.Context = ctx
 
 	diagnostics := engine.LintFile(path, content, lint.ProjectAnalysis, resolved.Enabled, resolved.AllKnownRuleIDs, resolved.RuleConfig)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	diagnostic.Sort(diagnostics)
 	return diagnostics, nil
 }

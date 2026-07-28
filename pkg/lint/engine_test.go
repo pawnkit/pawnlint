@@ -1,6 +1,7 @@
 package lint_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -10,6 +11,25 @@ import (
 	"github.com/pawnkit/pawnlint/pkg/lint"
 	"github.com/pawnkit/pawnlint/pkg/rules"
 )
+
+func TestEngineStopsWhenCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	engine := lint.NewEngine(rules.Default())
+	engine.Context = ctx
+	diagnostics := engine.LintFile(
+		"main.pwn",
+		[]byte("main() { value + 1; }\n"),
+		lint.ProjectAnalysis,
+		map[string]diagnostic.Severity{"discarded-expression": diagnostic.SeverityWarning},
+		nil,
+		nil,
+	)
+	if len(diagnostics) != 0 {
+		t.Fatalf("diagnostics = %+v, want none", diagnostics)
+	}
+}
 
 func TestEngineRunsAllRules(t *testing.T) {
 	reg := rules.Default()

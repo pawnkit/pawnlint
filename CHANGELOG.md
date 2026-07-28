@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.0 - 2026-07-28
+
+### Added
+
+- Added cancellable project builds and editor diagnostics.
+
+### Changed
+
+- Stopped lint rules and include traversal when an editor request is
+  superseded.
+
 ## 1.3.4 - 2026-07-26
 
 ### Changed

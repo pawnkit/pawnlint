@@ -2,6 +2,7 @@ package project
 
 import (
 	"bytes"
+	"context"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -165,6 +166,7 @@ type Model struct {
 	includeResolver    *includeResolution
 	options            Options
 	rootTokensUsed     bool
+	ctx                context.Context
 }
 
 type physicalFile struct {
@@ -195,6 +197,14 @@ type defineEnvironment struct {
 }
 
 func Build(sources []Source, options Options) (*Model, error) {
+	return BuildContext(context.Background(), sources, options)
+}
+
+// BuildContext builds a project model and stops when ctx is cancelled.
+func BuildContext(ctx context.Context, sources []Source, options Options) (*Model, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	options.IncludePaths = append([]string(nil), options.IncludePaths...)
 	options.Defines = normalizeDefines(options.Defines)
 	features := AllFeatures()
@@ -231,10 +241,14 @@ func Build(sources []Source, options Options) (*Model, error) {
 		sourceFiles:        make(map[uint32]*File),
 		options:            options,
 		functionEffects:    features.Has(FeatureFunctionEffects),
+		ctx:                ctx,
 	}
 	model.includeResolver = newIncludeResolver(sources, options)
 	rootEnvironment := model.internDefines(options.Defines)
 	for _, source := range sources {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		file, err := model.addFile(source.Path, source.Content, true, rootEnvironment, "")
 		if err != nil {
 			return nil, err
@@ -244,11 +258,17 @@ func Build(sources []Source, options Options) (*Model, error) {
 		}
 	}
 	for _, file := range append([]*File(nil), model.Files...) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if err := model.resolveFileIncludes(file); err != nil {
 			return nil, err
 		}
 	}
 	for _, file := range model.Files {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		file.buildTagAliases()
 		file.expansionState = nil
 	}
@@ -294,6 +314,9 @@ func Build(sources []Source, options Options) (*Model, error) {
 	}
 	if options.ReleaseIncludes {
 		model.ReleaseIncludeTokens(nil)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 	return model, nil
 }
