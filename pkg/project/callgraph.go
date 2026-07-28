@@ -120,19 +120,6 @@ func (m *Model) buildCallGraph() *CallGraph {
 			})
 		}
 	}
-	sort.SliceStable(graph.Calls, func(i, j int) bool {
-		left, right := graph.Calls[i], graph.Calls[j]
-		if declarationKey(left.Caller) != declarationKey(right.Caller) {
-			return declarationLess(left.Caller, right.Caller)
-		}
-		if left.File.canonical != right.File.canonical {
-			return left.File.canonical < right.File.canonical
-		}
-		if callSyntaxOffset(left) != callSyntaxOffset(right) {
-			return callSyntaxOffset(left) < callSyntaxOffset(right)
-		}
-		return declarationLess(left.Callee, right.Callee)
-	})
 	graph.buildRuntimeEdges(m)
 	graph.recursive = graph.findRecursiveComponents()
 	return graph
@@ -391,7 +378,7 @@ func (g *CallGraph) buildRuntimeEdges(model *Model) {
 		}
 		return declarationLess(left.Callee, right.Callee)
 	})
-	sort.SliceStable(g.Calls, func(i, j int) bool {
+	sort.Slice(g.Calls, func(i, j int) bool {
 		left, right := g.Calls[i], g.Calls[j]
 		if declarationKey(left.Caller) != declarationKey(right.Caller) {
 			return declarationLess(left.Caller, right.Caller)

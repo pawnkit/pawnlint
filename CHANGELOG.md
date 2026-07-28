@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.4 - 2026-07-28
+
+### Performance
+
+- Sort call-graph edges once after direct and runtime calls are combined.
+- Reduced warm SAFW editor linting from about 382 ms to about 365 ms on the
+  reference machine.
+
 ## 1.7.3 - 2026-07-28
 
 ### Fixed
