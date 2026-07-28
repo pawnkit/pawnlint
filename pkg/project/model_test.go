@@ -493,6 +493,33 @@ func TestDuplicateGlobalsAcrossIncludes(t *testing.T) {
 	}
 }
 
+func TestBuildUsesProvidedIncludeSources(t *testing.T) {
+	dir := t.TempDir()
+	rootPath := filepath.Join(dir, "main.pwn")
+	includePath := filepath.Join(dir, "shared.inc")
+	if err := os.WriteFile(includePath, []byte("stock FromDisk() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	model, err := Build(
+		[]Source{{Path: rootPath, Content: []byte("#include \"shared.inc\"\nmain() {}\n")}},
+		Options{
+			WorkingDir: dir,
+			IncludeSources: []Source{{
+				Path: includePath, Content: []byte("stock FromAnalysis() {}\n"),
+			}},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(model.Declarations["FromAnalysis"]) != 1 {
+		t.Fatal("provided include source was not used")
+	}
+	if len(model.Declarations["FromDisk"]) != 0 {
+		t.Fatal("include was read from disk")
+	}
+}
+
 func TestIteratorCapacityDeclarationDoesNotConflictWithBackingArray(t *testing.T) {
 	dir := t.TempDir()
 	rootPath := filepath.Join(dir, "main.pwn")

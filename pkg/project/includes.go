@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -332,7 +331,7 @@ func (m *Model) resolveInclude(from *File, path string, quoted bool, defines *de
 		source = physical.source
 	} else {
 		var err error
-		source, err = os.ReadFile(chosen)
+		source, err = m.includeResolver.ReadFile(chosen)
 		if err != nil {
 			return nil, nil, err
 		}

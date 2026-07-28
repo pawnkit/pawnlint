@@ -35,6 +35,7 @@ type Options struct {
 	ParseCache      *ParseCache
 	ObserveTiming   func(TimingEvent)
 	RootTokens      []token.Token
+	IncludeSources  []Source
 }
 
 type TimingStage string

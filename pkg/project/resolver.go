@@ -13,17 +13,20 @@ import (
 
 type includeResolution struct {
 	fsys      fsx.FS
+	files     map[string][]byte
 	roots     []string
 	resolvers map[string]*include.Resolver
 }
 
 func newIncludeResolver(sources []Source, options Options) *includeResolution {
-	files := make(map[string][]byte, len(sources))
-	for _, source := range sources {
-		path, err := canonicalPath(source.Path, options.WorkingDir)
-		if err == nil {
-			slashPath := pathutil.ToSlash(path)
-			files[slashPath] = source.Content
+	files := make(map[string][]byte, len(options.IncludeSources)+len(sources))
+	for _, group := range [][]Source{options.IncludeSources, sources} {
+		for _, source := range group {
+			path, err := canonicalPath(source.Path, options.WorkingDir)
+			if err == nil {
+				slashPath := pathutil.ToSlash(path)
+				files[slashPath] = source.Content
+			}
 		}
 	}
 	roots := make([]string, 0, len(options.IncludePaths)+1)
@@ -33,7 +36,8 @@ func newIncludeResolver(sources []Source, options Options) *includeResolution {
 	roots = append(roots, pathutil.ToSlash(options.WorkingDir))
 
 	return &includeResolution{
-		fsys:      sourceFS{files: files},
+		fsys:      &sourceFS{files: files, stats: make(map[string]fs.FileInfo), statErrors: make(map[string]error)},
+		files:     files,
 		roots:     roots,
 		resolvers: make(map[string]*include.Resolver),
 	}
@@ -49,19 +53,51 @@ func (r *includeResolution) ResolveAll(fromFile, spec string, quoted bool, inclu
 	return resolver.ResolveAll(pathutil.ToSlash(fromFile), spec, quoted)
 }
 
-type sourceFS struct {
-	files map[string][]byte
+func (r *includeResolution) ReadFile(path string) ([]byte, error) {
+	path = pathutil.ToSlash(path)
+	if content, ok := r.files[path]; ok {
+		return content, nil
+	}
+	path = pathutil.Clean(path)
+	if content, ok := r.files[path]; ok {
+		return content, nil
+	}
+	return os.ReadFile(filepath.FromSlash(path)) //nolint:gosec // Resolution constrains the path.
 }
 
-func (s sourceFS) Stat(path string) (fs.FileInfo, error) {
-	path = pathutil.Clean(path)
+type sourceFS struct {
+	files      map[string][]byte
+	stats      map[string]fs.FileInfo
+	statErrors map[string]error
+}
+
+func (s *sourceFS) Stat(path string) (fs.FileInfo, error) {
 	if content, ok := s.files[path]; ok {
 		return sourceFileInfo{name: filepath.Base(path), size: int64(len(content))}, nil
 	}
-	return os.Stat(path)
+	if info, ok := s.stats[path]; ok {
+		return info, nil
+	}
+	if err, ok := s.statErrors[path]; ok {
+		return nil, err
+	}
+	cleaned := pathutil.Clean(path)
+	if cleaned != path {
+		return s.Stat(cleaned)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		s.statErrors[path] = err
+		return nil, err
+	}
+	s.stats[path] = info
+	return info, nil
 }
 
-func (s sourceFS) ReadFile(path string) ([]byte, error) {
+func (s *sourceFS) ReadFile(path string) ([]byte, error) {
+	if content, ok := s.files[path]; ok {
+		return append([]byte(nil), content...), nil
+	}
 	path = pathutil.Clean(path)
 	if content, ok := s.files[path]; ok {
 		return append([]byte(nil), content...), nil
@@ -69,7 +105,7 @@ func (s sourceFS) ReadFile(path string) ([]byte, error) {
 	return os.ReadFile(path) //nolint:gosec // Include roots constrain resolver paths.
 }
 
-func (s sourceFS) ReadDir(path string) ([]fs.DirEntry, error) {
+func (s *sourceFS) ReadDir(path string) ([]fs.DirEntry, error) {
 	return os.ReadDir(path)
 }
 
@@ -85,4 +121,4 @@ func (sourceFileInfo) ModTime() time.Time { return time.Time{} }
 func (sourceFileInfo) IsDir() bool        { return false }
 func (sourceFileInfo) Sys() any           { return nil }
 
-var _ fsx.FS = sourceFS{}
+var _ fsx.FS = (*sourceFS)(nil)

@@ -99,7 +99,8 @@ func diagnoseContext(
 		}
 	}
 	features := resolved.ProjectFeaturesExcluding(delegated)
-	if cache != nil && shared != nil && shared.Preprocess != nil {
+	var sharedSources []project.Source
+	if shared != nil && shared.Preprocess != nil {
 		prepared := make([]project.PreparedSource, 0, len(shared.Preprocess.Files))
 		for _, file := range shared.Preprocess.Files {
 			uri := coresource.URI(file.URI)
@@ -111,13 +112,17 @@ func diagnoseContext(
 			if err != nil {
 				continue
 			}
+			path := filepath.Clean(canonical)
+			sharedSources = append(sharedSources, project.Source{Path: path, Content: file.Content})
 			prepared = append(prepared, project.PreparedSource{
-				Path: filepath.Clean(canonical), Content: file.Content, Tokens: file.Tokens,
+				Path: path, Content: file.Content, Tokens: file.Tokens,
 				DiscardTrivia: !features.Has(project.FeatureTrivia) && !bytes.Contains(file.Content, []byte("pawnlint-")),
 			})
 		}
-		if err := cache.PrepareContext(ctx, prepared); err != nil {
-			return nil, err
+		if cache != nil {
+			if err := cache.PrepareContext(ctx, prepared); err != nil {
+				return nil, err
+			}
 		}
 	}
 	model, err := project.BuildContext(
@@ -126,6 +131,7 @@ func diagnoseContext(
 		project.Options{
 			WorkingDir: workingDir, IncludePaths: includePaths, Defines: resolved.Source.Defines,
 			ParseCache: cache, Features: &features, RootTokens: rootTokens, ObserveTiming: observe,
+			IncludeSources: sharedSources,
 		},
 	)
 	if err != nil {

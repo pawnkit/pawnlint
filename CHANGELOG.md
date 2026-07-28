@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.7.6 - 2026-07-28
+
+### Fixed
+
+- Use shared analysis buffers when resolving includes, including unsaved
+  changes.
+
+### Performance
+
+- Cache include metadata for each project build.
+- Reduced warm SAFW editor linting from about 353 ms to about 337 ms on the
+  reference machine.
+
 ## 1.7.5 - 2026-07-28
 
 ### Fixed
