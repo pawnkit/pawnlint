@@ -1,6 +1,7 @@
 package project_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -9,6 +10,34 @@ import (
 	"github.com/pawnkit/pawn-parser/lexer"
 	"github.com/pawnkit/pawnlint/pkg/project"
 )
+
+func TestParseCachePreparesTokenizedSources(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	content := []byte("main() {}\n")
+	cache := project.NewParseCache()
+	if err := cache.PrepareContext(context.Background(), []project.PreparedSource{{
+		Path: path, Content: content, Tokens: lexer.Tokenize(content),
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	parseEvents := 0
+	_, err := project.Build([]project.Source{{Path: path, Content: content}}, project.Options{
+		WorkingDir: dir,
+		ParseCache: cache,
+		ObserveTiming: func(event project.TimingEvent) {
+			if event.Stage == project.TimingParse {
+				parseEvents++
+			}
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if parseEvents != 0 {
+		t.Fatalf("parse events = %d, want 0", parseEvents)
+	}
+}
 
 func TestParseCacheReusesUnchangedFiles(t *testing.T) {
 	dir := t.TempDir()

@@ -1,9 +1,11 @@
 package project
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
+	"golang.org/x/sync/errgroup"
 )
 
 type ParseCache struct {
@@ -27,6 +30,14 @@ type parseCacheEntry struct {
 	hash          [sha256.Size]byte
 	discardTrivia bool
 	file          *parser.File
+}
+
+// PreparedSource is immutable parser input for [ParseCache.PrepareContext].
+type PreparedSource struct {
+	Path          string
+	Content       []byte
+	Tokens        []token.Token
+	DiscardTrivia bool
 }
 
 type indexCacheEntry struct {
@@ -90,6 +101,31 @@ func defineSnapshotsCacheKey(snapshots []defineSnapshotIdentity) string {
 
 func NewParseCache() *ParseCache {
 	return &ParseCache{entries: make(map[string]parseCacheEntry)}
+}
+
+// PrepareContext parses sources concurrently into the cache.
+func (c *ParseCache) PrepareContext(ctx context.Context, sources []PreparedSource) error {
+	if c == nil || len(sources) == 0 {
+		return ctx.Err()
+	}
+	group, groupCtx := errgroup.WithContext(ctx)
+	group.SetLimit(max(1, runtime.GOMAXPROCS(0)))
+	seen := make(map[string]struct{}, len(sources))
+	for _, source := range sources {
+		if _, ok := seen[source.Path]; ok {
+			continue
+		}
+		seen[source.Path] = struct{}{}
+		source := source
+		group.Go(func() error {
+			if err := groupCtx.Err(); err != nil {
+				return err
+			}
+			c.parse(source.Path, source.Content, source.DiscardTrivia, source.Tokens)
+			return groupCtx.Err()
+		})
+	}
+	return group.Wait()
 }
 
 func (c *ParseCache) parse(path string, source []byte, discardTrivia bool, tokens []token.Token) (*parser.File, bool) {

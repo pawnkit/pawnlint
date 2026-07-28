@@ -2,11 +2,13 @@
 package editor
 
 import (
+	"bytes"
 	"context"
 	"path/filepath"
 
 	analysis "github.com/pawnkit/pawn-analysis"
 	"github.com/pawnkit/pawn-parser/token"
+	coresource "github.com/pawnkit/pawnkit-core/source"
 	"github.com/pawnkit/pawnlint/internal/config"
 	projectcontext "github.com/pawnkit/pawnlint/internal/project"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
@@ -35,6 +37,18 @@ func DiagnoseContextWithCache(
 	workingDir string,
 	cache *project.ParseCache,
 	shared *analysis.Result,
+) ([]diagnostic.Diagnostic, error) {
+	return diagnoseContext(ctx, path, content, workingDir, cache, shared, nil)
+}
+
+func diagnoseContext(
+	ctx context.Context,
+	path string,
+	content []byte,
+	workingDir string,
+	cache *project.ParseCache,
+	shared *analysis.Result,
+	observe func(project.TimingEvent),
 ) ([]diagnostic.Diagnostic, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -85,12 +99,33 @@ func DiagnoseContextWithCache(
 		}
 	}
 	features := resolved.ProjectFeaturesExcluding(delegated)
+	if cache != nil && shared != nil && shared.Preprocess != nil {
+		prepared := make([]project.PreparedSource, 0, len(shared.Preprocess.Files))
+		for _, file := range shared.Preprocess.Files {
+			uri := coresource.URI(file.URI)
+			filename, err := uri.Filename()
+			if err != nil {
+				continue
+			}
+			canonical, err := filepath.Abs(filename)
+			if err != nil {
+				continue
+			}
+			prepared = append(prepared, project.PreparedSource{
+				Path: filepath.Clean(canonical), Content: file.Content, Tokens: file.Tokens,
+				DiscardTrivia: !features.Has(project.FeatureTrivia) && !bytes.Contains(file.Content, []byte("pawnlint-")),
+			})
+		}
+		if err := cache.PrepareContext(ctx, prepared); err != nil {
+			return nil, err
+		}
+	}
 	model, err := project.BuildContext(
 		ctx,
 		[]project.Source{{Path: path, Content: content}},
 		project.Options{
 			WorkingDir: workingDir, IncludePaths: includePaths, Defines: resolved.Source.Defines,
-			ParseCache: cache, Features: &features, RootTokens: rootTokens,
+			ParseCache: cache, Features: &features, RootTokens: rootTokens, ObserveTiming: observe,
 		},
 	)
 	if err != nil {

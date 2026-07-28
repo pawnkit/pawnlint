@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.0 - 2026-07-28
+
+### Performance
+
+- Prepare unchanged include parses in parallel from pawn-analysis tokens.
+- Reduced cold SAFW workspace diagnostics by about 8% on the reference
+  machine.
+
 ## 1.6.2 - 2026-07-28
 
 ### Performance
