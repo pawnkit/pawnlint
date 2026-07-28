@@ -92,34 +92,32 @@ func (m *Model) buildCallGraph() *CallGraph {
 		}
 	}
 	sortDeclarations(graph.Functions)
-	for _, file := range m.Files {
-		for _, call := range file.Syntax.OfKind(parser.KindCallExpression) {
-			if file.Syntax.Uncertain(call) || file.Syntax.Inactive(call) {
+	for target, references := range m.references {
+		resolved := m.declarationsByID[target]
+		if resolved == nil || resolved.Kind != semantic.SymbolFunction {
+			continue
+		}
+		for _, reference := range references {
+			if reference.Kind != semantic.ReferenceCall {
 				continue
 			}
-			calleeNode := call.Field("function")
-			if !calleeNode.Valid() || calleeNode.Kind() != parser.KindIdentifier {
+			call := reference.File.Syntax.Parent(referenceSyntax(reference))
+			if !call.Valid() || call.Kind() != parser.KindCallExpression ||
+				reference.File.Syntax.Uncertain(call) || reference.File.Syntax.Inactive(call) {
 				continue
 			}
-			caller := byNode[file][file.Syntax.EnclosingFunction(call)]
+			caller := byNode[reference.File][reference.File.Syntax.EnclosingFunction(call)]
 			if !declarationSyntax(caller).Valid() {
 				continue
 			}
-			callees := m.functionVariants(file, calleeNode)
-			if len(callees) == 0 {
-				resolved, ok := m.resolveSyntax(file, calleeNode)
-				if !ok {
-					continue
-				}
-				callee, ok := m.callDefinition(file, resolved)
-				if !ok {
-					continue
-				}
-				callees = []Declaration{callee}
+			callee, ok := m.callDefinition(reference.File, *resolved)
+			if !ok {
+				continue
 			}
-			for _, callee := range callees {
-				graph.Calls = append(graph.Calls, Call{Caller: caller, Callee: callee, File: file, Node: call.Pointer(), syntax: call})
-			}
+			graph.Calls = append(graph.Calls, Call{
+				Caller: caller, Callee: callee, File: reference.File,
+				Node: call.Pointer(), syntax: call,
+			})
 		}
 	}
 	sort.SliceStable(graph.Calls, func(i, j int) bool {

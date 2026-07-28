@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.2 - 2026-07-28
+
+### Performance
+
+- Build call-graph edges from resolved references instead of resolving every
+  call twice.
+- Reduced warm SAFW editor linting from about 388 ms to about 341 ms on the
+  reference machine.
+
 ## 1.7.1 - 2026-07-28
 
 ### Performance
