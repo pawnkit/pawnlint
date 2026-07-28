@@ -37,6 +37,18 @@ type functionVariantKey struct {
 	name string
 }
 
+type unitResolutionKey struct {
+	unit   *Unit
+	from   *File
+	name   string
+	target semantic.ReferenceTarget
+}
+
+type unitResolution struct {
+	declaration Declaration
+	ok          bool
+}
+
 func (m *Model) References(declaration Declaration) []Reference {
 	if m == nil || declaration.File == nil || !declarationSyntax(declaration).Valid() {
 		return nil
@@ -71,13 +83,6 @@ func (m *Model) FunctionVariants(file *File, node *parser.Node) []Declaration {
 		return nil
 	}
 	return m.functionVariantsNamed(file, file.syntaxNode(node).Text())
-}
-
-func (m *Model) functionVariants(file *File, node cst.Node) []Declaration {
-	if m == nil || file == nil || !node.Valid() || node.Kind() != parser.KindIdentifier {
-		return nil
-	}
-	return m.functionVariantsNamed(file, node.Text())
 }
 
 // FunctionVariantsNamed returns callable variants visible from file.
@@ -212,6 +217,7 @@ func (m *Model) buildReferences() {
 	bySymbol := make(map[*semantic.Symbol]Declaration)
 	byCompactSymbol := make(map[*semantic.CompactSymbol]Declaration)
 	ambiguousReferences := make(map[referenceID]struct{})
+	unitResolutions := make(map[unitResolutionKey]unitResolution)
 	for _, declarations := range m.Declarations {
 		for _, declaration := range declarations {
 			if declaration.Symbol != nil {
@@ -270,17 +276,17 @@ func (m *Model) buildReferences() {
 		for _, file := range unit.Files {
 			if file.Semantic != nil {
 				for _, reference := range file.Semantic.UnresolvedReferences() {
-					m.addUnresolvedReference(unit, file, file.Syntax.PointerNode(reference.Node), reference.Node, reference.Kind, reference.Target, ambiguousReferences)
+					m.addUnresolvedReference(unit, file, file.Syntax.PointerNode(reference.Node), reference.Node, reference.Kind, reference.Target, ambiguousReferences, unitResolutions)
 				}
 				continue
 			}
 			for _, reference := range file.CompactSemantic.UnresolvedReferences() {
-				m.addUnresolvedReference(unit, file, file.Syntax.CompactNode(reference.Node), nil, reference.Kind, reference.Target, ambiguousReferences)
+				m.addUnresolvedReference(unit, file, file.Syntax.CompactNode(reference.Node), nil, reference.Kind, reference.Target, ambiguousReferences, unitResolutions)
 			}
 		}
 	}
 	for key := range m.references {
-		sort.SliceStable(m.references[key], func(i, j int) bool {
+		less := func(i, j int) bool {
 			left, right := m.references[key][i], m.references[key][j]
 			if left.File.canonical != right.File.canonical {
 				return left.File.canonical < right.File.canonical
@@ -289,13 +295,26 @@ func (m *Model) buildReferences() {
 				return referenceSyntaxOffset(left) < referenceSyntaxOffset(right)
 			}
 			return left.Kind < right.Kind
-		})
+		}
+		if !sort.SliceIsSorted(m.references[key], less) {
+			sort.SliceStable(m.references[key], less)
+		}
 	}
 }
 
-func (m *Model) addUnresolvedReference(unit *Unit, file *File, node cst.Node, pointer *parser.Node, kind semantic.ReferenceKind, target semantic.ReferenceTarget, ambiguousReferences map[referenceID]struct{}) {
+func (m *Model) addUnresolvedReference(
+	unit *Unit,
+	file *File,
+	node cst.Node,
+	pointer *parser.Node,
+	kind semantic.ReferenceKind,
+	target semantic.ReferenceTarget,
+	ambiguousReferences map[referenceID]struct{},
+	unitResolutions map[unitResolutionKey]unitResolution,
+) {
+	name := node.Text()
 	if target == semantic.ReferenceFunction {
-		variants := m.functionVariants(file, node)
+		variants := m.functionVariantsNamed(file, name)
 		if len(variants) != 0 {
 			for _, declaration := range variants {
 				m.addReference(declaration, Reference{File: file, Node: pointer, Kind: kind, compact: node.ID()}, ambiguousReferences)
@@ -303,9 +322,14 @@ func (m *Model) addUnresolvedReference(unit *Unit, file *File, node cst.Node, po
 			return
 		}
 	}
-	declaration, ok := m.resolveInUnit(unit, file, node.Text(), target)
-	if ok {
-		m.addReference(declaration, Reference{File: file, Node: pointer, Kind: kind, compact: node.ID()}, ambiguousReferences)
+	key := unitResolutionKey{unit: unit, from: file, name: name, target: target}
+	resolution, found := unitResolutions[key]
+	if !found {
+		resolution.declaration, resolution.ok = m.resolveInUnit(unit, file, name, target)
+		unitResolutions[key] = resolution
+	}
+	if resolution.ok {
+		m.addReference(resolution.declaration, Reference{File: file, Node: pointer, Kind: kind, compact: node.ID()}, ambiguousReferences)
 	}
 }
 

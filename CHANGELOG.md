@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.14 - 2026-07-28
+
+### Performance
+
+- Reuse unresolved symbol lookups within each project unit.
+- Skip sorting reference lists that are already ordered.
+- Reduced warm SAFW editor linting from about 218 ms to about 205 ms and
+  allocation count from about 399,000 to 352,000 on the reference machine.
+
 ## 1.7.13 - 2026-07-28
 
 ### Performance
