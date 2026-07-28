@@ -15,13 +15,15 @@ func appendSharedDiagnostics(dst []diagnostic.Diagnostic, path string, content [
 	if result == nil {
 		result = analysis.Analyze(content, analysis.Options{URI: coresource.FileURI(path)})
 	}
-	lines := source.NewLineTable(content)
 	for _, item := range result.Diagnostics {
-		if item.Primary.File != result.File || !strings.HasPrefix(item.Code, "pawn-analysis:sema/") {
+		if !sharedDiagnostic(item.Code) ||
+			item.Primary.File != result.File && !sharedProjectDiagnostic(item.Code) {
 			continue
 		}
+		filename, itemContent := sharedFile(result, item.Primary.File, path, content)
+		lines := source.NewLineTable(itemContent)
 		start, end := int(item.Primary.Start), int(item.Primary.End)
-		if duplicateShared(dst, item.Code, start, end) {
+		if duplicateShared(dst, item.Code, filename, start, end) {
 			continue
 		}
 		ruleID := item.Code
@@ -31,19 +33,20 @@ func appendSharedDiagnostics(dst []diagnostic.Diagnostic, path string, content [
 		dst = append(dst, diagnostic.Diagnostic{
 			RuleID: ruleID, Code: item.Code, Severity: sharedSeverity(item.Severity),
 			Category: diagnostic.CategoryCorrectness, Message: item.Message,
-			Filename: path, Range: lines.Range(start, end),
+			Filename: filename, Range: lines.Range(start, end),
 		})
 	}
 	return dst
 }
 
-func duplicateShared(dst []diagnostic.Diagnostic, code string, start, end int) bool {
+func duplicateShared(dst []diagnostic.Diagnostic, code, filename string, start, end int) bool {
 	equivalent := sharedRuleID(code)
 	if equivalent == "" {
 		return false
 	}
 	for _, item := range dst {
-		if item.RuleID == equivalent && rangesOverlap(start, end, item.Range.Start.Offset, item.Range.End.Offset) {
+		if item.RuleID == equivalent && item.Filename == filename &&
+			rangesOverlap(start, end, item.Range.Start.Offset, item.Range.End.Offset) {
 			return true
 		}
 	}
@@ -52,21 +55,55 @@ func duplicateShared(dst []diagnostic.Diagnostic, code string, start, end int) b
 
 func sharedRuleID(code string) string {
 	return map[string]string{
-		"pawn-analysis:sema/not-callable":   "non-callable-symbol",
-		"pawn-analysis:sema/tag-mismatch":   "argument-tag-mismatch",
-		"pawn-analysis:sema/unreachable":    "unreachable-code",
-		"pawn-analysis:sema/missing-return": "missing-return-value",
+		"pawn-analysis:sema/not-callable":            "non-callable-symbol",
+		"pawn-analysis:sema/tag-mismatch":            "argument-tag-mismatch",
+		"pawn-analysis:sema/unreachable":             "unreachable-code",
+		"pawn-analysis:sema/missing-return":          "missing-return-value",
+		"pawn-analysis:preprocess/include-not-found": "missing-include",
+		"pawn-analysis:preprocess/include-cycle":     "include-cycle",
 	}[code]
 }
 
 // DelegatesToShared reports rules owned by pawn-analysis in editor runs.
 func DelegatesToShared(ruleID string) bool {
 	switch ruleID {
-	case "non-callable-symbol", "argument-tag-mismatch", "unreachable-code", "missing-return-value":
+	case "non-callable-symbol", "argument-tag-mismatch", "unreachable-code", "missing-return-value",
+		"missing-include", "include-cycle":
 		return true
 	default:
 		return false
 	}
+}
+
+func sharedDiagnostic(code string) bool {
+	return strings.HasPrefix(code, "pawn-analysis:sema/") || sharedRuleID(code) != ""
+}
+
+func sharedProjectDiagnostic(code string) bool {
+	return code == "pawn-analysis:preprocess/include-not-found" ||
+		code == "pawn-analysis:preprocess/include-cycle"
+}
+
+func sharedFile(result *analysis.Result, file coresource.FileID, fallback string, content []byte) (string, []byte) {
+	if result == nil || result.Registry == nil {
+		return fallback, content
+	}
+	uri, ok := result.Registry.URI(file)
+	if !ok {
+		return fallback, content
+	}
+	filename, err := uri.Filename()
+	if err != nil {
+		return fallback, content
+	}
+	if result.Preprocess != nil {
+		for _, item := range result.Preprocess.Files {
+			if item.URI == uri.String() {
+				return filename, item.Content
+			}
+		}
+	}
+	return filename, content
 }
 
 func rangesOverlap(aStart, aEnd, bStart, bEnd int) bool {

@@ -51,10 +51,17 @@ func TestProjectFeaturesExcludeSharedRules(t *testing.T) {
 	resolved := &config.Resolved{
 		Enabled: map[string]diagnostic.Severity{
 			"argument-tag-mismatch": diagnostic.SeverityWarning,
+			"include-cycle":         diagnostic.SeverityError,
 		},
 	}
-	features := resolved.ProjectFeaturesExcluding(map[string]struct{}{"argument-tag-mismatch": {}})
+	features := resolved.ProjectFeaturesExcluding(map[string]struct{}{
+		"argument-tag-mismatch": {},
+		"include-cycle":         {},
+	})
 	if features.Has(project.FeatureReferences) {
 		t.Fatal("shared rule still requested project references")
+	}
+	if features.Has(project.FeatureIncludeCycles) {
+		t.Fatal("shared rule still requested project include cycles")
 	}
 }

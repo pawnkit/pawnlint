@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.0 - 2026-07-28
+
+### Changed
+
+- Reused pawn-analysis results for missing includes and include cycles in
+  editor runs.
+
 ## 1.5.0 - 2026-07-28
 
 ### Changed

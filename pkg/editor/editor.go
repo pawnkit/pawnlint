@@ -21,10 +21,8 @@ func Diagnose(path string, content []byte, workingDir string) ([]diagnostic.Diag
 }
 
 // DiagnoseWithCache lints content as path using configuration found from
-// workingDir, reusing cache across calls so unchanged includes are not
-// re-parsed on every call, and shared (if non-nil) instead of analyzing the
-// file again for pawn-analysis:sema/* diagnostics. Nil arguments behave
-// exactly like [Diagnose].
+// workingDir. It reuses cached includes and shared analysis facts when
+// supplied. Nil arguments behave like [Diagnose].
 func DiagnoseWithCache(path string, content []byte, workingDir string, cache *project.ParseCache, shared *analysis.Result) ([]diagnostic.Diagnostic, error) {
 	return DiagnoseContextWithCache(context.Background(), path, content, workingDir, cache, shared)
 }

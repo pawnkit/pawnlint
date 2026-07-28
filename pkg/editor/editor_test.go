@@ -219,3 +219,72 @@ func TestDiagnoseWithCacheUsesSharedRuleOwner(t *testing.T) {
 		t.Fatalf("non-callable diagnostics = %d, want 1: %+v", count, diagnostics)
 	}
 }
+
+func TestDiagnoseWithCacheUsesSharedMissingInclude(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "gamemode.pwn")
+	content := []byte("#include <missing>\nmain() {}\n")
+	shared := analysis.Analyze(content, analysis.Options{
+		URI: coresource.FileURI(path), Includes: preprocess.MapResolver{},
+	})
+
+	diagnostics, err := editor.DiagnoseWithCache(path, content, dir, nil, shared)
+	if err != nil {
+		t.Fatal(err)
+	}
+	count := 0
+	for _, item := range diagnostics {
+		if item.RuleID != "missing-include" {
+			continue
+		}
+		count++
+		if item.Code != "pawn-analysis:preprocess/include-not-found" {
+			t.Fatalf("diagnostic code = %q", item.Code)
+		}
+	}
+	if count != 1 {
+		t.Fatalf("missing-include diagnostics = %d, want 1: %+v", count, diagnostics)
+	}
+}
+
+func TestDiagnoseWithCacheSuppressesSharedMissingInclude(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "gamemode.pwn")
+	content := []byte("// pawnlint-disable-next-line missing-include\n#include <missing>\n")
+	shared := analysis.Analyze(content, analysis.Options{
+		URI: coresource.FileURI(path), Includes: preprocess.MapResolver{},
+	})
+
+	diagnostics, err := editor.DiagnoseWithCache(path, content, dir, nil, shared)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range diagnostics {
+		if item.RuleID == "missing-include" {
+			t.Fatalf("suppressed diagnostic returned: %+v", item)
+		}
+	}
+}
+
+func TestDiagnoseWithCacheUsesSharedIncludeCycle(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "gamemode.pwn")
+	content := []byte("#include \"loop.inc\"\nmain() {}\n")
+	shared := analysis.Analyze(content, analysis.Options{
+		URI: coresource.FileURI(path),
+		Includes: preprocess.MapResolver{
+			"loop.inc": []byte("#include \"loop.inc\"\n"),
+		},
+	})
+
+	diagnostics, err := editor.DiagnoseWithCache(path, content, dir, nil, shared)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range diagnostics {
+		if item.RuleID == "include-cycle" && item.Code == "pawn-analysis:preprocess/include-cycle" {
+			return
+		}
+	}
+	t.Fatalf("shared include-cycle diagnostic missing: %+v", diagnostics)
+}
