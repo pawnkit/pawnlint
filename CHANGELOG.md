@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.11 - 2026-07-28
+
+### Performance
+
+- Bound cached define contexts and analysis variants so old editor
+  configurations do not accumulate for the lifetime of the language server.
+
 ## 1.7.10 - 2026-07-28
 
 ### Performance

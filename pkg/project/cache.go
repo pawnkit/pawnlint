@@ -14,15 +14,21 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const (
+	maxAnalysisCacheEntries = 4096
+	maxDefineContexts       = 1024
+)
+
 type ParseCache struct {
 	mu      sync.RWMutex
 	entries map[string]parseCacheEntry
 
-	analysisMu sync.RWMutex
-	indexes    map[string]indexCacheEntry
-	walks      map[analysisCacheKey]walkCacheEntry
-	semantics  map[analysisCacheKey]semanticCacheEntry
-	defines    map[[sha256.Size]byte][]defineContextCacheEntry
+	analysisMu  sync.RWMutex
+	indexes     map[string]indexCacheEntry
+	walks       map[analysisCacheKey]walkCacheEntry
+	semantics   map[analysisCacheKey]semanticCacheEntry
+	defines     map[[sha256.Size]byte][]defineContextCacheEntry
+	defineCount int
 }
 
 type parseCacheEntry struct {
@@ -200,6 +206,9 @@ func (c *ParseCache) putWalk(path string, hash, definesKey [sha256.Size]byte, co
 	}
 	key := analysisCacheKey{path: path, defines: definesKey, snapshots: snapshotsKey, complete: complete}
 	c.analysisMu.Lock()
+	if _, exists := c.walks[key]; !exists && len(c.walks)+len(c.semantics) >= maxAnalysisCacheEntries {
+		c.resetAnalysisLocked()
+	}
 	if c.walks == nil {
 		c.walks = make(map[analysisCacheKey]walkCacheEntry)
 	}
@@ -227,6 +236,9 @@ func (c *ParseCache) putSemantic(path string, hash, definesKey [sha256.Size]byte
 	}
 	key := analysisCacheKey{path: path, defines: definesKey, snapshots: snapshotsKey, complete: complete}
 	c.analysisMu.Lock()
+	if _, exists := c.semantics[key]; !exists && len(c.walks)+len(c.semantics) >= maxAnalysisCacheEntries {
+		c.resetAnalysisLocked()
+	}
 	if c.semantics == nil {
 		c.semantics = make(map[analysisCacheKey]semanticCacheEntry)
 	}
@@ -255,12 +267,23 @@ func (c *ParseCache) defineContext(names []string, key [sha256.Size]byte) *walk.
 			return entry.context
 		}
 	}
+	if c.defineCount >= maxDefineContexts {
+		c.resetAnalysisLocked()
+	}
 	if c.defines == nil {
 		c.defines = make(map[[sha256.Size]byte][]defineContextCacheEntry)
 	}
 	c.defines[key] = append(c.defines[key], defineContextCacheEntry{
 		names: append([]string(nil), names...), context: context,
 	})
+	c.defineCount++
 	c.analysisMu.Unlock()
 	return context
+}
+
+func (c *ParseCache) resetAnalysisLocked() {
+	c.walks = nil
+	c.semantics = nil
+	c.defines = nil
+	c.defineCount = 0
 }
