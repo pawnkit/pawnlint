@@ -1,6 +1,7 @@
 package lint
 
 import (
+	"path/filepath"
 	"strings"
 
 	analysis "github.com/pawnkit/pawn-analysis"
@@ -45,7 +46,7 @@ func duplicateShared(dst []diagnostic.Diagnostic, code, filename string, start, 
 		return false
 	}
 	for _, item := range dst {
-		if item.RuleID == equivalent && item.Filename == filename &&
+		if item.RuleID == equivalent && sameSharedFile(item.Filename, filename) &&
 			rangesOverlap(start, end, item.Range.Start.Offset, item.Range.End.Offset) {
 			return true
 		}
@@ -96,6 +97,7 @@ func sharedFile(result *analysis.Result, file coresource.FileID, fallback string
 	if err != nil {
 		return fallback, content
 	}
+	filename = filepath.Clean(filename)
 	if result.Preprocess != nil {
 		for _, item := range result.Preprocess.Files {
 			if item.URI == uri.String() {
@@ -104,6 +106,10 @@ func sharedFile(result *analysis.Result, file coresource.FileID, fallback string
 		}
 	}
 	return filename, content
+}
+
+func sameSharedFile(left, right string) bool {
+	return filepath.Clean(left) == filepath.Clean(right)
 }
 
 func rangesOverlap(aStart, aEnd, bStart, bEnd int) bool {
