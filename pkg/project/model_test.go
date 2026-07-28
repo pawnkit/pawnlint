@@ -709,6 +709,35 @@ func TestBuildResolvesCrossFileReferences(t *testing.T) {
 	}
 }
 
+func TestReferencesUseCanonicalOrder(t *testing.T) {
+	dir := t.TempDir()
+	for name, source := range map[string]string{
+		"shared.inc": "Shared() {}\n",
+		"z.inc":      "UseZ() { Shared(); Shared(); }\n",
+		"a.inc":      "UseA() { Shared(); Shared(); }\n",
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(source), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rootPath := filepath.Join(dir, "main.pwn")
+	source := []byte("#include \"shared.inc\"\n#include \"z.inc\"\n#include \"a.inc\"\nmain() {}\n")
+	model, err := Build([]Source{{Path: rootPath, Content: source}}, Options{WorkingDir: dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	declaration := onlyDeclaration(t, model, "Shared", semantic.SymbolFunction)
+	references := model.References(declaration)
+	if len(references) != 4 {
+		t.Fatalf("references = %d, want 4", len(references))
+	}
+	for index := 1; index < len(references); index++ {
+		if compareReferences(references[index-1], references[index]) > 0 {
+			t.Fatalf("references are not ordered at index %d", index)
+		}
+	}
+}
+
 func TestIncludeReceivesDefinesEstablishedByParent(t *testing.T) {
 	dir := t.TempDir()
 	includePath := filepath.Join(dir, "feature.inc")

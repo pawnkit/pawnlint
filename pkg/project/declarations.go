@@ -1,6 +1,8 @@
 package project
 
 import (
+	"cmp"
+	"slices"
 	"sort"
 
 	"github.com/pawnkit/pawn-parser"
@@ -286,18 +288,8 @@ func (m *Model) buildReferences() {
 		}
 	}
 	for key := range m.references {
-		less := func(i, j int) bool {
-			left, right := m.references[key][i], m.references[key][j]
-			if left.File.canonical != right.File.canonical {
-				return left.File.canonical < right.File.canonical
-			}
-			if referenceSyntaxOffset(left) != referenceSyntaxOffset(right) {
-				return referenceSyntaxOffset(left) < referenceSyntaxOffset(right)
-			}
-			return left.Kind < right.Kind
-		}
-		if !sort.SliceIsSorted(m.references[key], less) {
-			sort.Slice(m.references[key], less)
+		if !slices.IsSortedFunc(m.references[key], compareReferences) {
+			slices.SortFunc(m.references[key], compareReferences)
 		}
 	}
 }
@@ -488,7 +480,27 @@ func declarationSyntaxOffset(declaration Declaration) int {
 }
 
 func referenceSyntaxOffset(reference Reference) int {
-	return referenceSyntax(reference).Start()
+	if reference.Node != nil {
+		return reference.Node.Start
+	}
+	if reference.File == nil || reference.File.CompactParsed == nil {
+		return 0
+	}
+	nodes := reference.File.CompactParsed.Tree.Nodes
+	if uint32(reference.compact) >= uint32(len(nodes)) {
+		return 0
+	}
+	return int(nodes[reference.compact].Start)
+}
+
+func compareReferences(left, right Reference) int {
+	if order := cmp.Compare(left.File.canonical, right.File.canonical); order != 0 {
+		return order
+	}
+	if order := cmp.Compare(referenceSyntaxOffset(left), referenceSyntaxOffset(right)); order != 0 {
+		return order
+	}
+	return cmp.Compare(left.Kind, right.Kind)
 }
 
 func declarationLess(left, right Declaration) bool {

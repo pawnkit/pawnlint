@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.18 - 2026-07-28
+
+### Performance
+
+- Sort reference lists without reflection.
+- Read reference offsets directly from the syntax tree.
+- Reduced median warm SAFW editor linting from about 177 ms to 173 ms and
+  allocation count from about 323,000 to 320,000 on the reference machine.
+
 ## 1.7.17 - 2026-07-28
 
 ### Performance
