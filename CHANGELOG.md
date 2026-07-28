@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.17 - 2026-07-28
+
+### Performance
+
+- Use an unstable sort for reference lists whose ordering keys are complete.
+- Reduced median warm SAFW editor linting from about 187 ms to 177 ms on the
+  reference machine.
+
 ## 1.7.16 - 2026-07-28
 
 ### Performance

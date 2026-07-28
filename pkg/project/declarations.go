@@ -297,7 +297,7 @@ func (m *Model) buildReferences() {
 			return left.Kind < right.Kind
 		}
 		if !sort.SliceIsSorted(m.references[key], less) {
-			sort.SliceStable(m.references[key], less)
+			sort.Slice(m.references[key], less)
 		}
 	}
 }
