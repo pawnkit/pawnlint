@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.9 - 2026-07-28
+
+### Performance
+
+- Store one syntax identity per indexed reference.
+- Reserve resolution maps from direct semantic reference counts.
+- Reduced warm SAFW editor linting from about 289 ms to about 271 ms and
+  allocations from about 96 MB to 92 MB on the reference machine.
+
 ## 1.7.8 - 2026-07-28
 
 ### Performance

@@ -223,6 +223,13 @@ func (m *Model) buildReferences() {
 	}
 	for _, file := range m.Files {
 		if file.Semantic != nil {
+			referenceCount := 0
+			for _, symbol := range file.Semantic.Symbols {
+				referenceCount += len(file.Semantic.References(symbol))
+			}
+			if referenceCount > 0 {
+				m.resolved[file] = make(map[fileNodeID]declarationID, referenceCount)
+			}
 			for _, symbol := range file.Semantic.Symbols {
 				declaration, exists := bySymbol[symbol]
 				if !exists {
@@ -233,10 +240,17 @@ func (m *Model) buildReferences() {
 					m.references[declarationKey(declaration)] = make([]Reference, 0, len(references))
 				}
 				for _, reference := range references {
-					m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind, syntax: file.Syntax.PointerNode(reference.Node)}, ambiguousReferences)
+					m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind}, ambiguousReferences)
 				}
 			}
 			continue
+		}
+		referenceCount := 0
+		for _, symbol := range file.CompactSemantic.Symbols {
+			referenceCount += len(file.CompactSemantic.References(symbol))
+		}
+		if referenceCount > 0 {
+			m.resolved[file] = make(map[fileNodeID]declarationID, referenceCount)
 		}
 		for _, symbol := range file.CompactSemantic.Symbols {
 			declaration, exists := byCompactSymbol[symbol]
@@ -248,7 +262,7 @@ func (m *Model) buildReferences() {
 				m.references[declarationKey(declaration)] = make([]Reference, 0, len(references))
 			}
 			for _, reference := range references {
-				m.addReference(declaration, Reference{File: file, Kind: reference.Kind, syntax: file.Syntax.CompactNode(reference.Node)}, ambiguousReferences)
+				m.addReference(declaration, Reference{File: file, Kind: reference.Kind, compact: reference.Node}, ambiguousReferences)
 			}
 		}
 	}
@@ -284,14 +298,14 @@ func (m *Model) addUnresolvedReference(unit *Unit, file *File, node cst.Node, po
 		variants := m.functionVariants(file, node)
 		if len(variants) != 0 {
 			for _, declaration := range variants {
-				m.addReference(declaration, Reference{File: file, Node: pointer, Kind: kind, syntax: node}, ambiguousReferences)
+				m.addReference(declaration, Reference{File: file, Node: pointer, Kind: kind, compact: node.ID()}, ambiguousReferences)
 			}
 			return
 		}
 	}
 	declaration, ok := m.resolveInUnit(unit, file, node.Text(), target)
 	if ok {
-		m.addReference(declaration, Reference{File: file, Node: pointer, Kind: kind, syntax: node}, ambiguousReferences)
+		m.addReference(declaration, Reference{File: file, Node: pointer, Kind: kind, compact: node.ID()}, ambiguousReferences)
 	}
 }
 
@@ -436,11 +450,11 @@ func declarationSyntax(declaration Declaration) cst.Node {
 }
 
 func referenceSyntax(reference Reference) cst.Node {
-	if reference.syntax.Valid() {
-		return reference.syntax
-	}
 	if reference.File != nil && reference.File.Syntax != nil {
-		return reference.File.Syntax.PointerNode(reference.Node)
+		if reference.Node != nil {
+			return reference.File.Syntax.PointerNode(reference.Node)
+		}
+		return reference.File.Syntax.CompactNode(reference.compact)
 	}
 	return cst.Node{}
 }

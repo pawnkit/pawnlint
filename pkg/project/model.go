@@ -17,6 +17,7 @@ import (
 	sourceinfo "github.com/pawnkit/pawnlint/internal/source"
 	"github.com/pawnkit/pawnlint/internal/source/cst"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
+	"github.com/pawnkit/pawnlint/internal/syntax"
 )
 
 type Source struct {
@@ -131,10 +132,10 @@ type DuplicateGlobal struct {
 }
 
 type Reference struct {
-	File   *File
-	Node   *parser.Node
-	Kind   semantic.ReferenceKind
-	syntax cst.Node
+	File    *File
+	Node    *parser.Node
+	Kind    semantic.ReferenceKind
+	compact syntax.NodeID
 }
 
 type Model struct {
