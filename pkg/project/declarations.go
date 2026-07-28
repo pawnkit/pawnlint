@@ -97,6 +97,14 @@ func (m *Model) functionVariantsNamed(file *File, name string) []Declaration {
 		return nil
 	}
 	key := functionVariantKey{file: file, name: name}
+	var singleUnit *Unit
+	if len(m.Units) == 1 {
+		singleUnit = m.Units[0]
+		if _, contains := singleUnit.members[file]; !contains {
+			return nil
+		}
+		key.file = nil
+	}
 	m.functionVariantsMu.RLock()
 	cached, found := m.functionVariantMap[key]
 	m.functionVariantsMu.RUnlock()
@@ -112,13 +120,10 @@ func (m *Model) functionVariantsNamed(file *File, name string) []Declaration {
 			declarations = append(declarations, declaration)
 		}
 	}
-	if len(m.Units) == 1 {
-		unit := m.Units[0]
-		if _, contains := unit.members[file]; contains {
-			for _, declaration := range m.Declarations[name] {
-				if _, included := unit.members[declaration.File]; included && declaration.Kind == semantic.SymbolFunction && !declarationSymbolAmbiguous(declaration) {
-					add(declaration)
-				}
+	if singleUnit != nil {
+		for _, declaration := range m.Declarations[name] {
+			if _, included := singleUnit.members[declaration.File]; included && declaration.Kind == semantic.SymbolFunction && !declarationSymbolAmbiguous(declaration) {
+				add(declaration)
 			}
 		}
 	} else {

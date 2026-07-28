@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.19 - 2026-07-28
+
+### Performance
+
+- Share callable-variant lookups across files in a single project unit.
+- Reduced median warm SAFW editor linting from about 173 ms to 166 ms,
+  allocations from about 79 MB to 72 MB, and allocation count from about
+  320,000 to 308,000 on the reference machine.
+
 ## 1.7.18 - 2026-07-28
 
 ### Performance

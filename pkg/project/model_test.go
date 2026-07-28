@@ -738,6 +738,37 @@ func TestReferencesUseCanonicalOrder(t *testing.T) {
 	}
 }
 
+func TestFunctionVariantsShareSingleUnitCache(t *testing.T) {
+	dir := t.TempDir()
+	for name, source := range map[string]string{
+		"shared.inc": "Shared() {}\n",
+		"one.inc":    "UseOne() { Shared(); }\n",
+		"two.inc":    "UseTwo() { Shared(); }\n",
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(source), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rootPath := filepath.Join(dir, "main.pwn")
+	source := []byte("#include \"shared.inc\"\n#include \"one.inc\"\n#include \"two.inc\"\nmain() {}\n")
+	model, err := Build([]Source{{Path: rootPath, Content: source}}, Options{WorkingDir: dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	model.functionVariantMap = make(map[functionVariantKey][]Declaration)
+	one := model.File(filepath.Join(dir, "one.inc"))
+	two := model.File(filepath.Join(dir, "two.inc"))
+	if variants := model.FunctionVariantsNamed(one, "Shared"); len(variants) != 1 {
+		t.Fatalf("one variants = %d, want 1", len(variants))
+	}
+	if variants := model.FunctionVariantsNamed(two, "Shared"); len(variants) != 1 {
+		t.Fatalf("two variants = %d, want 1", len(variants))
+	}
+	if len(model.functionVariantMap) != 1 {
+		t.Fatalf("cache entries = %d, want 1", len(model.functionVariantMap))
+	}
+}
+
 func TestIncludeReceivesDefinesEstablishedByParent(t *testing.T) {
 	dir := t.TempDir()
 	includePath := filepath.Join(dir, "feature.inc")
