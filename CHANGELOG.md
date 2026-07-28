@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.20 - 2026-07-28
+
+### Fixed
+
+- Updated pawn-analysis for guarded include cycles and macro-replaced
+  callables.
+
 ## 1.7.19 - 2026-07-28
 
 ### Performance
