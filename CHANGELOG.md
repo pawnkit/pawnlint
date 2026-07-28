@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.2 - 2026-07-28
+
+### Performance
+
+- Updated pawn-analysis for lower preprocessor allocation and faster cold
+  project analysis.
+
 ## 1.6.1 - 2026-07-28
 
 ### Performance
