@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.7 - 2026-07-28
+
+### Performance
+
+- Use fixed-size hashes for define and analysis cache keys.
+- Reduced warm SAFW editor linting from about 337 ms to about 306 ms and
+  allocations from about 176 MB to 125 MB on the reference machine.
+
 ## 1.7.6 - 2026-07-28
 
 ### Fixed

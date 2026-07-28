@@ -102,10 +102,10 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	}
 	file := &File{Path: display, Source: physical.source, Parsed: parsed, CompactParsed: compact, Provided: provided, canonical: canonical, includeRoot: includeRoot, defines: defines, complete: m.options.DefinesComplete, sourceID: uint32(len(m.Files) + 1), sourceHash: physical.hash, syntaxIndex: physical.syntaxIndex}
 	if parsed != nil {
-		walkModel := m.options.ParseCache.getWalk(canonical, physical.hash, defines.definesKey, m.options.DefinesComplete, "")
+		walkModel := m.options.ParseCache.getWalk(canonical, physical.hash, defines.definesKey, m.options.DefinesComplete, [sha256.Size]byte{})
 		if walkModel == nil {
 			walkModel = walk.NewWithContext(display, parsed, defines.walk, nil, m.options.DefinesComplete, physical.lineTable, physical.syntaxIndex)
-			m.options.ParseCache.putWalk(canonical, physical.hash, defines.definesKey, m.options.DefinesComplete, "", walkModel)
+			m.options.ParseCache.putWalk(canonical, physical.hash, defines.definesKey, m.options.DefinesComplete, [sha256.Size]byte{}, walkModel)
 		}
 		file.Walk = walkModel
 		file.Syntax = cst.Pointer(file.Walk)
@@ -340,7 +340,7 @@ func (m *Model) resolveInclude(from *File, path string, quoted bool, defines *de
 	return resolved, candidates, err
 }
 
-func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot, snapshotsKey string, cache *ParseCache) {
+func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot, snapshotsKey [sha256.Size]byte, cache *ParseCache) {
 	f.snapshots = append(f.snapshots[:0], snapshots...)
 	f.snapshotsKey = snapshotsKey
 	if f.Parsed != nil {
@@ -370,7 +370,7 @@ func (m *Model) internDefines(defines []string) *defineEnvironment {
 	definesKey := definesCacheKey(names)
 	environment := &defineEnvironment{
 		id: m.nextEnvironmentID, names: names, definesKey: definesKey, walk: walk.NewDefineContext(names),
-		cacheHash: sha256.Sum256([]byte(definesKey)),
+		cacheHash: definesKey,
 	}
 	m.defineEnvironments[hash] = append(m.defineEnvironments[hash], environment)
 	return environment

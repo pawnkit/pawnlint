@@ -83,7 +83,7 @@ type File struct {
 	runtimeCalls      []runtimeCallFact
 	expansionOrigins  map[*parser.Node][]expansionOriginFact
 	snapshots         []walk.DefineSnapshot
-	snapshotsKey      string
+	snapshotsKey      [sha256.Size]byte
 	pointerOnce       sync.Once
 	pointerNodes      map[nodeLocation]*parser.Node
 	compactNodeMu     sync.Mutex
@@ -197,7 +197,7 @@ type defineEnvironment struct {
 	id         uint32
 	order      uint32
 	names      []string
-	definesKey string
+	definesKey [sha256.Size]byte
 	walk       *walk.DefineContext
 	cacheHash  [sha256.Size]byte
 }

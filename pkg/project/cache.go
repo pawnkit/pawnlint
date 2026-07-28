@@ -4,9 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
-	"encoding/hex"
 	"runtime"
-	"strings"
 	"sync"
 
 	"github.com/pawnkit/pawn-parser"
@@ -22,8 +20,8 @@ type ParseCache struct {
 
 	analysisMu sync.RWMutex
 	indexes    map[string]indexCacheEntry
-	walks      map[string]walkCacheEntry
-	semantics  map[string]semanticCacheEntry
+	walks      map[analysisCacheKey]walkCacheEntry
+	semantics  map[analysisCacheKey]semanticCacheEntry
 }
 
 type parseCacheEntry struct {
@@ -55,29 +53,22 @@ type semanticCacheEntry struct {
 	semantic *semantic.Model
 }
 
-func definesCacheKey(defines []string) string {
-	var b strings.Builder
+func definesCacheKey(defines []string) [sha256.Size]byte {
+	hash := sha256.New()
 	for _, define := range defines {
-		b.WriteString(define)
-		b.WriteByte('\x00')
+		_, _ = hash.Write([]byte(define))
+		_, _ = hash.Write([]byte{0})
 	}
-	return b.String()
+	var key [sha256.Size]byte
+	hash.Sum(key[:0])
+	return key
 }
 
-func analysisCacheKey(path, definesKey, snapshotsKey string, complete bool) string {
-	var b strings.Builder
-	b.WriteString(path)
-	b.WriteByte('\x00')
-	if complete {
-		b.WriteByte('1')
-	} else {
-		b.WriteByte('0')
-	}
-	b.WriteByte('\x00')
-	b.WriteString(definesKey)
-	b.WriteByte('\x00')
-	b.WriteString(snapshotsKey)
-	return b.String()
+type analysisCacheKey struct {
+	path      string
+	defines   [sha256.Size]byte
+	snapshots [sha256.Size]byte
+	complete  bool
 }
 
 type defineSnapshotIdentity struct {
@@ -85,9 +76,9 @@ type defineSnapshotIdentity struct {
 	hash   [sha256.Size]byte
 }
 
-func defineSnapshotsCacheKey(snapshots []defineSnapshotIdentity) string {
+func defineSnapshotsCacheKey(snapshots []defineSnapshotIdentity) [sha256.Size]byte {
 	if len(snapshots) == 0 {
-		return ""
+		return [sha256.Size]byte{}
 	}
 	hash := sha256.New()
 	var offset [8]byte
@@ -96,7 +87,9 @@ func defineSnapshotsCacheKey(snapshots []defineSnapshotIdentity) string {
 		_, _ = hash.Write(offset[:])
 		_, _ = hash.Write(snapshot.hash[:])
 	}
-	return hex.EncodeToString(hash.Sum(nil))
+	var key [sha256.Size]byte
+	hash.Sum(key[:0])
+	return key
 }
 
 func NewParseCache() *ParseCache {
@@ -181,11 +174,11 @@ func (c *ParseCache) putIndex(path string, hash [sha256.Size]byte, index *walk.I
 	c.analysisMu.Unlock()
 }
 
-func (c *ParseCache) getWalk(path string, hash [sha256.Size]byte, definesKey string, complete bool, snapshotsKey string) *walk.Model {
+func (c *ParseCache) getWalk(path string, hash, definesKey [sha256.Size]byte, complete bool, snapshotsKey [sha256.Size]byte) *walk.Model {
 	if c == nil {
 		return nil
 	}
-	key := analysisCacheKey(path, definesKey, snapshotsKey, complete)
+	key := analysisCacheKey{path: path, defines: definesKey, snapshots: snapshotsKey, complete: complete}
 	c.analysisMu.RLock()
 	entry, ok := c.walks[key]
 	c.analysisMu.RUnlock()
@@ -195,24 +188,24 @@ func (c *ParseCache) getWalk(path string, hash [sha256.Size]byte, definesKey str
 	return nil
 }
 
-func (c *ParseCache) putWalk(path string, hash [sha256.Size]byte, definesKey string, complete bool, snapshotsKey string, model *walk.Model) {
+func (c *ParseCache) putWalk(path string, hash, definesKey [sha256.Size]byte, complete bool, snapshotsKey [sha256.Size]byte, model *walk.Model) {
 	if c == nil {
 		return
 	}
-	key := analysisCacheKey(path, definesKey, snapshotsKey, complete)
+	key := analysisCacheKey{path: path, defines: definesKey, snapshots: snapshotsKey, complete: complete}
 	c.analysisMu.Lock()
 	if c.walks == nil {
-		c.walks = make(map[string]walkCacheEntry)
+		c.walks = make(map[analysisCacheKey]walkCacheEntry)
 	}
 	c.walks[key] = walkCacheEntry{hash: hash, walk: model}
 	c.analysisMu.Unlock()
 }
 
-func (c *ParseCache) getSemantic(path string, hash [sha256.Size]byte, definesKey string, complete bool, snapshotsKey string) *semantic.Model {
+func (c *ParseCache) getSemantic(path string, hash, definesKey [sha256.Size]byte, complete bool, snapshotsKey [sha256.Size]byte) *semantic.Model {
 	if c == nil {
 		return nil
 	}
-	key := analysisCacheKey(path, definesKey, snapshotsKey, complete)
+	key := analysisCacheKey{path: path, defines: definesKey, snapshots: snapshotsKey, complete: complete}
 	c.analysisMu.RLock()
 	entry, ok := c.semantics[key]
 	c.analysisMu.RUnlock()
@@ -222,14 +215,14 @@ func (c *ParseCache) getSemantic(path string, hash [sha256.Size]byte, definesKey
 	return nil
 }
 
-func (c *ParseCache) putSemantic(path string, hash [sha256.Size]byte, definesKey string, complete bool, snapshotsKey string, model *semantic.Model) {
+func (c *ParseCache) putSemantic(path string, hash, definesKey [sha256.Size]byte, complete bool, snapshotsKey [sha256.Size]byte, model *semantic.Model) {
 	if c == nil {
 		return
 	}
-	key := analysisCacheKey(path, definesKey, snapshotsKey, complete)
+	key := analysisCacheKey{path: path, defines: definesKey, snapshots: snapshotsKey, complete: complete}
 	c.analysisMu.Lock()
 	if c.semantics == nil {
-		c.semantics = make(map[string]semanticCacheEntry)
+		c.semantics = make(map[analysisCacheKey]semanticCacheEntry)
 	}
 	c.semantics[key] = semanticCacheEntry{hash: hash, semantic: model}
 	c.analysisMu.Unlock()
