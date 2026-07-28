@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.0 - 2026-07-28
+
+### Changed
+
+- Reused pawn-analysis results for callability, argument tags, unreachable
+  code, and missing return values in editor runs.
+
+### Performance
+
+- Reduced warm SAFW editor linting from 436-483 ms to about 388-401 ms on the
+  reference machine.
+
 ## 1.4.1 - 2026-07-28
 
 ### Performance

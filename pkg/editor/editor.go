@@ -78,7 +78,15 @@ func DiagnoseContextWithCache(
 	if shared != nil && shared.Preprocess != nil {
 		rootTokens = shared.Preprocess.OriginalTokens
 	}
-	features := resolved.ProjectFeatures(reg)
+	delegated := make(map[string]struct{})
+	if shared != nil {
+		for _, id := range reg.IDs() {
+			if lint.DelegatesToShared(id) {
+				delegated[id] = struct{}{}
+			}
+		}
+	}
+	features := resolved.ProjectFeaturesExcluding(delegated)
 	model, err := project.BuildContext(
 		ctx,
 		[]project.Source{{Path: path, Content: content}},

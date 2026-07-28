@@ -151,6 +151,9 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 		if e.cancelled() {
 			return nil
 		}
+		if e.SharedAnalysis != nil && DelegatesToShared(id) {
+			continue
+		}
 		if _, enabled := ruleSet[id]; !enabled {
 			continue
 		}
@@ -195,6 +198,9 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	for _, id := range e.Reg.IDs() {
 		if e.cancelled() {
 			return nil
+		}
+		if e.SharedAnalysis != nil && DelegatesToShared(id) {
+			continue
 		}
 		sev, enabled := ruleSet[id]
 		if !enabled || sev == diagnostic.SeverityOff {

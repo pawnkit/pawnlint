@@ -24,8 +24,12 @@ func appendSharedDiagnostics(dst []diagnostic.Diagnostic, path string, content [
 		if duplicateShared(dst, item.Code, start, end) {
 			continue
 		}
+		ruleID := item.Code
+		if equivalent := sharedRuleID(item.Code); shared != nil && equivalent != "" {
+			ruleID = equivalent
+		}
 		dst = append(dst, diagnostic.Diagnostic{
-			RuleID: item.Code, Code: item.Code, Severity: sharedSeverity(item.Severity),
+			RuleID: ruleID, Code: item.Code, Severity: sharedSeverity(item.Severity),
 			Category: diagnostic.CategoryCorrectness, Message: item.Message,
 			Filename: path, Range: lines.Range(start, end),
 		})
@@ -34,12 +38,7 @@ func appendSharedDiagnostics(dst []diagnostic.Diagnostic, path string, content [
 }
 
 func duplicateShared(dst []diagnostic.Diagnostic, code string, start, end int) bool {
-	equivalent := map[string]string{
-		"pawn-analysis:sema/not-callable":   "non-callable-symbol",
-		"pawn-analysis:sema/tag-mismatch":   "argument-tag-mismatch",
-		"pawn-analysis:sema/unreachable":    "unreachable-code",
-		"pawn-analysis:sema/missing-return": "missing-return-value",
-	}[code]
+	equivalent := sharedRuleID(code)
 	if equivalent == "" {
 		return false
 	}
@@ -49,6 +48,25 @@ func duplicateShared(dst []diagnostic.Diagnostic, code string, start, end int) b
 		}
 	}
 	return false
+}
+
+func sharedRuleID(code string) string {
+	return map[string]string{
+		"pawn-analysis:sema/not-callable":   "non-callable-symbol",
+		"pawn-analysis:sema/tag-mismatch":   "argument-tag-mismatch",
+		"pawn-analysis:sema/unreachable":    "unreachable-code",
+		"pawn-analysis:sema/missing-return": "missing-return-value",
+	}[code]
+}
+
+// DelegatesToShared reports rules owned by pawn-analysis in editor runs.
+func DelegatesToShared(ruleID string) bool {
+	switch ruleID {
+	case "non-callable-symbol", "argument-tag-mismatch", "unreachable-code", "missing-return-value":
+		return true
+	default:
+		return false
+	}
 }
 
 func rangesOverlap(aStart, aEnd, bStart, bEnd int) bool {

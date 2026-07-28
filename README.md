@@ -6,6 +6,8 @@ Static analysis and linting for Pawn v3 (SA-MP and open.mp).
 
 `pawnlint` parses with [`pawn-parser`](https://github.com/pawnkit/pawn-parser).
 The Pawn compiler is still the source of truth for compilation.
+Editor integrations can pass existing `pawn-analysis` results so equivalent
+semantic checks are not repeated.
 
 ## Features
 

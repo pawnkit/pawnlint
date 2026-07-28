@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/pawnkit/pawnlint/internal/config"
+	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/project"
 	"github.com/pawnkit/pawnlint/pkg/rules"
 )
@@ -43,5 +44,17 @@ func TestAllProjectFeatures(t *testing.T) {
 	features := resolved.ProjectFeatures(registry)
 	if !features.Has(project.FeatureFunctionEffects) || !features.Has(project.FeatureRuntimeCalls) || !features.Has(project.FeatureTrivia) {
 		t.Fatal("full project analysis is disabled")
+	}
+}
+
+func TestProjectFeaturesExcludeSharedRules(t *testing.T) {
+	resolved := &config.Resolved{
+		Enabled: map[string]diagnostic.Severity{
+			"argument-tag-mismatch": diagnostic.SeverityWarning,
+		},
+	}
+	features := resolved.ProjectFeaturesExcluding(map[string]struct{}{"argument-tag-mismatch": {}})
+	if features.Has(project.FeatureReferences) {
+		t.Fatal("shared rule still requested project references")
 	}
 }

@@ -195,3 +195,27 @@ func TestDiagnoseWithCacheUsesSharedAnalysisForOwnFileOnly(t *testing.T) {
 		t.Fatalf("expected the root file's own shared diagnostic, got %+v", diags)
 	}
 }
+
+func TestDiagnoseWithCacheUsesSharedRuleOwner(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "gamemode.pwn")
+	content := []byte("main() { new value; value(); }\n")
+	shared := analysis.Analyze(content, analysis.Options{URI: coresource.FileURI(path)})
+
+	diagnostics, err := editor.DiagnoseWithCache(path, content, dir, nil, shared)
+	if err != nil {
+		t.Fatal(err)
+	}
+	count := 0
+	for _, item := range diagnostics {
+		if item.RuleID == "non-callable-symbol" {
+			count++
+			if item.Code != "pawn-analysis:sema/not-callable" {
+				t.Fatalf("diagnostic code = %q", item.Code)
+			}
+		}
+	}
+	if count != 1 {
+		t.Fatalf("non-callable diagnostics = %d, want 1: %+v", count, diagnostics)
+	}
+}

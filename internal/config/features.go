@@ -7,24 +7,28 @@ import (
 )
 
 func (r *Resolved) ProjectFeatures(_ *lint.Registrar) project.Features {
+	return r.ProjectFeaturesExcluding(nil)
+}
+
+func (r *Resolved) ProjectFeaturesExcluding(excluded map[string]struct{}) project.Features {
 	if r == nil || len(r.Source.ExternalRules) != 0 {
 		return project.AllFeatures()
 	}
 	enabled := make(map[string]struct{}, len(r.Enabled))
 	for id, severity := range r.Enabled {
-		if severity != diagnostic.SeverityOff {
+		if _, skip := excluded[id]; severity != diagnostic.SeverityOff && !skip {
 			enabled[id] = struct{}{}
 		}
 	}
 	for _, override := range r.Overrides {
 		for id, severity := range override.Enabled {
-			if severity != diagnostic.SeverityOff {
+			if _, skip := excluded[id]; severity != diagnostic.SeverityOff && !skip {
 				enabled[id] = struct{}{}
 			}
 		}
 	}
 	for id, severity := range r.CLIForced {
-		if severity != diagnostic.SeverityOff {
+		if _, skip := excluded[id]; severity != diagnostic.SeverityOff && !skip {
 			enabled[id] = struct{}{}
 		}
 	}
