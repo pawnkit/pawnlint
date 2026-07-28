@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.10 - 2026-07-28
+
+### Performance
+
+- Reuse immutable define contexts through the warm analysis cache.
+- Reduced warm SAFW editor linting from about 271 ms to about 255 ms and
+  allocations from about 92 MB to 87 MB on the reference machine.
+
 ## 1.7.9 - 2026-07-28
 
 ### Performance

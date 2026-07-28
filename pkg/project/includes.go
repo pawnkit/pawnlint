@@ -369,7 +369,7 @@ func (m *Model) internDefines(defines []string) *defineEnvironment {
 	names := append([]string(nil), defines...)
 	definesKey := definesCacheKey(names)
 	environment := &defineEnvironment{
-		id: m.nextEnvironmentID, names: names, definesKey: definesKey, walk: walk.NewDefineContext(names),
+		id: m.nextEnvironmentID, names: names, definesKey: definesKey, walk: m.options.ParseCache.defineContext(names, definesKey),
 		cacheHash: definesKey,
 	}
 	m.defineEnvironments[hash] = append(m.defineEnvironments[hash], environment)

@@ -22,6 +22,7 @@ type ParseCache struct {
 	indexes    map[string]indexCacheEntry
 	walks      map[analysisCacheKey]walkCacheEntry
 	semantics  map[analysisCacheKey]semanticCacheEntry
+	defines    map[[sha256.Size]byte][]defineContextCacheEntry
 }
 
 type parseCacheEntry struct {
@@ -51,6 +52,11 @@ type walkCacheEntry struct {
 type semanticCacheEntry struct {
 	hash     [sha256.Size]byte
 	semantic *semantic.Model
+}
+
+type defineContextCacheEntry struct {
+	names   []string
+	context *walk.DefineContext
 }
 
 func definesCacheKey(defines []string) [sha256.Size]byte {
@@ -226,4 +232,35 @@ func (c *ParseCache) putSemantic(path string, hash, definesKey [sha256.Size]byte
 	}
 	c.semantics[key] = semanticCacheEntry{hash: hash, semantic: model}
 	c.analysisMu.Unlock()
+}
+
+func (c *ParseCache) defineContext(names []string, key [sha256.Size]byte) *walk.DefineContext {
+	if c == nil {
+		return walk.NewDefineContext(names)
+	}
+	c.analysisMu.RLock()
+	for _, entry := range c.defines[key] {
+		if sameDefines(entry.names, names) {
+			c.analysisMu.RUnlock()
+			return entry.context
+		}
+	}
+	c.analysisMu.RUnlock()
+
+	context := walk.NewDefineContext(names)
+	c.analysisMu.Lock()
+	for _, entry := range c.defines[key] {
+		if sameDefines(entry.names, names) {
+			c.analysisMu.Unlock()
+			return entry.context
+		}
+	}
+	if c.defines == nil {
+		c.defines = make(map[[sha256.Size]byte][]defineContextCacheEntry)
+	}
+	c.defines[key] = append(c.defines[key], defineContextCacheEntry{
+		names: append([]string(nil), names...), context: context,
+	})
+	c.analysisMu.Unlock()
+	return context
 }
