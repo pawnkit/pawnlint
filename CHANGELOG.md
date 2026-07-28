@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.1 - 2026-07-28
+
+### Performance
+
+- Updated pawn-analysis to avoid copying expanded parser tokens.
+
 ## 1.6.0 - 2026-07-28
 
 ### Changed
