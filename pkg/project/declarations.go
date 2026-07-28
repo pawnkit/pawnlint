@@ -96,25 +96,39 @@ func (m *Model) functionVariantsNamed(file *File, name string) []Declaration {
 	if found {
 		return cached
 	}
-	seen := make(map[declarationID]Declaration)
-	for _, unit := range m.Units {
-		if _, contains := unit.members[file]; !contains {
-			continue
-		}
-		for _, declaration := range m.Declarations[name] {
-			if _, included := unit.members[declaration.File]; !included || declaration.Kind != semantic.SymbolFunction || declarationSymbolAmbiguous(declaration) {
-				continue
-			}
-			seen[declarationKey(declaration)] = declaration
-		}
-	}
 	var definitions []Declaration
 	var declarations []Declaration
-	for _, declaration := range seen {
+	add := func(declaration Declaration) {
 		if declarationSyntax(declaration).Kind() == parser.KindFunctionDefinition {
 			definitions = append(definitions, declaration)
 		} else if declarationSyntax(declaration).Kind() == parser.KindFunctionDeclaration {
 			declarations = append(declarations, declaration)
+		}
+	}
+	if len(m.Units) == 1 {
+		unit := m.Units[0]
+		if _, contains := unit.members[file]; contains {
+			for _, declaration := range m.Declarations[name] {
+				if _, included := unit.members[declaration.File]; included && declaration.Kind == semantic.SymbolFunction && !declarationSymbolAmbiguous(declaration) {
+					add(declaration)
+				}
+			}
+		}
+	} else {
+		seen := make(map[declarationID]Declaration)
+		for _, unit := range m.Units {
+			if _, contains := unit.members[file]; !contains {
+				continue
+			}
+			for _, declaration := range m.Declarations[name] {
+				if _, included := unit.members[declaration.File]; !included || declaration.Kind != semantic.SymbolFunction || declarationSymbolAmbiguous(declaration) {
+					continue
+				}
+				seen[declarationKey(declaration)] = declaration
+			}
+		}
+		for _, declaration := range seen {
+			add(declaration)
 		}
 	}
 	candidates := definitions
@@ -214,7 +228,11 @@ func (m *Model) buildReferences() {
 				if !exists {
 					continue
 				}
-				for _, reference := range file.Semantic.References(symbol) {
+				references := file.Semantic.References(symbol)
+				if len(references) > 0 {
+					m.references[declarationKey(declaration)] = make([]Reference, 0, len(references))
+				}
+				for _, reference := range references {
 					m.addReference(declaration, Reference{File: file, Node: reference.Node, Kind: reference.Kind, syntax: file.Syntax.PointerNode(reference.Node)}, ambiguousReferences)
 				}
 			}
@@ -225,7 +243,11 @@ func (m *Model) buildReferences() {
 			if !exists {
 				continue
 			}
-			for _, reference := range file.CompactSemantic.References(symbol) {
+			references := file.CompactSemantic.References(symbol)
+			if len(references) > 0 {
+				m.references[declarationKey(declaration)] = make([]Reference, 0, len(references))
+			}
+			for _, reference := range references {
 				m.addReference(declaration, Reference{File: file, Kind: reference.Kind, syntax: file.Syntax.CompactNode(reference.Node)}, ambiguousReferences)
 			}
 		}

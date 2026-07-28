@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.7.8 - 2026-07-28
+
+### Performance
+
+- Avoid deduplication maps when resolving functions in a single project unit.
+- Reserve reference index capacity from existing semantic data.
+- Updated pawn-project to avoid rebuilding canonical paths.
+- Reduced warm SAFW editor linting from about 306 ms to about 289 ms and
+  allocations from about 125 MB to 96 MB on the reference machine.
+
 ## 1.7.7 - 2026-07-28
 
 ### Performance
