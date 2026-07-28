@@ -1,6 +1,7 @@
 package project
 
 import (
+	"crypto/sha256"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -16,6 +17,8 @@ type includeResolution struct {
 	files     map[string][]byte
 	roots     []string
 	resolvers map[string]*include.Resolver
+	cache     *ParseCache
+	context   [sha256.Size]byte
 }
 
 func newIncludeResolver(sources []Source, options Options) *includeResolution {
@@ -34,23 +37,49 @@ func newIncludeResolver(sources []Source, options Options) *includeResolution {
 		roots = append(roots, pathutil.ToSlash(root))
 	}
 	roots = append(roots, pathutil.ToSlash(options.WorkingDir))
+	context := sha256.New()
+	for _, root := range roots {
+		_, _ = context.Write([]byte(root))
+		_, _ = context.Write([]byte{0})
+	}
+	for _, group := range [][]Source{options.IncludeSources, sources} {
+		for _, source := range group {
+			path, err := canonicalPath(source.Path, options.WorkingDir)
+			if err != nil {
+				continue
+			}
+			_, _ = context.Write([]byte(pathutil.ToSlash(path)))
+			_, _ = context.Write([]byte{0})
+		}
+	}
+	var contextKey [sha256.Size]byte
+	context.Sum(contextKey[:0])
 
 	return &includeResolution{
 		fsys:      &sourceFS{files: files, stats: make(map[string]fs.FileInfo), statErrors: make(map[string]error), cache: options.ParseCache},
 		files:     files,
 		roots:     roots,
 		resolvers: make(map[string]*include.Resolver),
+		cache:     options.ParseCache,
+		context:   contextKey,
 	}
 }
 
 func (r *includeResolution) ResolveAll(fromFile, spec string, quoted bool, includeRoot string) []string {
 	root := pathutil.ToSlash(includeRoot)
+	from := pathutil.ToSlash(fromFile)
+	key := includeResolutionCacheKey{context: r.context, from: from, spec: spec, root: root, quoted: quoted}
+	if paths, ok := r.cache.getIncludeResolution(key); ok {
+		return paths
+	}
 	resolver := r.resolvers[root]
 	if resolver == nil {
 		resolver = include.NewWithQuotedRoots(r.fsys, r.roots, []string{root})
 		r.resolvers[root] = resolver
 	}
-	return resolver.ResolveAll(pathutil.ToSlash(fromFile), spec, quoted)
+	paths := resolver.ResolveAll(from, spec, quoted)
+	r.cache.putIncludeResolution(key, paths)
+	return paths
 }
 
 func (r *includeResolution) ReadFile(path string) ([]byte, error) {

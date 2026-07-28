@@ -94,3 +94,29 @@ func TestParseCacheBoundsFilesystemProbes(t *testing.T) {
 		t.Fatalf("filesystem probes = %d successes, %d failures", len(cache.stats), len(cache.statErrors))
 	}
 }
+
+func TestParseCacheInvalidatesIncludeResolutions(t *testing.T) {
+	cache := NewParseCache()
+	key := includeResolutionCacheKey{spec: "shared"}
+	cache.putIncludeResolution(key, []string{"shared.inc"})
+	cache.InvalidateFiles()
+	if _, ok := cache.getIncludeResolution(key); ok {
+		t.Fatal("include resolution survived invalidation")
+	}
+}
+
+func TestParseCacheBoundsIncludeResolutions(t *testing.T) {
+	cache := NewParseCache()
+	cache.includes = make(map[includeResolutionCacheKey][]string, maxIncludeResolutions)
+	for index := 0; index < maxIncludeResolutions; index++ {
+		cache.includes[includeResolutionCacheKey{spec: strconv.Itoa(index)}] = nil
+	}
+	current := includeResolutionCacheKey{spec: "current"}
+	cache.putIncludeResolution(current, []string{"current.inc"})
+	if len(cache.includes) != 1 {
+		t.Fatalf("include resolutions = %d, want 1", len(cache.includes))
+	}
+	if paths, ok := cache.getIncludeResolution(current); !ok || len(paths) != 1 {
+		t.Fatalf("current include resolution = %#v, %t", paths, ok)
+	}
+}

@@ -20,6 +20,7 @@ const (
 	maxAnalysisCacheEntries = 4096
 	maxDefineContexts       = 1024
 	maxFilesystemProbes     = 16384
+	maxIncludeResolutions   = 16384
 )
 
 type ParseCache struct {
@@ -36,6 +37,7 @@ type ParseCache struct {
 	resolutionMu sync.RWMutex
 	stats        map[string]fs.FileInfo
 	statErrors   map[string]error
+	includes     map[includeResolutionCacheKey][]string
 }
 
 type parseCacheEntry struct {
@@ -70,6 +72,14 @@ type semanticCacheEntry struct {
 type defineContextCacheEntry struct {
 	names   []string
 	context *walk.DefineContext
+}
+
+type includeResolutionCacheKey struct {
+	context [sha256.Size]byte
+	from    string
+	spec    string
+	root    string
+	quoted  bool
 }
 
 func definesCacheKey(defines []string) [sha256.Size]byte {
@@ -123,6 +133,7 @@ func (c *ParseCache) InvalidateFiles() {
 	c.resolutionMu.Lock()
 	c.stats = nil
 	c.statErrors = nil
+	c.includes = nil
 	c.resolutionMu.Unlock()
 }
 
@@ -165,6 +176,31 @@ func (c *ParseCache) stat(path string) (fs.FileInfo, error) {
 	}
 	c.resolutionMu.Unlock()
 	return info, err
+}
+
+func (c *ParseCache) getIncludeResolution(key includeResolutionCacheKey) ([]string, bool) {
+	if c == nil {
+		return nil, false
+	}
+	c.resolutionMu.RLock()
+	paths, ok := c.includes[key]
+	c.resolutionMu.RUnlock()
+	return paths, ok
+}
+
+func (c *ParseCache) putIncludeResolution(key includeResolutionCacheKey, paths []string) {
+	if c == nil {
+		return
+	}
+	c.resolutionMu.Lock()
+	if _, exists := c.includes[key]; !exists && len(c.includes) >= maxIncludeResolutions {
+		c.includes = nil
+	}
+	if c.includes == nil {
+		c.includes = make(map[includeResolutionCacheKey][]string)
+	}
+	c.includes[key] = paths
+	c.resolutionMu.Unlock()
 }
 
 // PrepareContext parses sources concurrently into the cache.

@@ -114,6 +114,40 @@ func TestParseCacheReusesAnalysisForUnchangedIncludes(t *testing.T) {
 	}
 }
 
+func TestParseCacheSeparatesAvailableIncludeSources(t *testing.T) {
+	dir := t.TempDir()
+	includeDir := filepath.Join(dir, "include")
+	rootPath := filepath.Join(dir, "main.pwn")
+	includePath := filepath.Join(includeDir, "shared.inc")
+	source := project.Source{Path: rootPath, Content: []byte("#include <shared>\nmain() {}\n")}
+	cache := project.NewParseCache()
+	options := project.Options{
+		WorkingDir: dir, IncludePaths: []string{includeDir}, ParseCache: cache,
+	}
+
+	missing, err := project.Build([]project.Source{source}, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if issues := missing.MissingIncludes(); len(issues) != 1 {
+		t.Fatalf("missing includes = %#v", issues)
+	}
+
+	options.IncludeSources = []project.Source{{
+		Path: includePath, Content: []byte("stock Shared() {}\n"),
+	}}
+	resolved, err := project.Build([]project.Source{source}, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if issues := resolved.MissingIncludes(); len(issues) != 0 {
+		t.Fatalf("missing includes with provided source = %#v", issues)
+	}
+	if len(resolved.Declarations["Shared"]) != 1 {
+		t.Fatal("provided include was not resolved")
+	}
+}
+
 func TestParseCacheInvalidatesAnalysisOnDefineChange(t *testing.T) {
 	dir := t.TempDir()
 	includeDir := filepath.Join(dir, "include")

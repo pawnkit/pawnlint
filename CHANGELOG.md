@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.7.16 - 2026-07-28
+
+### Performance
+
+- Reuse bounded include resolutions while project roots and available sources
+  stay unchanged.
+- Clear cached resolutions through the existing file invalidation hook.
+- Reduced warm SAFW editor linting from about 191 ms to about 173 ms,
+  allocations from about 82 MB to 79 MB, and allocation count from about
+  352,000 to 323,000 on the reference machine.
+
 ## 1.7.15 - 2026-07-28
 
 ### Performance
