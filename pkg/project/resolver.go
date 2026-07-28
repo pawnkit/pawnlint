@@ -36,7 +36,7 @@ func newIncludeResolver(sources []Source, options Options) *includeResolution {
 	roots = append(roots, pathutil.ToSlash(options.WorkingDir))
 
 	return &includeResolution{
-		fsys:      &sourceFS{files: files, stats: make(map[string]fs.FileInfo), statErrors: make(map[string]error)},
+		fsys:      &sourceFS{files: files, stats: make(map[string]fs.FileInfo), statErrors: make(map[string]error), cache: options.ParseCache},
 		files:     files,
 		roots:     roots,
 		resolvers: make(map[string]*include.Resolver),
@@ -69,21 +69,28 @@ type sourceFS struct {
 	files      map[string][]byte
 	stats      map[string]fs.FileInfo
 	statErrors map[string]error
+	cache      *ParseCache
 }
 
 func (s *sourceFS) Stat(path string) (fs.FileInfo, error) {
 	if content, ok := s.files[path]; ok {
 		return sourceFileInfo{name: filepath.Base(path), size: int64(len(content))}, nil
 	}
+	cleaned := pathutil.Clean(path)
+	if cleaned != path {
+		if content, ok := s.files[cleaned]; ok {
+			return sourceFileInfo{name: filepath.Base(cleaned), size: int64(len(content))}, nil
+		}
+		path = cleaned
+	}
+	if s.cache != nil {
+		return s.cache.stat(path)
+	}
 	if info, ok := s.stats[path]; ok {
 		return info, nil
 	}
 	if err, ok := s.statErrors[path]; ok {
 		return nil, err
-	}
-	cleaned := pathutil.Clean(path)
-	if cleaned != path {
-		return s.Stat(cleaned)
 	}
 	info, err := os.Stat(path)
 	if err != nil {

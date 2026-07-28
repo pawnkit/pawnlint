@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
+	"io/fs"
+	"os"
 	"runtime"
 	"sync"
 
@@ -17,6 +19,7 @@ import (
 const (
 	maxAnalysisCacheEntries = 4096
 	maxDefineContexts       = 1024
+	maxFilesystemProbes     = 16384
 )
 
 type ParseCache struct {
@@ -29,6 +32,10 @@ type ParseCache struct {
 	semantics   map[analysisCacheKey]semanticCacheEntry
 	defines     map[[sha256.Size]byte][]defineContextCacheEntry
 	defineCount int
+
+	resolutionMu sync.RWMutex
+	stats        map[string]fs.FileInfo
+	statErrors   map[string]error
 }
 
 type parseCacheEntry struct {
@@ -106,6 +113,58 @@ func defineSnapshotsCacheKey(snapshots []defineSnapshotIdentity) [sha256.Size]by
 
 func NewParseCache() *ParseCache {
 	return &ParseCache{entries: make(map[string]parseCacheEntry)}
+}
+
+// InvalidateFiles clears cached filesystem probes.
+func (c *ParseCache) InvalidateFiles() {
+	if c == nil {
+		return
+	}
+	c.resolutionMu.Lock()
+	c.stats = nil
+	c.statErrors = nil
+	c.resolutionMu.Unlock()
+}
+
+func (c *ParseCache) stat(path string) (fs.FileInfo, error) {
+	if c == nil {
+		return os.Stat(path)
+	}
+	c.resolutionMu.RLock()
+	info, found := c.stats[path]
+	err, failed := c.statErrors[path]
+	c.resolutionMu.RUnlock()
+	if found {
+		return info, nil
+	}
+	if failed {
+		return nil, err
+	}
+	info, err = os.Stat(path)
+	c.resolutionMu.Lock()
+	if existing, ok := c.stats[path]; ok {
+		info, err = existing, nil
+	} else if existing, ok := c.statErrors[path]; ok {
+		info, err = nil, existing
+	} else {
+		if len(c.stats)+len(c.statErrors) >= maxFilesystemProbes {
+			c.stats = nil
+			c.statErrors = nil
+		}
+		if err == nil {
+			if c.stats == nil {
+				c.stats = make(map[string]fs.FileInfo)
+			}
+			c.stats[path] = info
+		} else {
+			if c.statErrors == nil {
+				c.statErrors = make(map[string]error)
+			}
+			c.statErrors[path] = err
+		}
+	}
+	c.resolutionMu.Unlock()
+	return info, err
 }
 
 // PrepareContext parses sources concurrently into the cache.

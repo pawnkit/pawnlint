@@ -2,6 +2,9 @@ package project
 
 import (
 	"crypto/sha256"
+	"os"
+	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/pawnkit/pawnlint/internal/semantic"
@@ -53,5 +56,41 @@ func TestModelReusesRecentDefineEnvironment(t *testing.T) {
 	model.internDefines([]string{"SECOND"})
 	if repeated := model.internDefines([]string{"FIRST"}); repeated != first {
 		t.Fatal("interned define environment was not reused")
+	}
+}
+
+func TestParseCacheInvalidatesFilesystemProbes(t *testing.T) {
+	cache := NewParseCache()
+	path := filepath.Join(t.TempDir(), "added.inc")
+	if _, err := cache.stat(path); !os.IsNotExist(err) {
+		t.Fatalf("first stat error = %v", err)
+	}
+	if err := os.WriteFile(path, []byte{}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cache.stat(path); !os.IsNotExist(err) {
+		t.Fatalf("cached stat error = %v", err)
+	}
+	cache.InvalidateFiles()
+	if _, err := cache.stat(path); err != nil {
+		t.Fatalf("stat after invalidation: %v", err)
+	}
+}
+
+func TestParseCacheBoundsFilesystemProbes(t *testing.T) {
+	cache := NewParseCache()
+	cache.statErrors = make(map[string]error, maxFilesystemProbes)
+	for index := 0; index < maxFilesystemProbes; index++ {
+		cache.statErrors[strconv.Itoa(index)] = os.ErrNotExist
+	}
+	path := filepath.Join(t.TempDir(), "current.inc")
+	if err := os.WriteFile(path, []byte{}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cache.stat(path); err != nil {
+		t.Fatal(err)
+	}
+	if len(cache.stats) != 1 || len(cache.statErrors) != 0 {
+		t.Fatalf("filesystem probes = %d successes, %d failures", len(cache.stats), len(cache.statErrors))
 	}
 }

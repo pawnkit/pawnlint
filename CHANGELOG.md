@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.13 - 2026-07-28
+
+### Performance
+
+- Reuse bounded filesystem probes across warm include resolution.
+- Reduced warm SAFW editor linting from about 230 ms to about 205 ms,
+  allocations from about 87 MB to 81 MB, and allocation count by about 40,000
+  on the reference machine.
+
 ## 1.7.12 - 2026-07-28
 
 ### Performance
