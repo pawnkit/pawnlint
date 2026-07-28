@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.12 - 2026-07-28
+
+### Performance
+
+- Reuse the most recent define environment across adjacent include lookups.
+- Reduced warm SAFW editor linting from about 250 ms to about 230 ms on the
+  reference machine.
+
 ## 1.7.11 - 2026-07-28
 
 ### Performance

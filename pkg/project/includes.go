@@ -359,9 +359,13 @@ func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot, snapshotsKey [sha256
 }
 
 func (m *Model) internDefines(defines []string) *defineEnvironment {
+	if m.lastEnvironment != nil && sameDefines(m.lastEnvironment.names, defines) {
+		return m.lastEnvironment
+	}
 	hash := defineEnvironmentHash(defines)
 	for _, environment := range m.defineEnvironments[hash] {
 		if sameDefines(environment.names, defines) {
+			m.lastEnvironment = environment
 			return environment
 		}
 	}
@@ -373,6 +377,7 @@ func (m *Model) internDefines(defines []string) *defineEnvironment {
 		cacheHash: definesKey,
 	}
 	m.defineEnvironments[hash] = append(m.defineEnvironments[hash], environment)
+	m.lastEnvironment = environment
 	return environment
 }
 

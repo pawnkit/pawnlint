@@ -155,6 +155,7 @@ type Model struct {
 	byCanonical        map[string]*File
 	byContext          map[fileContextKey]*File
 	defineEnvironments map[uint64][]*defineEnvironment
+	lastEnvironment    *defineEnvironment
 	nextEnvironmentID  uint32
 	physical           map[string]*physicalFile
 	references         map[declarationID][]Reference

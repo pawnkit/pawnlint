@@ -43,3 +43,15 @@ func TestParseCacheBoundsAnalysisVariants(t *testing.T) {
 		t.Fatalf("define contexts = %d, want 0", cache.defineCount)
 	}
 }
+
+func TestModelReusesRecentDefineEnvironment(t *testing.T) {
+	model := &Model{defineEnvironments: make(map[uint64][]*defineEnvironment)}
+	first := model.internDefines([]string{"FIRST"})
+	if repeated := model.internDefines([]string{"FIRST"}); repeated != first {
+		t.Fatal("recent define environment was not reused")
+	}
+	model.internDefines([]string{"SECOND"})
+	if repeated := model.internDefines([]string{"FIRST"}); repeated != first {
+		t.Fatal("interned define environment was not reused")
+	}
+}
