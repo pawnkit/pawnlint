@@ -10,15 +10,15 @@ import (
 )
 
 func (m *CompactModel) Eval(node syntax.NodeID) (int64, bool) {
-	return m.compactEval(node, make(map[*CompactSymbol]bool), nil, nil)
+	return m.compactEval(node, nil, nil, nil)
 }
 
 func (m *CompactModel) EvalWithValues(node syntax.NodeID, values map[*CompactSymbol]int64) (int64, bool) {
-	return m.compactEval(node, make(map[*CompactSymbol]bool), values, nil)
+	return m.compactEval(node, nil, values, nil)
 }
 
 func (m *CompactModel) EvalWithResolver(node syntax.NodeID, resolver func(syntax.NodeID) (int64, bool)) (int64, bool) {
-	return m.compactEval(node, make(map[*CompactSymbol]bool), nil, resolver)
+	return m.compactEval(node, nil, nil, resolver)
 }
 
 func (m *CompactModel) ConstantValue(symbol *CompactSymbol) (int64, bool) {
@@ -93,8 +93,11 @@ func (m *CompactModel) compactEval(node syntax.NodeID, visiting map[*CompactSymb
 		if value, ok := m.constants[symbol]; ok {
 			return value, true
 		}
-		if symbol.Value == syntax.NoNode || visiting[symbol] {
+		if symbol.Value == syntax.NoNode || visiting != nil && visiting[symbol] {
 			return 0, false
+		}
+		if visiting == nil {
+			visiting = make(map[*CompactSymbol]bool)
 		}
 		visiting[symbol] = true
 		value, ok := m.compactEval(symbol.Value, visiting, values, resolver)

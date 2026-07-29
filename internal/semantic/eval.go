@@ -9,15 +9,15 @@ import (
 )
 
 func (m *Model) Eval(node *parser.Node) (int64, bool) {
-	return m.eval(node, make(map[*Symbol]bool), nil, nil)
+	return m.eval(node, nil, nil, nil)
 }
 
 func (m *Model) EvalWithValues(node *parser.Node, values map[*Symbol]int64) (int64, bool) {
-	return m.eval(node, make(map[*Symbol]bool), values, nil)
+	return m.eval(node, nil, values, nil)
 }
 
 func (m *Model) EvalWithResolver(node *parser.Node, resolver func(*parser.Node) (int64, bool)) (int64, bool) {
-	return m.eval(node, make(map[*Symbol]bool), nil, resolver)
+	return m.eval(node, nil, nil, resolver)
 }
 
 func (m *Model) ConstantValue(symbol *Symbol) (int64, bool) {
@@ -92,8 +92,11 @@ func (m *Model) eval(node *parser.Node, visiting map[*Symbol]bool, values map[*S
 		if value, ok := m.constantValues[symbol]; ok {
 			return value, true
 		}
-		if symbol.Value == nil || visiting[symbol] {
+		if symbol.Value == nil || visiting != nil && visiting[symbol] {
 			return 0, false
+		}
+		if visiting == nil {
+			visiting = make(map[*Symbol]bool)
 		}
 		visiting[symbol] = true
 		value, ok := m.eval(symbol.Value, visiting, values, resolver)

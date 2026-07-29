@@ -82,16 +82,31 @@ func (m *Model) buildFunctionEffects() {
 			states[declarationKey(function)] = m.directCompactFunctionEffects(function, compactReferences[function.File], compactSymbols[declarationSyntax(function).ID()])
 		}
 	}
-	for iteration := 0; iteration <= len(states); iteration++ {
-		changed := false
-		for _, function := range m.CallGraph.Functions {
-			state := states[declarationKey(function)]
-			if m.mergeFunctionEffects(function, state, states) {
-				changed = true
+	callers := make(map[declarationID][]declarationID)
+	queue := make([]declarationID, 0, len(m.CallGraph.Functions))
+	queued := make(map[declarationID]bool, len(m.CallGraph.Functions))
+	for _, function := range m.CallGraph.Functions {
+		id := declarationKey(function)
+		queue = append(queue, id)
+		queued[id] = true
+		for _, call := range states[id].calls {
+			callee := declarationKey(call.Callee)
+			if states[callee] != nil {
+				callers[callee] = append(callers[callee], id)
 			}
 		}
-		if !changed {
-			break
+	}
+	for head := 0; head < len(queue); head++ {
+		id := queue[head]
+		queued[id] = false
+		if !m.mergeFunctionEffects(states[id], states) {
+			continue
+		}
+		for _, caller := range callers[id] {
+			if !queued[caller] {
+				queue = append(queue, caller)
+				queued[caller] = true
+			}
 		}
 	}
 	for _, function := range m.CallGraph.Functions {
@@ -337,7 +352,7 @@ func (m *Model) indexCompactEffectParameters(file *File, function syntax.NodeID,
 	}
 }
 
-func (m *Model) mergeFunctionEffects(function Declaration, state *functionEffectState, states map[declarationID]*functionEffectState) bool {
+func (m *Model) mergeFunctionEffects(state *functionEffectState, states map[declarationID]*functionEffectState) bool {
 	complete := state.complete
 	intrinsicImpure := state.intrinsicImpure
 	reads := len(state.reads)
@@ -549,7 +564,10 @@ func effectReferencesByAmpersand(file *File, parameter cst.Node) bool {
 	if name := parameter.Field("name"); name.Valid() {
 		end = name.Start()
 	}
-	for index := 0; index < file.Syntax.TokenCount(); index++ {
+	index := sort.Search(file.Syntax.TokenCount(), func(index int) bool {
+		return file.Syntax.Token(index).End() > parameter.Start()
+	})
+	for ; index < file.Syntax.TokenCount(); index++ {
 		current := file.Syntax.Token(index)
 		if current.Start() >= end {
 			break

@@ -59,6 +59,52 @@ func BenchmarkFunctionEffects(b *testing.B) {
 	}
 }
 
+func BenchmarkFunctionEffectsCallChain(b *testing.B) {
+	benchmarkFunctionEffectsCallChain(b, false)
+}
+
+func BenchmarkFunctionEffectsReverseCallChain(b *testing.B) {
+	benchmarkFunctionEffectsCallChain(b, true)
+}
+
+func benchmarkFunctionEffectsCallChain(b *testing.B, reverse bool) {
+	b.Helper()
+	dir := b.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	var source strings.Builder
+	source.WriteString("new shared;\n")
+	if reverse {
+		source.WriteString("Function500() { return shared; }\n")
+		for index := 499; index >= 0; index-- {
+			fmt.Fprintf(&source, "Function%d() { return Function%d(); }\n", index, index+1)
+		}
+	} else {
+		for index := 0; index < 500; index++ {
+			fmt.Fprintf(&source, "Function%d() { return Function%d(); }\n", index, index+1)
+		}
+		source.WriteString("Function500() { return shared; }\n")
+	}
+	content := []byte(source.String())
+	b.ReportAllocs()
+	b.StopTimer()
+	for iteration := 0; iteration < b.N; iteration++ {
+		model, err := Build([]Source{{Path: path, Content: content}}, Options{WorkingDir: dir, DefinesComplete: true})
+		if err != nil {
+			b.Fatal(err)
+		}
+		functions := model.Declarations["Function0"]
+		if len(functions) != 1 {
+			b.Fatalf("Function0 declarations = %d", len(functions))
+		}
+		b.StartTimer()
+		effects, ok := model.FunctionEffects(functions[0])
+		b.StopTimer()
+		if !ok || len(effects.ReadsGlobals) != 1 {
+			b.Fatalf("Function0 effects = %#v, %v", effects, ok)
+		}
+	}
+}
+
 func contextualIncludeBenchmark(b *testing.B) (string, string, []byte) {
 	b.Helper()
 	dir := b.TempDir()

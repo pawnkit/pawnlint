@@ -117,6 +117,8 @@ type fileFacts struct {
 	assignments map[*parser.Node][]*parser.Node
 	symbols     map[*parser.Node][]*semantic.Symbol
 	pureCalls   map[*parser.Node]pureCallFact
+	constants   map[*parser.Node]evalFact
+	flowValues  map[*parser.Node]evalFact
 }
 
 type pureCallFact struct {
@@ -124,11 +126,18 @@ type pureCallFact struct {
 	pure bool
 }
 
+type evalFact struct {
+	value int64
+	known bool
+}
+
 func newFileFacts(tree *walk.Model, model *semantic.Model) *fileFacts {
 	facts := &fileFacts{
 		assignments: make(map[*parser.Node][]*parser.Node),
 		symbols:     make(map[*parser.Node][]*semantic.Symbol),
 		pureCalls:   make(map[*parser.Node]pureCallFact),
+		constants:   make(map[*parser.Node]evalFact),
+		flowValues:  make(map[*parser.Node]evalFact),
 	}
 	if tree != nil {
 		for _, assignment := range tree.OfKind(parser.KindAssignmentExpression) {
@@ -183,7 +192,19 @@ func (ctx *Context) Eval(node *parser.Node) (int64, bool) {
 		return 0, false
 	}
 	if ctx.Flow != nil && ctx.Level >= ControlFlowAnalysis {
-		if value, ok := ctx.Flow.Eval(node); ok {
+		if ctx.facts != nil {
+			if fact, ok := ctx.facts.flowValues[node]; ok {
+				if fact.known {
+					return fact.value, true
+				}
+			} else {
+				value, known := ctx.Flow.Eval(node)
+				ctx.facts.flowValues[node] = evalFact{value: value, known: known}
+				if known {
+					return value, true
+				}
+			}
+		} else if value, ok := ctx.Flow.Eval(node); ok {
 			return value, true
 		}
 	}
@@ -194,6 +215,18 @@ func (ctx *Context) Constant(node *parser.Node) (int64, bool) {
 	if ctx == nil {
 		return 0, false
 	}
+	if ctx.facts != nil {
+		if fact, ok := ctx.facts.constants[node]; ok {
+			return fact.value, fact.known
+		}
+		value, known := ctx.constant(node)
+		ctx.facts.constants[node] = evalFact{value: value, known: known}
+		return value, known
+	}
+	return ctx.constant(node)
+}
+
+func (ctx *Context) constant(node *parser.Node) (int64, bool) {
 	if ctx.Project != nil && ctx.ProjectFile != nil {
 		return ctx.Project.Eval(ctx.ProjectFile, node)
 	}

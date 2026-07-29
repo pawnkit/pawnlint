@@ -53,7 +53,7 @@ func (PossiblyUninitialized) Run(ctx *lint.Context) {
 		if function.Uncertain {
 			continue
 		}
-		for _, symbol := range ctx.Semantic.Symbols {
+		for _, symbol := range ctx.FunctionSymbols(function.Node) {
 			if !initializationCandidate(ctx, function, symbol) {
 				continue
 			}

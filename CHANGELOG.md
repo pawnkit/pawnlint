@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.37 - 2026-07-29
+
+### Performance
+
+- Propagate function effects through affected callers instead of rescanning the call graph.
+- Reuse constant and flow evaluation results across rules.
+- Limit uninitialized-variable checks to symbols in the current function.
+
 ## 1.7.36 - 2026-07-29
 
 ### Performance

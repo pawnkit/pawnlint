@@ -45,6 +45,18 @@ func TestEvalUnknown(t *testing.T) {
 	}
 }
 
+func BenchmarkEvalUnknown(b *testing.B) {
+	src := []byte("main() { new value = other + 1; }\n")
+	file := parser.Parse(src)
+	tree := walk.New("x.pwn", file)
+	model := semantic.Build(file, tree)
+	expression := tree.OfKind(parser.KindVariableDeclarator)[0].Field("initializer")
+	b.ReportAllocs()
+	for b.Loop() {
+		_, _ = model.Eval(expression)
+	}
+}
+
 func TestEvalNamedConstant(t *testing.T) {
 	src := []byte("const zero = 1 - 1; main() { new value = zero; }\n")
 	file := parser.Parse(src)
