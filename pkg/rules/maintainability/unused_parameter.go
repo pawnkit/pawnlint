@@ -28,8 +28,8 @@ func (UnusedParameter) Metadata() lint.Metadata {
 	}
 }
 
-const explanationUnusedParameter = `An unused parameter may indicate dead code or an incomplete function. Public
-and command-handler functions are skipped because external signatures may require every parameter.
+const explanationUnusedParameter = `An unused parameter may indicate dead code or an incomplete function. Public,
+command-handler, and dialog-handler functions are skipped because external signatures may require every parameter.
 Functions wrapped by a hooking library (` + "`hook`" + `, ` + "`inline`" + `, and similar
 single-word prefixes) are skipped for the same reason. Names beginning with
 ` + "`_`" + ` or listed in a ` + "`#pragma unused`" + ` directive in the same function are
@@ -42,6 +42,9 @@ func (UnusedParameter) Run(ctx *lint.Context) {
 	pragmaUnused := pragmaUnusedNamesByFunction(ctx)
 	for _, symbol := range ctx.Semantic.Symbols {
 		if symbol.Kind != semantic.SymbolParameter || symbol.Ambiguous || strings.HasPrefix(symbol.Name, "_") {
+			continue
+		}
+		if isPawnVariadicParameter(ctx, symbol.Decl) {
 			continue
 		}
 		if symbol.Function == nil || symbol.Function.Kind != parser.KindFunctionDefinition || hasExternalSignature(ctx, symbol.Function) {
@@ -59,6 +62,18 @@ func (UnusedParameter) Run(ctx *lint.Context) {
 			Range:    ctx.Walk.Range(symbol.NameNode),
 		})
 	}
+}
+
+func isPawnVariadicParameter(ctx *lint.Context, parameter *parser.Node) bool {
+	if parameter == nil {
+		return false
+	}
+	for _, child := range parameter.Children {
+		if child.Kind == parser.KindTaggedType && strings.TrimSpace(ctx.Walk.Text(child)) == "<>" {
+			return true
+		}
+	}
+	return false
 }
 
 func pragmaUnusedNamesByFunction(ctx *lint.Context) map[*parser.Node]map[string]bool {
@@ -105,7 +120,7 @@ func hasExternalSignature(ctx *lint.Context, function *parser.Node) bool {
 		return true
 	}
 	tag := strings.TrimSuffix(strings.ToLower(ctx.Walk.Text(function.Field("tag"))), ":")
-	if tag == "command" || strings.HasSuffix(tag, "cmd") {
+	if tag == "command" || tag == "dialog" || strings.HasSuffix(tag, "cmd") {
 		return true
 	}
 	for _, child := range function.Children {

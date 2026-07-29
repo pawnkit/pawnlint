@@ -10,7 +10,7 @@ import (
 )
 
 func TestCompactSymbolsAndReferencesMatchPointerModel(t *testing.T) {
-	source := []byte("enum Color { Red, Green }\nforward Float:GetValue(Float:value);\nstock Float:GetValue(Float:value) { new Float:local = value; local += 1.0; return local; }\nmain() { new Float:local; local = GetValue(local); Missing(local); }\n")
+	source := []byte("enum Color { Red, Green }\nforward Float:GetValue(Float:value);\nstock Float:GetValue(Float:value) { new Float:local = value; local += 1.0; return local; }\nmain() { new Float:local; local = GetValue(local); --local; Missing(local); }\n")
 	pointerFile := parser.Parse(source)
 	compactFile := parser.ParseForLinter(source)
 	pointerWalk := walk.New("x.pwn", pointerFile)

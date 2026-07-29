@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.7.34 - 2026-07-29
+
+### Fixed
+
+- Treat prefix updates as variable writes in `prefer-const`.
+- Skip dialog handlers and Pawn variadic parameters in unused checks.
+
+### Performance
+
+- Avoid runtime expansion for strict unused-function checks.
+- Filter duplicate conditions and redundant initializers before purity analysis.
+
 ## 1.7.33 - 2026-07-29
 
 ### Performance

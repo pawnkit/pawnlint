@@ -1,6 +1,7 @@
 package maintainability
 
 import (
+	"bytes"
 	"strings"
 
 	"github.com/pawnkit/pawn-parser"
@@ -56,7 +57,7 @@ func (UnusedFunction) Run(ctx *lint.Context) {
 			continue
 		}
 		declaration, ok := projectDeclaration(ctx.Project, file, symbol)
-		if !ok || len(ctx.Project.References(declaration)) != 0 || ctx.Project.CallGraph != nil && len(ctx.Project.CallGraph.AsyncIncoming(declaration)) != 0 {
+		if !ok || len(ctx.Project.References(declaration)) != 0 || projectUnitContainsCallbackName(ctx.Project, file, symbol.Name) {
 			continue
 		}
 		ctx.Report(diagnostic.Diagnostic{
@@ -65,6 +66,30 @@ func (UnusedFunction) Run(ctx *lint.Context) {
 			Range:    ctx.Walk.Range(symbol.NameNode),
 		})
 	}
+}
+
+func projectUnitContainsCallbackName(model *project.Model, file *project.File, name string) bool {
+	quoted := []byte(`"` + name + `"`)
+	for _, unit := range model.Units {
+		if !unitContainsFile(unit, file) {
+			continue
+		}
+		for _, candidate := range unit.Files {
+			if bytes.Contains(candidate.Source, quoted) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func unitContainsFile(unit *project.Unit, file *project.File) bool {
+	for _, candidate := range unit.Files {
+		if candidate == file {
+			return true
+		}
+	}
+	return false
 }
 
 type UnusedGlobal struct{}
@@ -114,14 +139,7 @@ func (UnusedGlobal) Run(ctx *lint.Context) {
 
 func projectUnitHasErrors(model *project.Model, file *project.File) bool {
 	for _, unit := range model.Units {
-		contains := false
-		for _, candidate := range unit.Files {
-			if candidate == file {
-				contains = true
-				break
-			}
-		}
-		if !contains {
+		if !unitContainsFile(unit, file) {
 			continue
 		}
 		for _, candidate := range unit.Files {

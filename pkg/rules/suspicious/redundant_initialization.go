@@ -54,6 +54,9 @@ func (RedundantInitialization) Run(ctx *lint.Context) {
 			if !hasReachableDefinition(candidate.block, candidate.symbol, definitions) || valueReadAfter(candidate.block, candidate.symbol, definitions, uses) {
 				continue
 			}
+			if !ctx.Pure(candidate.initializer) {
+				continue
+			}
 			ctx.Report(diagnostic.Diagnostic{
 				Message:  fmt.Sprintf("initial value of %q is overwritten before it is read", candidate.symbol.Name),
 				Filename: ctx.File.Path,
@@ -70,7 +73,7 @@ func redundantInitializerCandidates(ctx *lint.Context, function *controlflow.Fun
 			continue
 		}
 		initializer := symbol.Decl.Field("initializer")
-		if initializer == nil || !ctx.Pure(initializer) {
+		if initializer == nil {
 			continue
 		}
 		if len(symbol.Decl.Children) != 0 && hasDimension(symbol.Decl) {

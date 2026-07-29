@@ -26,6 +26,23 @@ func TestBuildResolvesLocalReferences(t *testing.T) {
 	}
 }
 
+func TestBuildTreatsPrefixUpdateAsReadWrite(t *testing.T) {
+	src := []byte("main() { new value = 2; --value; }\n")
+	file := parser.Parse(src)
+	model := semantic.Build(file, walk.New("x.pwn", file))
+	for _, symbol := range model.Symbols {
+		if symbol.Name != "value" || symbol.Kind != semantic.SymbolLocal {
+			continue
+		}
+		references := model.References(symbol)
+		if len(references) != 1 || references[0].Kind != semantic.ReferenceReadWrite {
+			t.Fatalf("references = %#v", references)
+		}
+		return
+	}
+	t.Fatal("local symbol not collected")
+}
+
 func TestBuildPreservesUnresolvedReferenceKinds(t *testing.T) {
 	src := []byte("main() { External(); new value = external_value; }\n")
 	file := parser.Parse(src)

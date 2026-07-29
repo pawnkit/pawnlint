@@ -45,10 +45,6 @@ func (LoopInvariantCall) Run(ctx *lint.Context) {
 				if !loopInvariantRepeatedRegion(loop, call) || call.HasError || call.Tok.Origin != nil || ctx.Walk.Uncertain(call) {
 					continue
 				}
-				name, pure := loopInvariantPureCall(ctx, call)
-				if !pure || name == "strlen" || loopInvariantInsidePureCall(ctx, call, loop) {
-					continue
-				}
 				symbols := make(map[*semantic.Symbol]struct{})
 				arguments := call.Field("arguments")
 				if arguments == nil || !loopInvariantArguments(ctx, arguments, loop, symbols) {
@@ -56,12 +52,16 @@ func (LoopInvariantCall) Run(ctx *lint.Context) {
 				}
 				changed := false
 				for symbol := range symbols {
-					if loopInvariantSymbolChanges(ctx, loop, symbol) {
+					if loopInvariantSymbolChanges(ctx, loop, call, symbol) {
 						changed = true
 						break
 					}
 				}
 				if changed {
+					continue
+				}
+				name, pure := loopInvariantPureCall(ctx, call)
+				if !pure || name == "strlen" || loopInvariantInsidePureCall(ctx, call, loop) {
 					continue
 				}
 				ctx.Report(diagnostic.Diagnostic{
@@ -138,7 +138,7 @@ func loopInvariantPureCall(ctx *lint.Context, call *parser.Node) (string, bool) 
 	return ctx.PureCall(call)
 }
 
-func loopInvariantSymbolChanges(ctx *lint.Context, loop *parser.Node, symbol *semantic.Symbol) bool {
+func loopInvariantSymbolChanges(ctx *lint.Context, loop, candidate *parser.Node, symbol *semantic.Symbol) bool {
 	for _, reference := range ctx.Semantic.References(symbol) {
 		if !loopInvariantMutationRegion(loop, reference.Node) {
 			continue
@@ -147,7 +147,7 @@ func loopInvariantSymbolChanges(ctx *lint.Context, loop *parser.Node, symbol *se
 			return true
 		}
 		for current := reference.Node; current != nil && current != loop; current = ctx.Walk.Parent(current) {
-			if current.Kind == parser.KindCallExpression {
+			if current.Kind == parser.KindCallExpression && current != candidate {
 				if _, pure := loopInvariantPureCall(ctx, current); !pure {
 					return true
 				}

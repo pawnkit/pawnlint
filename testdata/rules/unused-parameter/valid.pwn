@@ -18,6 +18,11 @@ CMD:ExternalCommand(playerid, params[])
     return 1;
 }
 
+Dialog:Menu(playerid, response, listitem, inputtext[])
+{
+    return 1;
+}
+
 hook OnPlayerEnterVehicle(playerid, vehicleid, ispassenger)
 {
     return playerid;
@@ -32,4 +37,11 @@ stock PragmaUnused(a, b, c)
 {
     #pragma unused b, c
     return a;
+}
+
+stock FormatMessage(const message[], va_args<>)
+{
+    new buffer[128];
+    format(buffer, sizeof buffer, message, va_start<1>);
+    return buffer;
 }

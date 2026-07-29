@@ -13,8 +13,8 @@ Reports unused parameters in non-public function definitions
 
 ## Details
 
-An unused parameter may indicate dead code or an incomplete function. Public
-and command-handler functions are skipped because external signatures may require every parameter.
+An unused parameter may indicate dead code or an incomplete function. Public,
+command-handler, and dialog-handler functions are skipped because external signatures may require every parameter.
 Functions wrapped by a hooking library (`hook`, `inline`, and similar
 single-word prefixes) are skipped for the same reason. Names beginning with
 `_` or listed in a `#pragma unused` directive in the same function are

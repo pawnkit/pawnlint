@@ -24,7 +24,12 @@ static Dead()
 {
 }
 `)
-	model, err := project.Build([]project.Source{{Path: path, Content: source}}, project.Options{WorkingDir: dir, DefinesComplete: true})
+	features := project.NewFeatures(project.FeatureReferences)
+	model, err := project.Build([]project.Source{{Path: path, Content: source}}, project.Options{
+		WorkingDir:      dir,
+		DefinesComplete: true,
+		Features:        &features,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

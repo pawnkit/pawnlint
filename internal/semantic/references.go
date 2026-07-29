@@ -155,6 +155,10 @@ func (m *Model) referenceKind(node *parser.Node) ReferenceKind {
 		}
 	case parser.KindUpdateExpression:
 		return ReferenceReadWrite
+	case parser.KindUnaryExpression:
+		if parent.Tok.Kind == token.PlusPlus || parent.Tok.Kind == token.MinusMinus {
+			return ReferenceReadWrite
+		}
 	case parser.KindCallExpression:
 		if parent.Field("function") == node || parent.Field("callee") == node {
 			return ReferenceCall

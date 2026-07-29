@@ -42,8 +42,33 @@ func TestAllProjectFeatures(t *testing.T) {
 		t.Fatal(err)
 	}
 	features := resolved.ProjectFeatures(registry)
-	if !features.Has(project.FeatureFunctionEffects) || !features.Has(project.FeatureRuntimeCalls) || !features.Has(project.FeatureTrivia) {
+	if !features.Has(project.FeatureFunctionEffects) || !features.Has(project.FeatureTrivia) {
 		t.Fatal("full project analysis is disabled")
+	}
+	if features.Has(project.FeatureRuntimeCalls) {
+		t.Fatal("preview runtime call analysis is enabled")
+	}
+}
+
+func TestStrictProjectFeaturesSkipRuntimeExpansion(t *testing.T) {
+	registry := rules.Default()
+	resolved, err := config.Resolve(config.File{Profile: "strict"}, "", registry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.ProjectFeatures(registry).Has(project.FeatureRuntimeCalls) {
+		t.Fatal("runtime call analysis is enabled")
+	}
+}
+
+func TestTaintRuleEnablesRuntimeExpansion(t *testing.T) {
+	resolved := &config.Resolved{
+		Enabled: map[string]diagnostic.Severity{
+			"tainted-data-to-sink": diagnostic.SeverityWarning,
+		},
+	}
+	if !resolved.ProjectFeatures(nil).Has(project.FeatureRuntimeCalls) {
+		t.Fatal("runtime call analysis is disabled")
 	}
 }
 

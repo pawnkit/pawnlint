@@ -165,6 +165,11 @@ func (m *CompactModel) compactReferenceKind(node syntax.NodeID) ReferenceKind {
 		}
 	case parser.KindUpdateExpression:
 		return ReferenceReadWrite
+	case parser.KindUnaryExpression:
+		kind := m.Walk.Tree.TokenKind(parent)
+		if kind == token.PlusPlus || kind == token.MinusMinus {
+			return ReferenceReadWrite
+		}
 	case parser.KindCallExpression:
 		if m.Walk.Tree.Field(parent, "function") == node || m.Walk.Tree.Field(parent, "callee") == node {
 			return ReferenceCall
