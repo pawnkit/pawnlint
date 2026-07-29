@@ -21,8 +21,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - run: go build ./...
@@ -49,10 +49,10 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - uses: golangci/golangci-lint-action@v9
@@ -63,8 +63,8 @@ jobs:
     name: Performance budget
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - name: Check project model budget
@@ -77,16 +77,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out pawnlint
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           path: pawnlint
       - name: Check out pawn-corpus
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           repository: pawnkit/pawn-corpus
           ref: ff6369e0060edb8667379abd35207d7d893ea12b
           path: pawn-corpus
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: pawnlint/go.mod
       - name: Run corpus-backed tests
@@ -101,16 +101,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out pawnlint
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           path: pawnlint
       - name: Check out pawn-corpus
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           repository: pawnkit/pawn-corpus
           ref: v0.1.15
           path: pawn-corpus
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: pawnlint/go.mod
       - name: Install report tools
@@ -137,7 +137,7 @@ jobs:
         run: scripts/realworld-bench.sh "$RUNNER_TEMP/pawnlint-corpus" "$RUNNER_TEMP/pawnlint-results"
       - name: Upload reports
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: pawnlint-real-project-results
           path: ${{ runner.temp }}/pawnlint-results/*.json
@@ -154,8 +154,8 @@ jobs:
           - goos: windows
             goarch: arm64
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - run: go build ./...
@@ -167,8 +167,8 @@ jobs:
     name: Vulnerability scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
@@ -177,8 +177,8 @@ jobs:
     name: Fuzz smoke tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - run: go test ./internal/source/walk -run=^$ -fuzz=FuzzWalk -fuzztime=30s
@@ -190,10 +190,10 @@ jobs:
     name: Release snapshot
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - uses: anchore/sbom-action/download-syft@v0
@@ -205,8 +205,8 @@ jobs:
   support:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-      - uses: pawnkit/pawn-actions/support-check@v1.6.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: pawnkit/pawn-actions/support-check@v1.8.10
         with:
           repository: pawnkit/pawnlint
           targets: linux-amd64,windows-amd64,darwin-arm64
