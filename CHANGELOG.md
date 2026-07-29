@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.31 - 2026-07-29
+
+### Changed
+
+- Limit syntax expansion reuse to rebased trivia edits.
+
 ## 1.7.30 - 2026-07-29
 
 ### Changed

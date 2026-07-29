@@ -128,7 +128,8 @@ func diagnoseContextWithTimings(
 			}
 			path := filepath.Clean(canonical)
 			var compactSyntax *parser.CompactFile
-			if i == 0 && shared.Parse != nil && bytes.Equal(shared.Parse.Source, file.Content) {
+			if i == 0 && shared.Reuse.RebasedSyntax && shared.Parse != nil &&
+				bytes.Equal(shared.Parse.Source, file.Content) {
 				compactSyntax = shared.Parse
 			}
 			sharedSources = append(sharedSources, project.Source{Path: path, Content: file.Content})
