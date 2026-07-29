@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.29 - 2026-07-29
+
+### Performance
+
+- Reuse compatible preprocessing in small and single-file projects.
+
 ## 1.7.28 - 2026-07-29
 
 ### Performance
