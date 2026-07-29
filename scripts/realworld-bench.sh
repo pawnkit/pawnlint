@@ -4,7 +4,8 @@ set -euo pipefail
 workspace=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 corpora=${1:-/tmp/pawnlint-corpus}
 output=${2:-/tmp/pawnlint-realworld-results}
-manifest="$workspace/testdata/realworld/corpora.tsv"
+source "$workspace/scripts/realworld-manifest.sh"
+manifest=$(realworld_manifest)
 binary="$output/pawnlint"
 stats="$output/realworldstats"
 
@@ -47,4 +48,4 @@ while IFS=$'\t' read -r name repository commit entry config; do
     --slurpfile diagnostics "$diagnostics" \
     '{name:$name,repository:$repository,commit:$commit,metrics:$metrics[0],project:$project[0],diagnostics:{count:($diagnostics[0]|length),byRule:($diagnostics[0]|group_by(.ruleId)|map({ruleId:.[0].ruleId,count:length}))}}' > "$report"
   jq -c . "$report"
-done < "$manifest"
+done <<< "$manifest"

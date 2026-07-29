@@ -1,0 +1,5 @@
+project	entry	config
+scavenge-survive	gamemodes/ScavengeSurvive.pwn	scavenge-survive.toml
+gta-open	gamemodes/main.pwn	gta-open.toml
+sp-rp	gamemodes/gamemode.pwn	sp-rp.toml
+akrp-v5	gamemodes/AKRPV5.pwn	akrp-v5.toml

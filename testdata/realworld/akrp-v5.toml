@@ -1,2 +1,6 @@
 profile = "all"
 target = "openmp"
+include-paths = [
+  "include",
+  "pawno/include",
+]

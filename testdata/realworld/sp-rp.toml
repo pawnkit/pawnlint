@@ -1,0 +1,26 @@
+profile = "all"
+target = "samp"
+include-paths = [
+  "gamemodes",
+  "dependencies/ColAndreas",
+  "dependencies/MenuStore",
+  "dependencies/Pawn.RakNet",
+  "dependencies/Pawn.Regex",
+  "dependencies/SA-MP-MySQL",
+  "dependencies/SKY",
+  "dependencies/YSI-Includes",
+  "dependencies/amx_assembly",
+  "dependencies/code-parse.inc",
+  "dependencies/indirection",
+  "dependencies/md-sort",
+  "dependencies/pawn-fsutil",
+  "dependencies/pawn-stdlib",
+  "dependencies/progress2",
+  "dependencies/samp-bcrypt",
+  "dependencies/samp-plugin-crashdetect",
+  "dependencies/samp-stdlib",
+  "dependencies/samp-streamer-plugin",
+  "dependencies/sscanf",
+  "dependencies/strlib",
+  "dependencies/zcmd",
+]

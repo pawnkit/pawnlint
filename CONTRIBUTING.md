@@ -16,3 +16,12 @@ CGO_ENABLED=1 go test -race ./...
 Rules should report behavior the analyzer can prove. Keep target API facts in
 `pawn-api` and shared language fixtures in `pawn-corpus`. Regenerate rule docs
 when configuration or diagnostics change.
+
+The scheduled real-project suite uses the revisions pinned by `pawn-corpus`.
+Run it locally with:
+
+```sh
+scripts/prepare-realworld.sh
+scripts/ensure-realworld.sh
+task bench-realworld
+```

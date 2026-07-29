@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.22 - 2026-07-29
+
+### Changed
+
+- Read real-project revisions from `pawn-corpus`.
+- Added SP-RP to the scheduled real-project suite.
+
 ## 1.7.21 - 2026-07-29
 
 ### Performance
