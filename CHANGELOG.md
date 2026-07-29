@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.25 - 2026-07-29
+
+### Performance
+
+- Removed the incremental name cache after editor benchmarks showed a
+  regression.
+
 ## 1.7.24 - 2026-07-29
 
 ### Performance
