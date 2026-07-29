@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.30 - 2026-07-29
+
+### Changed
+
+- Reuse pawn-analysis syntax when linting editor buffers.
+
 ## 1.7.29 - 2026-07-29
 
 ### Performance

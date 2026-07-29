@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/lexer"
 	"github.com/pawnkit/pawnlint/pkg/project"
 )
@@ -36,6 +37,32 @@ func TestParseCachePreparesTokenizedSources(t *testing.T) {
 	}
 	if parseEvents != 0 {
 		t.Fatalf("parse events = %d, want 0", parseEvents)
+	}
+}
+
+func TestParseCachePreparesCompactSyntax(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	content := []byte("main() {}\n")
+	cache := project.NewParseCache()
+	if err := cache.PrepareContext(context.Background(), []project.PreparedSource{{
+		Path: path, Content: content, Tokens: lexer.Tokenize([]byte("main( {")),
+		CompactSyntax: parser.ParseCompact(content, parser.ParseOptions{}),
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	model, err := project.Build([]project.Source{{Path: path, Content: content}}, project.Options{
+		WorkingDir: dir,
+		ParseCache: cache,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := model.File(path)
+	if file == nil || file.Parsed == nil || file.Parsed.HasParseErrors() {
+		t.Fatal("prepared compact syntax was not used")
 	}
 }
 

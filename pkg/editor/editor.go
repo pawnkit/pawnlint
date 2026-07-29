@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	analysis "github.com/pawnkit/pawn-analysis"
+	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	coresource "github.com/pawnkit/pawnkit-core/source"
 	"github.com/pawnkit/pawnlint/internal/config"
@@ -115,7 +116,7 @@ func diagnoseContextWithTimings(
 	var sharedSources []project.Source
 	if shared != nil && shared.Preprocess != nil {
 		prepared := make([]project.PreparedSource, 0, len(shared.Preprocess.Files))
-		for _, file := range shared.Preprocess.Files {
+		for i, file := range shared.Preprocess.Files {
 			uri := coresource.URI(file.URI)
 			filename, err := uri.Filename()
 			if err != nil {
@@ -126,9 +127,14 @@ func diagnoseContextWithTimings(
 				continue
 			}
 			path := filepath.Clean(canonical)
+			var compactSyntax *parser.CompactFile
+			if i == 0 && shared.Parse != nil && bytes.Equal(shared.Parse.Source, file.Content) {
+				compactSyntax = shared.Parse
+			}
 			sharedSources = append(sharedSources, project.Source{Path: path, Content: file.Content})
 			prepared = append(prepared, project.PreparedSource{
 				Path: path, Content: file.Content, Tokens: file.Tokens,
+				CompactSyntax: compactSyntax,
 				DiscardTrivia: !features.Has(project.FeatureTrivia) && !bytes.Contains(file.Content, []byte("pawnlint-")),
 			})
 		}

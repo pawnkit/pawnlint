@@ -1,6 +1,7 @@
 package project
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
@@ -51,6 +52,7 @@ type PreparedSource struct {
 	Path          string
 	Content       []byte
 	Tokens        []token.Token
+	CompactSyntax *parser.CompactFile
 	DiscardTrivia bool
 }
 
@@ -221,15 +223,37 @@ func (c *ParseCache) PrepareContext(ctx context.Context, sources []PreparedSourc
 			if err := groupCtx.Err(); err != nil {
 				return err
 			}
-			c.parse(source.Path, source.Content, source.DiscardTrivia, source.Tokens)
+			c.prepare(source)
 			return groupCtx.Err()
 		})
 	}
 	return group.Wait()
 }
 
-func (c *ParseCache) parse(path string, source []byte, discardTrivia bool, tokens []token.Token) (*parser.File, bool) {
-	return c.parseHashed(path, source, sha256.Sum256(source), discardTrivia, tokens)
+func (c *ParseCache) prepare(source PreparedSource) {
+	hash := sha256.Sum256(source.Content)
+	if source.CompactSyntax == nil || !bytes.Equal(source.CompactSyntax.Source, source.Content) {
+		c.parseHashed(source.Path, source.Content, hash, source.DiscardTrivia, source.Tokens)
+		return
+	}
+	c.mu.RLock()
+	entry := c.entries[source.Path]
+	c.mu.RUnlock()
+	if entry.file != nil && entry.hash == hash && entry.discardTrivia == source.DiscardTrivia {
+		return
+	}
+	parsed := source.CompactSyntax.ExpandTokensWithOptions(
+		source.Tokens,
+		parser.ParseOptions{DiscardTrivia: source.DiscardTrivia},
+	)
+	c.mu.Lock()
+	if c.entries == nil {
+		c.entries = make(map[string]parseCacheEntry)
+	}
+	if existing := c.entries[source.Path]; existing.file == nil || existing.hash != hash || existing.discardTrivia != source.DiscardTrivia {
+		c.entries[source.Path] = parseCacheEntry{hash: hash, discardTrivia: source.DiscardTrivia, file: parsed}
+	}
+	c.mu.Unlock()
 }
 
 func (c *ParseCache) parseHashed(path string, source []byte, hash [sha256.Size]byte, discardTrivia bool, tokens []token.Token) (*parser.File, bool) {
