@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.24 - 2026-07-29
+
+### Performance
+
+- Use cached name and call-arity checks during incremental analysis.
+
 ## 1.7.23 - 2026-07-29
 
 ### Changed
