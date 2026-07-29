@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.23 - 2026-07-29
+
+### Changed
+
+- Pin release actions and verify the tag against this changelog.
+
 ## 1.7.22 - 2026-07-29
 
 ### Changed
