@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.27 - 2026-07-29
+
+### Performance
+
+- Reuse unchanged local symbols during compatible editor edits.
+
 ## 1.7.26 - 2026-07-29
 
 ### Performance
