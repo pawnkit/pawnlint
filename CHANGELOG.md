@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.32 - 2026-07-29
+
+### Performance
+
+- Use lower-memory compact syntax expansion from pawn-parser.
+
 ## 1.7.31 - 2026-07-29
 
 ### Changed
