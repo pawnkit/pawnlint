@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.26 - 2026-07-29
+
+### Performance
+
+- Reuse unchanged syntax during compatible editor edits.
+
 ## 1.7.25 - 2026-07-29
 
 ### Performance
