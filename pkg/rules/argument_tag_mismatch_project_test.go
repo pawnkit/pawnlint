@@ -56,3 +56,27 @@ main() { str_get(commandName, command); }
 		t.Fatalf("diagnostics = %#v", diagnostics)
 	}
 }
+
+func TestArgumentTagMismatchExpandsAPITagAliases(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	source := []byte(`#define __TAG(%0) T_%0
+#define VEHICLE_TYRE_STATUS __TAG(VEHICLE_TYRE_STATUS)
+#define VEHICLE_TIRE_STATUS __TAG(VEHICLE_TYRE_STATUS)
+new VEHICLE_TIRE_STATUS:tires;
+main()
+{
+	UpdateVehicleDamageStatus(1, 0, 0, 0, tires);
+}
+`)
+	model, err := project.Build([]project.Source{{Path: path, Content: source}}, project.Options{WorkingDir: dir, DefinesComplete: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tags := model.NormalizeTags(model.File(path), []string{"VEHICLE_TYRE_STATUS", "VEHICLE_TIRE_STATUS"}); len(tags) != 2 || tags[0] != "T_VEHICLE_TYRE_STATUS" || tags[1] != "T_VEHICLE_TYRE_STATUS" {
+		t.Fatalf("normalized tags = %v", tags)
+	}
+	if diagnostics := lintProjectRule(t, model, nil, path, "argument-tag-mismatch"); len(diagnostics) != 0 {
+		t.Fatalf("diagnostics = %#v", diagnostics)
+	}
+}

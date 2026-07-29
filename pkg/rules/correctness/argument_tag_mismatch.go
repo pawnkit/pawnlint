@@ -99,10 +99,10 @@ func argumentTagSignature(ctx *lint.Context, call *parser.Node) (string, []argum
 		return name, argumentSourceParameters(ctx.Semantic, symbol.Decl), true
 	}
 	if native, ok := ctx.Natives()[name]; ok {
-		return name, argumentAPIParameters(native.Parameters), true
+		return name, argumentAPIParameters(ctx, native.Parameters), true
 	}
 	if function, ok := ctx.Functions()[name]; ok {
-		return name, argumentAPIParameters(function.Parameters), true
+		return name, argumentAPIParameters(ctx, function.Parameters), true
 	}
 	return "", nil, false
 }
@@ -148,14 +148,14 @@ func argumentSourceParameters(model *semantic.Model, function *parser.Node) []ar
 	return result
 }
 
-func argumentAPIParameters(parameters []api.Parameter) []argumentTagParameter {
+func argumentAPIParameters(ctx *lint.Context, parameters []api.Parameter) []argumentTagParameter {
 	result := make([]argumentTagParameter, len(parameters))
 	for index, parameter := range parameters {
 		tags := []string{""}
 		if parameter.Tag != "" && parameter.Tag != "_" {
 			tags = []string{parameter.Tag}
 		}
-		result[index] = argumentTagParameter{tags: tags, variadic: parameter.Variadic, known: true}
+		result[index] = argumentTagParameter{tags: argumentContextTags(ctx, tags), variadic: parameter.Variadic, known: true}
 	}
 	return result
 }
@@ -171,7 +171,7 @@ func argumentExpressionTags(ctx *lint.Context, node *parser.Node) ([]string, boo
 		}
 	}
 	if tags := ctx.ExpressionTags(node); len(tags) != 0 {
-		return normalizeArgumentTags(tags), true
+		return argumentContextTags(ctx, tags), true
 	}
 	switch node.Kind {
 	case parser.KindParenthesizedExpression:
@@ -183,7 +183,7 @@ func argumentExpressionTags(ctx *lint.Context, node *parser.Node) ([]string, boo
 				if len(tags) == 0 {
 					return []string{""}, true
 				}
-				return normalizeArgumentTags(tags), true
+				return argumentContextTags(ctx, tags), true
 			}
 		}
 		if symbol := ctx.Semantic.Resolve(node); symbol != nil && !symbol.Ambiguous && len(symbol.Tags) == 0 {
@@ -215,10 +215,10 @@ func argumentExpressionTags(ctx *lint.Context, node *parser.Node) ([]string, boo
 		if callee != nil && callee.Kind == parser.KindIdentifier {
 			name := ctx.Walk.Text(callee)
 			if native, ok := ctx.Natives()[name]; ok {
-				return normalizeArgumentTags([]string{native.ReturnTag}), true
+				return argumentContextTags(ctx, []string{native.ReturnTag}), true
 			}
 			if function, ok := ctx.Functions()[name]; ok {
-				return normalizeArgumentTags([]string{function.ReturnTag}), true
+				return argumentContextTags(ctx, []string{function.ReturnTag}), true
 			}
 		}
 	case parser.KindSizeofExpression, parser.KindTagofExpression, parser.KindArrayLiteral, parser.KindStringConcat:
@@ -238,6 +238,14 @@ func normalizeArgumentTags(tags []string) []string {
 		}
 	}
 	return result
+}
+
+func argumentContextTags(ctx *lint.Context, tags []string) []string {
+	tags = normalizeArgumentTags(tags)
+	if ctx.Project != nil && ctx.ProjectFile != nil {
+		tags = ctx.Project.NormalizeTags(ctx.ProjectFile, tags)
+	}
+	return normalizeArgumentTags(tags)
 }
 
 func argumentTagsCompatible(ctx *lint.Context, node *parser.Node, expected, actual []string) bool {

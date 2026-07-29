@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.35 - 2026-07-29
+
+### Fixed
+
+- Resolve open.mp `__TAG` aliases before comparing API argument tags.
+
 ## 1.7.34 - 2026-07-29
 
 ### Fixed

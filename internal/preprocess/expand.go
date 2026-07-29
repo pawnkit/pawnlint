@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	parser "github.com/pawnkit/pawn-parser"
+	"github.com/pawnkit/pawn-parser/lexer"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/source/cst"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
@@ -59,6 +60,31 @@ func (s *State) ExpandIdentifier(name string) (string, bool) {
 		result.WriteString(current.text)
 	}
 	return result.String(), true
+}
+
+func (s *State) TagAliases() map[string]string {
+	if s == nil {
+		return nil
+	}
+	result := make(map[string]string)
+	for name, definition := range s.definitions {
+		if definition.function || !definitionContainsIdentifier(definition, "__TAG") {
+			continue
+		}
+		if expanded, ok := s.ExpandIdentifier(name); ok {
+			result[name] = expanded
+		}
+	}
+	return result
+}
+
+func definitionContainsIdentifier(definition definition, name string) bool {
+	for _, current := range definition.body {
+		if current.kind == token.Identifier && current.text == name {
+			return true
+		}
+	}
+	return false
 }
 
 type definition struct {
@@ -417,21 +443,44 @@ func substitute(definition definition, arguments [][]piece, invocation *token.Or
 		indexes["%"+strconv.Itoa(index)] = index
 	}
 	var result []piece
-	for _, current := range definition.body {
+	for bodyIndex, current := range definition.body {
 		if current.kind == token.Hash || current.text == "%%" {
 			return nil, false
 		}
+		var pieces []piece
 		if index, exists := indexes[current.text]; exists {
 			for _, argument := range arguments[index] {
 				argument.origin = &token.Origin{Span: argument.span, Macro: definition.name, Parent: invocation}
-				result = append(result, argument)
+				pieces = append(pieces, argument)
 			}
-			continue
+		} else {
+			current.origin = &token.Origin{Span: current.span, Macro: definition.name, Parent: invocation}
+			pieces = []piece{current}
 		}
-		current.origin = &token.Origin{Span: current.span, Macro: definition.name, Parent: invocation}
-		result = append(result, current)
+		if bodyIndex != 0 && definition.body[bodyIndex-1].span.End.Offset == current.span.Start.Offset {
+			result, pieces = concatenateReplacementBoundary(result, pieces)
+		}
+		result = append(result, pieces...)
 	}
 	return result, true
+}
+
+func concatenateReplacementBoundary(left, right []piece) ([]piece, []piece) {
+	if len(left) == 0 || len(right) == 0 {
+		return left, right
+	}
+	last := &left[len(left)-1]
+	first := right[0]
+	text := last.text + first.text
+	tokens := lexer.RawTokens([]byte(text))
+	if len(tokens) != 2 || tokens[0].Kind == token.EOF || tokens[0].End.Offset != len(text) {
+		return left, right
+	}
+	last.text = text
+	last.kind = tokens[0].Kind
+	last.span.End = first.span.End
+	right = right[1:]
+	return left, right
 }
 
 func (e *expander) expandPieces(input []piece, depth int, disabled map[string]bool) []piece {

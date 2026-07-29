@@ -15,6 +15,13 @@ type FunctionParameter struct {
 	Known    bool
 }
 
+func (m *Model) NormalizeTags(file *File, tags []string) []string {
+	if m == nil {
+		return append([]string(nil), tags...)
+	}
+	return file.normalizeTags(tags)
+}
+
 type NodeKey struct {
 	file    *File
 	pointer *parser.Node

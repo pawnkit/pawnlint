@@ -7,6 +7,9 @@ func (f *File) buildTagAliases() {
 		return
 	}
 	aliases := make(map[string][]string)
+	for name, expanded := range f.expansionState.TagAliases() {
+		aliases[name] = expandedTags(expanded)
+	}
 	add := func(tags []string) {
 		for _, tag := range tags {
 			if tag == "" {

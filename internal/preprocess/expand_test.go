@@ -84,6 +84,24 @@ func TestStateExpandsNestedObjectMacro(t *testing.T) {
 	}
 }
 
+func TestStateExpandsFunctionMacroInsideTagAlias(t *testing.T) {
+	source := []byte(`#define __TAG(%0) T_%0
+#define VEHICLE_TYRE_STATUS __TAG(VEHICLE_TYRE_STATUS)
+#define VEHICLE_TIRE_STATUS __TAG(VEHICLE_TYRE_STATUS)
+new VEHICLE_TIRE_STATUS:tires;
+`)
+	parsed := parser.Parse(source)
+	_, state := ExpandWithState(parsed, walk.New("test.pwn", parsed), 1, nil, nil)
+	value, ok := state.ExpandIdentifier("VEHICLE_TIRE_STATUS")
+	if !ok || value != "T_VEHICLE_TYRE_STATUS" {
+		t.Fatalf("expansion = %q, %v", value, ok)
+	}
+	aliases := state.TagAliases()
+	if aliases["VEHICLE_TYRE_STATUS"] != "T_VEHICLE_TYRE_STATUS" || aliases["VEHICLE_TIRE_STATUS"] != "T_VEHICLE_TYRE_STATUS" {
+		t.Fatalf("tag aliases = %v", aliases)
+	}
+}
+
 func TestCompactInputExpansionMatchesPointerInput(t *testing.T) {
 	source := []byte(`#define ADD(%0,%1) ((%0) + (%1))
 #define VALUE 2
