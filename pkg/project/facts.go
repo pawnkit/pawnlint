@@ -11,7 +11,7 @@ func (m *Model) Eval(file *File, node *parser.Node) (int64, bool) {
 	if m == nil || file == nil || file.Semantic == nil || node == nil {
 		return 0, false
 	}
-	return m.evalSyntax(file, file.syntaxNode(node), make(map[declarationID]bool))
+	return m.evalSyntax(file, file.syntaxNode(node), nil)
 }
 
 func (m *Model) evalSyntax(file *File, node cst.Node, visiting map[declarationID]bool) (int64, bool) {
@@ -21,8 +21,11 @@ func (m *Model) evalSyntax(file *File, node cst.Node, visiting map[declarationID
 			return 0, false
 		}
 		key := declarationKey(declaration)
-		if visiting[key] {
+		if visiting != nil && visiting[key] {
 			return 0, false
+		}
+		if visiting == nil {
+			visiting = make(map[declarationID]bool)
 		}
 		visiting[key] = true
 		value, known := m.declarationValue(declaration, visiting)

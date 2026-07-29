@@ -23,3 +23,26 @@ func TestRealworldProfile(t *testing.T) {
 		t.Fatalf("exit code %d", code)
 	}
 }
+
+func BenchmarkRealworldProfile(b *testing.B) {
+	root := os.Getenv("PAWNLINT_REALWORLD_ROOT")
+	entry := os.Getenv("PAWNLINT_REALWORLD_ENTRY")
+	if root == "" || entry == "" {
+		b.Skip()
+	}
+	config := os.Getenv("PAWNLINT_REALWORLD_CONFIG")
+	if config == "" {
+		config = filepath.Join(root, "pawnlint.toml")
+	}
+	args := []string{
+		"--config=" + config,
+		"--profile=strict",
+		"--format=json",
+		filepath.Join(root, entry),
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		Run(args, strings.NewReader(""), io.Discard, io.Discard)
+	}
+}

@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	parser "github.com/pawnkit/pawn-parser"
 )
 
 func BenchmarkBuildContextualIncludes(b *testing.B) {
@@ -32,6 +35,58 @@ func BenchmarkBuildContextualIncludesCompact(b *testing.B) {
 	}
 }
 
+func BenchmarkBuildSharedCompactIncludeContexts(b *testing.B) {
+	dir, sources := sharedCompactIncludeContexts(b)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		if _, err := Build(sources, Options{WorkingDir: dir, DefinesComplete: true, ReleaseIncludes: true}); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func TestSharedCompactIncludeContextPerformanceBudget(t *testing.T) {
+	if os.Getenv("PAWNKIT_PERFORMANCE_BUDGET") == "" {
+		t.Skip()
+	}
+	dir, sources := sharedCompactIncludeContexts(t)
+	var buildErr error
+	started := time.Now()
+	allocations := testing.AllocsPerRun(1, func() {
+		_, buildErr = Build(sources, Options{WorkingDir: dir, DefinesComplete: true, ReleaseIncludes: true})
+	})
+	if buildErr != nil {
+		t.Fatal(buildErr)
+	}
+	if allocations > 60_000 {
+		t.Fatalf("allocations = %.0f, budget = 60000", allocations)
+	}
+	if elapsed := time.Since(started); elapsed > 500*time.Millisecond {
+		t.Fatalf("elapsed = %s, budget = 500ms", elapsed)
+	}
+}
+
+func sharedCompactIncludeContexts(tb testing.TB) (string, []Source) {
+	tb.Helper()
+	dir := tb.TempDir()
+	includePath := filepath.Join(dir, "shared.inc")
+	var include strings.Builder
+	for index := range 100 {
+		fmt.Fprintf(&include, "#if defined CONTEXT_%d\nstock Function%d() {}\n#endif\n", index, index)
+	}
+	if err := os.WriteFile(includePath, []byte(include.String()), 0o644); err != nil {
+		tb.Fatal(err)
+	}
+	sources := make([]Source, 100)
+	for index := range sources {
+		path := filepath.Join(dir, fmt.Sprintf("root_%d.pwn", index))
+		content := fmt.Appendf(nil, "#define CONTEXT_%d\n#include \"shared.inc\"\n", index)
+		sources[index] = Source{Path: path, Content: content}
+	}
+	return dir, sources
+}
+
 func BenchmarkFunctionEffects(b *testing.B) {
 	dir := b.TempDir()
 	path := filepath.Join(dir, "main.pwn")
@@ -56,6 +111,26 @@ func BenchmarkFunctionEffects(b *testing.B) {
 			b.Fatal("function effects are unavailable")
 		}
 		b.StopTimer()
+	}
+}
+
+func BenchmarkEvalUnknown(b *testing.B) {
+	dir := b.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	model, err := Build([]Source{{Path: path, Content: []byte("main() { Missing; }\n")}}, Options{WorkingDir: dir})
+	if err != nil {
+		b.Fatal(err)
+	}
+	file := model.File(path)
+	identifiers := file.Walk.OfKind(parser.KindIdentifier)
+	if len(identifiers) == 0 {
+		b.Fatal("missing identifier")
+	}
+	node := identifiers[len(identifiers)-1]
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		model.Eval(file, node)
 	}
 }
 

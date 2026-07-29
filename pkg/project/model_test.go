@@ -870,6 +870,36 @@ func TestRootsUseIndependentIncludeContexts(t *testing.T) {
 	}
 }
 
+func TestCompactIncludeContextsShareSyntaxIndex(t *testing.T) {
+	dir := t.TempDir()
+	includePath := filepath.Join(dir, "context.inc")
+	includeSource := []byte("#if defined ONE\nFromOne() {}\n#endif\n#if defined TWO\nFromTwo() {}\n#endif\n")
+	if err := os.WriteFile(includePath, includeSource, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	onePath := filepath.Join(dir, "one.pwn")
+	twoPath := filepath.Join(dir, "two.pwn")
+	model, err := Build([]Source{
+		{Path: onePath, Content: []byte("#define ONE\n#include \"context.inc\"\n")},
+		{Path: twoPath, Content: []byte("#define TWO\n#include \"context.inc\"\n")},
+	}, Options{WorkingDir: dir, DefinesComplete: true, ReleaseIncludes: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var contexts []*File
+	for _, file := range model.Files {
+		if file.canonical == includePath {
+			contexts = append(contexts, file)
+		}
+	}
+	if len(contexts) != 2 || contexts[0].CompactWalk == nil || contexts[1].CompactWalk == nil {
+		t.Fatalf("compact contexts = %d", len(contexts))
+	}
+	if contexts[0].CompactWalk.Tree != contexts[1].CompactWalk.Tree {
+		t.Fatal("compact syntax index was not shared")
+	}
+}
+
 func TestBuildInternsDefineEnvironments(t *testing.T) {
 	dir := t.TempDir()
 	onePath := filepath.Join(dir, "one.pwn")

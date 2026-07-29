@@ -43,15 +43,21 @@ func NewCompactWithDefineContext(path string, file *parser.CompactFile, defines 
 }
 
 func NewCompactWithContext(path string, file *parser.CompactFile, defines *DefineContext, snapshots []DefineSnapshot, complete bool, lineTable *source.LineTable) *CompactModel {
-	return newCompactWithContext(path, file, defines, snapshots, complete, lineTable, true)
+	return newCompactWithContext(path, file, nil, defines, snapshots, complete, lineTable, true)
 }
 
 func NewCompactWithSharedContext(path string, file *parser.CompactFile, defines *DefineContext, snapshots []DefineSnapshot, complete bool, lineTable *source.LineTable) *CompactModel {
-	return newCompactWithContext(path, file, defines, snapshots, complete, lineTable, false)
+	return newCompactWithContext(path, file, nil, defines, snapshots, complete, lineTable, false)
 }
 
-func newCompactWithContext(path string, file *parser.CompactFile, defines *DefineContext, snapshots []DefineSnapshot, complete bool, lineTable *source.LineTable, cloneSnapshots bool) *CompactModel {
-	tree := syntax.NewCompactTree(file)
+func NewCompactWithTreeContext(path string, tree *syntax.CompactTree, defines *DefineContext, snapshots []DefineSnapshot, complete bool, lineTable *source.LineTable) *CompactModel {
+	return newCompactWithContext(path, tree.File(), tree, defines, snapshots, complete, lineTable, false)
+}
+
+func newCompactWithContext(path string, file *parser.CompactFile, tree *syntax.CompactTree, defines *DefineContext, snapshots []DefineSnapshot, complete bool, lineTable *source.LineTable, cloneSnapshots bool) *CompactModel {
+	if tree == nil {
+		tree = syntax.NewCompactTree(file)
+	}
 	if lineTable == nil {
 		lineTable = source.NewLineTable(tree.Source())
 	}

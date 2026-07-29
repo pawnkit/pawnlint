@@ -182,6 +182,7 @@ type physicalFile struct {
 	hash        [sha256.Size]byte
 	parsed      *parser.File
 	compact     *parser.CompactFile
+	compactTree *syntax.CompactTree
 	lineTable   *sourceinfo.LineTable
 	syntaxIndex *walk.Index
 }

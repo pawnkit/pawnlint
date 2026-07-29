@@ -59,6 +59,19 @@ jobs:
         with:
           version: v2.12.2
 
+  performance:
+    name: Performance budget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Check project model budget
+        env:
+          PAWNKIT_PERFORMANCE_BUDGET: "1"
+        run: go test -count=1 -run '^TestSharedCompactIncludeContextPerformanceBudget$' ./pkg/project
+
   corpus:
     name: Corpus conformance
     runs-on: ubuntu-latest

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.7.39 - 2026-07-29
+
+### Fixed
+
+- Resolve relative config files from the current working directory.
+
+### Performance
+
+- Share compact syntax indexes between include contexts.
+- Reuse compact analysis syntax when expanding editor documents.
+- Avoid allocations when evaluating unknown project constants.
+- Added a performance budget for include-heavy project models.
+
 ## 1.7.38 - 2026-07-29
 
 ### Performance

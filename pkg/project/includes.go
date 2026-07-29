@@ -17,6 +17,7 @@ import (
 	sourceinfo "github.com/pawnkit/pawnlint/internal/source"
 	"github.com/pawnkit/pawnlint/internal/source/cst"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
+	"github.com/pawnkit/pawnlint/internal/syntax"
 )
 
 const compactTargetThreshold = 512 << 10
@@ -58,7 +59,11 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 			if m.options.ObserveTiming != nil {
 				m.observe(TimingEvent{Stage: TimingParse, Duration: time.Since(started)})
 			}
-			physical = &physicalFile{source: source, hash: sourceHash, compact: compact, lineTable: sourceinfo.NewLineTable(source)}
+			physical = &physicalFile{
+				source: source, hash: sourceHash, compact: compact,
+				compactTree: syntax.NewCompactTree(compact),
+				lineTable:   sourceinfo.NewLineTable(source),
+			}
 			m.physical[canonical] = physical
 		} else {
 			discardTrivia := !retainTrivia
@@ -110,7 +115,7 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 		file.Walk = walkModel
 		file.Syntax = cst.Pointer(file.Walk)
 	} else {
-		file.CompactWalk = walk.NewCompactWithContext(display, compact, defines.walk, nil, m.options.DefinesComplete, physical.lineTable)
+		file.CompactWalk = walk.NewCompactWithTreeContext(display, physical.compactTree, defines.walk, nil, m.options.DefinesComplete, physical.lineTable)
 		file.Syntax = cst.Compact(file.CompactWalk)
 	}
 	m.Files = append(m.Files, file)
@@ -353,7 +358,7 @@ func (f *File) rebuildWalk(snapshots []walk.DefineSnapshot, snapshotsKey [sha256
 		f.Walk = cached
 		f.Syntax = cst.Pointer(f.Walk)
 	} else {
-		f.CompactWalk = walk.NewCompactWithSharedContext(f.Path, f.CompactParsed, f.defines.walk, f.snapshots, f.complete, f.CompactWalk.LineTable)
+		f.CompactWalk = walk.NewCompactWithTreeContext(f.Path, f.CompactWalk.Tree, f.defines.walk, f.snapshots, f.complete, f.CompactWalk.LineTable)
 		f.Syntax = cst.Compact(f.CompactWalk)
 	}
 }

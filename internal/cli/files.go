@@ -46,6 +46,11 @@ func runFiles(opts *cli, stdout, stderr io.Writer, reg *lint.Registrar, r *confi
 	if r.SourcePath != "" {
 		projectDir = filepath.Dir(r.SourcePath)
 	}
+	projectDir, err := filepath.Abs(projectDir)
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "pawnlint: resolve project directory: %v\n", err)
+		return exitUsage
+	}
 	if len(opts.Paths) == 0 {
 		return runConfiguredBuilds(opts, stdout, stderr, reg, r, projectDir, timings)
 	}

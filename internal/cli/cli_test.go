@@ -676,6 +676,32 @@ func TestCLIUsesManifestIncludePaths(t *testing.T) {
 	}
 }
 
+func TestCLIUsesRelativeConfigWithManifestIncludePaths(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, "includes"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "includes", "helper.inc"), []byte("stock Helper() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	manifest := `{"entry":"main.pwn","pawnkit":{"schemaVersion":1,"profile":"openmp","includePaths":["includes"]}}`
+	if err := os.WriteFile(filepath.Join(dir, "pawn.json"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "pawnlint.toml"), []byte("include-paths = [\"includes\"]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "main.pwn"), []byte("#include <helper>\nmain() { Helper(); }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Chdir(dir)
+	out, stderr, code := runCLI(t, []string{"--config", "pawnlint.toml", "--format", "compact", "main.pwn"}, "")
+	if code != 0 || strings.Contains(out, "missing-include") {
+		t.Fatalf("code=%d output=%q stderr=%q", code, out, stderr)
+	}
+}
+
 func TestCLIParallelLintingIsRaceFreeAndDeterministic(t *testing.T) {
 	dir := t.TempDir()
 	const n = 60
