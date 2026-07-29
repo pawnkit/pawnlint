@@ -44,6 +44,7 @@ type ParseCache struct {
 type parseCacheEntry struct {
 	hash          [sha256.Size]byte
 	discardTrivia bool
+	allowTrivia   bool
 	file          *parser.File
 }
 
@@ -239,7 +240,7 @@ func (c *ParseCache) prepare(source PreparedSource) {
 	c.mu.RLock()
 	entry := c.entries[source.Path]
 	c.mu.RUnlock()
-	if entry.file != nil && entry.hash == hash && entry.discardTrivia == source.DiscardTrivia {
+	if entry.matches(hash, source.DiscardTrivia) {
 		return
 	}
 	parsed := source.CompactSyntax.ExpandTokensWithOptions(
@@ -250,8 +251,10 @@ func (c *ParseCache) prepare(source PreparedSource) {
 	if c.entries == nil {
 		c.entries = make(map[string]parseCacheEntry)
 	}
-	if existing := c.entries[source.Path]; existing.file == nil || existing.hash != hash || existing.discardTrivia != source.DiscardTrivia {
-		c.entries[source.Path] = parseCacheEntry{hash: hash, discardTrivia: source.DiscardTrivia, file: parsed}
+	if existing := c.entries[source.Path]; !existing.matches(hash, source.DiscardTrivia) {
+		c.entries[source.Path] = parseCacheEntry{
+			hash: hash, discardTrivia: source.DiscardTrivia, allowTrivia: true, file: parsed,
+		}
 	}
 	c.mu.Unlock()
 }
@@ -263,7 +266,7 @@ func (c *ParseCache) parseHashed(path string, source []byte, hash [sha256.Size]b
 	c.mu.RLock()
 	entry := c.entries[path]
 	c.mu.RUnlock()
-	if entry.file != nil && entry.hash == hash && entry.discardTrivia == discardTrivia {
+	if entry.matches(hash, discardTrivia) {
 		return entry.file, true
 	}
 	parsed := parseSource(source, discardTrivia, tokens)
@@ -271,13 +274,18 @@ func (c *ParseCache) parseHashed(path string, source []byte, hash [sha256.Size]b
 	if c.entries == nil {
 		c.entries = make(map[string]parseCacheEntry)
 	}
-	if existing := c.entries[path]; existing.file != nil && existing.hash == hash && existing.discardTrivia == discardTrivia {
+	if existing := c.entries[path]; existing.matches(hash, discardTrivia) {
 		parsed = existing.file
 	} else {
 		c.entries[path] = parseCacheEntry{hash: hash, discardTrivia: discardTrivia, file: parsed}
 	}
 	c.mu.Unlock()
 	return parsed, false
+}
+
+func (e parseCacheEntry) matches(hash [sha256.Size]byte, discardTrivia bool) bool {
+	return e.file != nil && e.hash == hash &&
+		(e.discardTrivia == discardTrivia || e.allowTrivia && !e.discardTrivia)
 }
 
 func (c *ParseCache) getIndex(path string, hash [sha256.Size]byte) *walk.Index {

@@ -132,11 +132,13 @@ func diagnoseContextWithTimings(
 				bytes.Equal(shared.Parse.Source, file.Content) {
 				compactSyntax = shared.Parse
 			}
+			discardTrivia := compactSyntax == nil && !features.Has(project.FeatureTrivia) &&
+				!bytes.Contains(file.Content, []byte("pawnlint-"))
 			sharedSources = append(sharedSources, project.Source{Path: path, Content: file.Content})
 			prepared = append(prepared, project.PreparedSource{
 				Path: path, Content: file.Content, Tokens: file.Tokens,
 				CompactSyntax: compactSyntax,
-				DiscardTrivia: !features.Has(project.FeatureTrivia) && !bytes.Contains(file.Content, []byte("pawnlint-")),
+				DiscardTrivia: discardTrivia,
 			})
 		}
 		if cache != nil {

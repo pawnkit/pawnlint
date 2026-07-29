@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.33 - 2026-07-29
+
+### Performance
+
+- Avoid copying shared tokens when expanding rebased syntax.
+
 ## 1.7.32 - 2026-07-29
 
 ### Performance

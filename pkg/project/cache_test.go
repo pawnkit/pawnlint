@@ -40,6 +40,38 @@ func TestParseCachePreparesTokenizedSources(t *testing.T) {
 	}
 }
 
+func TestParseCacheCompactEntrySatisfiesDiscardTrivia(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	content := []byte("// note\nmain() {}\n")
+	cache := project.NewParseCache()
+	if err := cache.PrepareContext(context.Background(), []project.PreparedSource{{
+		Path: path, Content: content, Tokens: lexer.Tokenize(content),
+		CompactSyntax: parser.ParseCompact(content, parser.ParseOptions{}),
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	features := project.NewFeatures()
+	parseEvents := 0
+	if _, err := project.Build([]project.Source{{Path: path, Content: content}}, project.Options{
+		WorkingDir: dir,
+		ParseCache: cache,
+		Features:   &features,
+		ObserveTiming: func(event project.TimingEvent) {
+			if event.Stage == project.TimingParse {
+				parseEvents++
+			}
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if parseEvents != 0 {
+		t.Fatalf("parse events = %d, want 0", parseEvents)
+	}
+}
+
 func TestParseCachePreparesCompactSyntax(t *testing.T) {
 	t.Parallel()
 
