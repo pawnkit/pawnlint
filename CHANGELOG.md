@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.38 - 2026-07-29
+
+### Performance
+
+- Reuse loop mutation checks across invariant-call candidates.
+
 ## 1.7.37 - 2026-07-29
 
 ### Performance
