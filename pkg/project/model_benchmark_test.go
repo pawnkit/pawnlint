@@ -32,6 +32,33 @@ func BenchmarkBuildContextualIncludesCompact(b *testing.B) {
 	}
 }
 
+func BenchmarkFunctionEffects(b *testing.B) {
+	dir := b.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	var source strings.Builder
+	for index := 0; index < 2_000; index++ {
+		fmt.Fprintf(&source, "Function%d(&value, other) { return value + other; }\n", index)
+	}
+	content := []byte(source.String())
+	b.ReportAllocs()
+	b.StopTimer()
+	for iteration := 0; iteration < b.N; iteration++ {
+		model, err := Build([]Source{{Path: path, Content: content}}, Options{WorkingDir: dir, DefinesComplete: true})
+		if err != nil {
+			b.Fatal(err)
+		}
+		functions := model.Declarations["Function1999"]
+		if len(functions) != 1 {
+			b.Fatalf("Function1999 declarations = %d", len(functions))
+		}
+		b.StartTimer()
+		if _, ok := model.FunctionEffects(functions[0]); !ok {
+			b.Fatal("function effects are unavailable")
+		}
+		b.StopTimer()
+	}
+}
+
 func contextualIncludeBenchmark(b *testing.B) (string, string, []byte) {
 	b.Helper()
 	dir := b.TempDir()

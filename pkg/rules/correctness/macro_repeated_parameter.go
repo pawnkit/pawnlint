@@ -2,6 +2,7 @@ package correctness
 
 import (
 	"fmt"
+	"sort"
 
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
@@ -77,17 +78,17 @@ func macroParameterKeywordOperand(ctx *lint.Context, node *parser.Node) bool {
 	if ctx.File == nil || ctx.File.Parsed == nil {
 		return false
 	}
-	for index := len(ctx.File.Parsed.Tokens) - 1; index >= 0; index-- {
-		tok := ctx.File.Parsed.Tokens[index]
-		if tok.End.Offset > node.Start {
-			continue
-		}
-		switch tok.Kind {
-		case token.KwSizeof, token.KwTagof, token.KwDefined:
-			return true
-		default:
-			return false
-		}
+	tokens := ctx.File.Parsed.Tokens
+	index := sort.Search(len(tokens), func(index int) bool {
+		return tokens[index].End.Offset > node.Start
+	}) - 1
+	if index < 0 {
+		return false
 	}
-	return false
+	switch tokens[index].Kind {
+	case token.KwSizeof, token.KwTagof, token.KwDefined:
+		return true
+	default:
+		return false
+	}
 }

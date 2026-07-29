@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.7.36 - 2026-07-29
+
+### Performance
+
+- Reduced allocations while inferring function effects for strict rules.
+- Reused call-purity results across rules.
+- Indexed uncertain loop regions once per file.
+- Avoided rescanning every token when locating a redundant `else`.
+- Looked up macro operands directly instead of rescanning the token stream.
+
 ## 1.7.35 - 2026-07-29
 
 ### Fixed

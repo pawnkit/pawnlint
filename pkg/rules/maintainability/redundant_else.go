@@ -1,6 +1,8 @@
 package maintainability
 
 import (
+	"sort"
+
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/source"
@@ -96,7 +98,14 @@ func redundantElseRange(ctx *lint.Context, consequence, alternative *parser.Node
 	if consequence == nil || alternative == nil {
 		return source.Range{}, false
 	}
-	for _, current := range ctx.File.Parsed.Tokens {
+	tokens := ctx.File.Parsed.Tokens
+	index := sort.Search(len(tokens), func(index int) bool {
+		return tokens[index].Start.Offset >= consequence.End
+	})
+	for _, current := range tokens[index:] {
+		if current.Start.Offset > alternative.Start {
+			break
+		}
 		if current.Kind != token.KwElse || current.Start.Offset < consequence.End || current.End.Offset > alternative.Start || current.Origin != nil {
 			continue
 		}

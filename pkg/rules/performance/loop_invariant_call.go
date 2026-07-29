@@ -31,18 +31,25 @@ func (LoopInvariantCall) Run(ctx *lint.Context) {
 	if ctx.Semantic == nil {
 		return
 	}
+	uncertainLoops := loopInvariantUncertainLoops(ctx)
 	calls := make(map[*parser.Node][]*parser.Node)
 	for _, call := range ctx.Walk.OfKind(parser.KindCallExpression) {
 		loop := loopInvariantNearestLoop(ctx, call)
-		calls[loop] = append(calls[loop], call)
+		if loop != nil {
+			calls[loop] = append(calls[loop], call)
+		}
 	}
 	for _, kind := range []parser.Kind{parser.KindWhileStatement, parser.KindDoWhileStatement, parser.KindForStatement} {
 		for _, loop := range ctx.Walk.OfKind(kind) {
-			if loop.HasError || ctx.Walk.Inactive(loop) || ctx.Walk.Uncertain(loop) || loopInvariantUncertain(ctx, loop) {
+			if loop.HasError || ctx.Walk.Inactive(loop) || ctx.Walk.Uncertain(loop) || uncertainLoops[loop] {
 				continue
 			}
 			for _, call := range calls[loop] {
 				if !loopInvariantRepeatedRegion(loop, call) || call.HasError || call.Tok.Origin != nil || ctx.Walk.Uncertain(call) {
+					continue
+				}
+				name, pure := loopInvariantPureCall(ctx, call)
+				if !pure || name == "strlen" || loopInvariantInsidePureCall(ctx, call, loop) {
 					continue
 				}
 				symbols := make(map[*semantic.Symbol]struct{})
@@ -60,10 +67,6 @@ func (LoopInvariantCall) Run(ctx *lint.Context) {
 				if changed {
 					continue
 				}
-				name, pure := loopInvariantPureCall(ctx, call)
-				if !pure || name == "strlen" || loopInvariantInsidePureCall(ctx, call, loop) {
-					continue
-				}
 				ctx.Report(diagnostic.Diagnostic{
 					Message:     fmt.Sprintf("pure call %q uses unchanged arguments inside the loop", name),
 					Filename:    ctx.File.Path,
@@ -73,6 +76,21 @@ func (LoopInvariantCall) Run(ctx *lint.Context) {
 			}
 		}
 	}
+}
+
+func loopInvariantUncertainLoops(ctx *lint.Context) map[*parser.Node]bool {
+	result := make(map[*parser.Node]bool)
+	for _, kind := range []parser.Kind{parser.KindMacroInvocation, parser.KindMacroInvocationBlock, parser.KindConditionalSplice} {
+		for _, node := range ctx.Walk.OfKind(kind) {
+			for current := ctx.Walk.Parent(node); current != nil; current = ctx.Walk.Parent(current) {
+				switch current.Kind {
+				case parser.KindWhileStatement, parser.KindDoWhileStatement, parser.KindForStatement:
+					result[current] = true
+				}
+			}
+		}
+	}
+	return result
 }
 
 func loopInvariantArguments(ctx *lint.Context, arguments, loop *parser.Node, symbols map[*semantic.Symbol]struct{}) bool {

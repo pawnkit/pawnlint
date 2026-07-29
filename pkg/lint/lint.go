@@ -116,12 +116,19 @@ type Context struct {
 type fileFacts struct {
 	assignments map[*parser.Node][]*parser.Node
 	symbols     map[*parser.Node][]*semantic.Symbol
+	pureCalls   map[*parser.Node]pureCallFact
+}
+
+type pureCallFact struct {
+	name string
+	pure bool
 }
 
 func newFileFacts(tree *walk.Model, model *semantic.Model) *fileFacts {
 	facts := &fileFacts{
 		assignments: make(map[*parser.Node][]*parser.Node),
 		symbols:     make(map[*parser.Node][]*semantic.Symbol),
+		pureCalls:   make(map[*parser.Node]pureCallFact),
 	}
 	if tree != nil {
 		for _, assignment := range tree.OfKind(parser.KindAssignmentExpression) {
@@ -263,6 +270,18 @@ func (ctx *Context) Pure(node *parser.Node) bool {
 }
 
 func (ctx *Context) PureCall(call *parser.Node) (string, bool) {
+	if ctx != nil && ctx.facts != nil {
+		if fact, ok := ctx.facts.pureCalls[call]; ok {
+			return fact.name, fact.pure
+		}
+		name, pure := ctx.pureCall(call)
+		ctx.facts.pureCalls[call] = pureCallFact{name: name, pure: pure}
+		return name, pure
+	}
+	return ctx.pureCall(call)
+}
+
+func (ctx *Context) pureCall(call *parser.Node) (string, bool) {
 	if ctx == nil || call == nil || call.Kind != parser.KindCallExpression {
 		return "", false
 	}

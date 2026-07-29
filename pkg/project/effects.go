@@ -340,9 +340,9 @@ func (m *Model) indexCompactEffectParameters(file *File, function syntax.NodeID,
 func (m *Model) mergeFunctionEffects(function Declaration, state *functionEffectState, states map[declarationID]*functionEffectState) bool {
 	complete := state.complete
 	intrinsicImpure := state.intrinsicImpure
-	reads := cloneEffectDeclarations(state.reads)
-	writes := cloneEffectDeclarations(state.writes)
-	mutated := cloneEffectParameters(state.mutated)
+	reads := len(state.reads)
+	writes := len(state.writes)
+	mutated := len(state.mutated)
 	for _, call := range state.calls {
 		callee := states[declarationKey(call.Callee)]
 		if callee == nil || !callee.complete {
@@ -350,20 +350,22 @@ func (m *Model) mergeFunctionEffects(function Declaration, state *functionEffect
 			continue
 		}
 		intrinsicImpure = intrinsicImpure || callee.intrinsicImpure
-		mergeEffectDeclarations(reads, callee.reads)
-		mergeEffectDeclarations(writes, callee.writes)
-		if len(callee.mutated) != 0 && !m.mapMutatedArguments(state, call, callee.mutated, mutated, writes) {
+		mergeEffectDeclarations(state.reads, callee.reads)
+		mergeEffectDeclarations(state.writes, callee.writes)
+		if len(callee.mutated) != 0 && !m.mapMutatedArguments(state, call, callee.mutated, state.mutated, state.writes) {
 			complete = false
 		}
 	}
-	pure := complete && !intrinsicImpure && len(reads) == 0 && len(writes) == 0 && len(mutated) == 0
-	changed := complete != state.complete || intrinsicImpure != state.intrinsicImpure || pure != state.pure || !sameEffectDeclarations(reads, state.reads) || !sameEffectDeclarations(writes, state.writes) || !sameEffectParameters(mutated, state.mutated)
+	pure := complete && !intrinsicImpure && len(state.reads) == 0 && len(state.writes) == 0 && len(state.mutated) == 0
+	changed := complete != state.complete ||
+		intrinsicImpure != state.intrinsicImpure ||
+		pure != state.pure ||
+		reads != len(state.reads) ||
+		writes != len(state.writes) ||
+		mutated != len(state.mutated)
 	state.complete = complete
 	state.intrinsicImpure = intrinsicImpure
 	state.pure = pure
-	state.reads = reads
-	state.writes = writes
-	state.mutated = mutated
 	return changed
 }
 
@@ -559,48 +561,10 @@ func effectReferencesByAmpersand(file *File, parameter cst.Node) bool {
 	return false
 }
 
-func cloneEffectDeclarations(values map[declarationID]Declaration) map[declarationID]Declaration {
-	result := make(map[declarationID]Declaration, len(values))
-	mergeEffectDeclarations(result, values)
-	return result
-}
-
 func mergeEffectDeclarations(target, source map[declarationID]Declaration) {
 	for key, declaration := range source {
 		target[key] = declaration
 	}
-}
-
-func cloneEffectParameters(values map[int]bool) map[int]bool {
-	result := make(map[int]bool, len(values))
-	for index := range values {
-		result[index] = true
-	}
-	return result
-}
-
-func sameEffectDeclarations(left, right map[declarationID]Declaration) bool {
-	if len(left) != len(right) {
-		return false
-	}
-	for key := range left {
-		if _, ok := right[key]; !ok {
-			return false
-		}
-	}
-	return true
-}
-
-func sameEffectParameters(left, right map[int]bool) bool {
-	if len(left) != len(right) {
-		return false
-	}
-	for index := range left {
-		if !right[index] {
-			return false
-		}
-	}
-	return true
 }
 
 func publicFunctionEffects(state *functionEffectState) FunctionEffects {
