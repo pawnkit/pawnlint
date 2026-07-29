@@ -84,7 +84,7 @@ func argumentTagSignature(ctx *lint.Context, call *parser.Node) (string, []argum
 			if declaration.Kind != semantic.SymbolFunction || !declaration.Valid() || declaration.Ambiguous() {
 				return "", nil, false
 			}
-			return name, argumentProjectParameters(declaration), true
+			return name, argumentProjectParameters(ctx.Project, declaration), true
 		}
 		for _, declaration := range ctx.Project.Declarations[name] {
 			if declaration.Kind == semantic.SymbolFunction {
@@ -107,8 +107,8 @@ func argumentTagSignature(ctx *lint.Context, call *parser.Node) (string, []argum
 	return "", nil, false
 }
 
-func argumentProjectParameters(declaration project.Declaration) []argumentTagParameter {
-	parameters := declaration.FunctionParameters()
+func argumentProjectParameters(model *project.Model, declaration project.Declaration) []argumentTagParameter {
+	parameters := model.FunctionParameters(declaration)
 	result := make([]argumentTagParameter, len(parameters))
 	for index, parameter := range parameters {
 		result[index] = argumentTagParameter{tags: normalizeArgumentTags(parameter.Tags), variadic: parameter.Variadic, known: parameter.Known}

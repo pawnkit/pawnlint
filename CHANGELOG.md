@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.21 - 2026-07-29
+
+### Performance
+
+- Cache function parameter facts in the project semantic model.
+- Avoid repeating local tag and constant queries after project resolution.
+- Report the slowest rules in the opt-in real-project timing test.
+
 ## 1.7.20 - 2026-07-28
 
 ### Fixed

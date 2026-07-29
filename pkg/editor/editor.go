@@ -50,6 +50,19 @@ func diagnoseContext(
 	shared *analysis.Result,
 	observe func(project.TimingEvent),
 ) ([]diagnostic.Diagnostic, error) {
+	return diagnoseContextWithTimings(ctx, path, content, workingDir, cache, shared, observe, nil)
+}
+
+func diagnoseContextWithTimings(
+	ctx context.Context,
+	path string,
+	content []byte,
+	workingDir string,
+	cache *project.ParseCache,
+	shared *analysis.Result,
+	observeProject func(project.TimingEvent),
+	observeLint func(lint.TimingEvent),
+) ([]diagnostic.Diagnostic, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -130,7 +143,7 @@ func diagnoseContext(
 		[]project.Source{{Path: path, Content: content}},
 		project.Options{
 			WorkingDir: workingDir, IncludePaths: includePaths, Defines: resolved.Source.Defines,
-			ParseCache: cache, Features: &features, RootTokens: rootTokens, ObserveTiming: observe,
+			ParseCache: cache, Features: &features, RootTokens: rootTokens, ObserveTiming: observeProject,
 			IncludeSources: sharedSources,
 		},
 	)
@@ -148,6 +161,7 @@ func diagnoseContext(
 	engine.API = resolved.API
 	engine.SharedAnalysis = shared
 	engine.Context = ctx
+	engine.ObserveTiming = observeLint
 
 	diagnostics := engine.LintFile(path, content, lint.ProjectAnalysis, resolved.Enabled, resolved.AllKnownRuleIDs, resolved.RuleConfig)
 	if err := ctx.Err(); err != nil {

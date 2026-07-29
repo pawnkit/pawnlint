@@ -40,6 +40,9 @@ func (m *CompactModel) declareCompact(decl, nameNode syntax.NodeID, kind SymbolK
 	}
 	m.Symbols = append(m.Symbols, symbol)
 	symbol.id = uint32(len(m.Symbols))
+	if kind == SymbolParameter && function != syntax.NoNode {
+		m.parameters[function] = append(m.parameters[function], symbol)
+	}
 	if kind == SymbolEnumRoot || kind == SymbolEnumEntry {
 		m.declSymbols[decl] = symbol
 	}

@@ -77,6 +77,7 @@ type Model struct {
 	nodeScopes     map[*parser.Node]*Scope
 	declSymbols    map[*parser.Node]*Symbol
 	constantValues map[*Symbol]int64
+	parameters     map[*parser.Node][]*Symbol
 }
 
 func Build(file *parser.File, tree *walk.Model) *Model {
@@ -91,6 +92,7 @@ func Build(file *parser.File, tree *walk.Model) *Model {
 		nodeScopes:     make(map[*parser.Node]*Scope),
 		declSymbols:    make(map[*parser.Node]*Symbol),
 		constantValues: make(map[*Symbol]int64),
+		parameters:     make(map[*parser.Node][]*Symbol),
 	}
 	m.Root = &Scope{Node: tree.Root()}
 	m.collect(tree.Root(), m.Root, nil, nil)
@@ -113,6 +115,13 @@ func Build(file *parser.File, tree *walk.Model) *Model {
 	}
 	m.evaluateEnums()
 	return m
+}
+
+func (m *Model) ParameterSymbols(function *parser.Node) []*Symbol {
+	if m == nil {
+		return nil
+	}
+	return m.parameters[function]
 }
 
 func (m *Model) collect(node *parser.Node, scope *Scope, function *parser.Node, functionScope *Scope) {

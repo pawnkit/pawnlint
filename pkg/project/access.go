@@ -108,8 +108,8 @@ func (d Declaration) FunctionParameters() []FunctionParameter {
 		}
 		item := FunctionParameter{Tags: []string{""}}
 		if d.Symbol != nil {
-			for _, symbol := range d.File.Semantic.Symbols {
-				if symbol.Kind != semantic.SymbolParameter || symbol.Decl != parameter.Pointer() {
+			for _, symbol := range d.File.Semantic.ParameterSymbols(declarationSyntax(d).Pointer()) {
+				if symbol.Decl != parameter.Pointer() {
 					continue
 				}
 				if !symbol.Ambiguous {
@@ -121,8 +121,8 @@ func (d Declaration) FunctionParameters() []FunctionParameter {
 				break
 			}
 		} else if d.compactSymbol != nil {
-			for _, symbol := range d.File.CompactSemantic.Symbols {
-				if symbol.Kind != semantic.SymbolParameter || symbol.Decl != parameter.ID() {
+			for _, symbol := range d.File.CompactSemantic.ParameterSymbols(declarationSyntax(d).ID()) {
+				if symbol.Decl != parameter.ID() {
 					continue
 				}
 				if !symbol.Ambiguous {
@@ -137,6 +137,32 @@ func (d Declaration) FunctionParameters() []FunctionParameter {
 		result = append(result, item)
 	}
 	return result
+}
+
+// FunctionParameters returns the cached signature for declaration.
+func (m *Model) FunctionParameters(declaration Declaration) []FunctionParameter {
+	if m == nil || declaration.File == nil {
+		return nil
+	}
+	key := declarationKey(declaration)
+	m.functionParametersMu.RLock()
+	parameters, found := m.functionParameters[key]
+	m.functionParametersMu.RUnlock()
+	if found {
+		return parameters
+	}
+	parameters = declaration.FunctionParameters()
+	m.functionParametersMu.Lock()
+	if m.functionParameters == nil {
+		m.functionParameters = make(map[declarationID][]FunctionParameter)
+	}
+	if existing, ok := m.functionParameters[key]; ok {
+		parameters = existing
+	} else {
+		m.functionParameters[key] = parameters
+	}
+	m.functionParametersMu.Unlock()
+	return parameters
 }
 
 // SingleReturnCallName identifies wrappers that return one direct call.

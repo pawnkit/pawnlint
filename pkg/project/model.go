@@ -139,40 +139,42 @@ type Reference struct {
 }
 
 type Model struct {
-	Files              []*File
-	Units              []*Unit
-	Declarations       map[string][]Declaration
-	CallGraph          *CallGraph
-	includeCycles      []IncludeCycle
-	duplicateFunctions []DuplicateFunction
-	duplicateGlobals   []DuplicateGlobal
-	includeDirectives  []IncludeIssue
-	missingIncludes    []IncludeIssue
-	ambiguousIncludes  []IncludeIssue
-	duplicateIncludes  []IncludeIssue
-	unusedIncludes     []IncludeIssue
-	symbolConflicts    []SymbolConflict
-	byCanonical        map[string]*File
-	byContext          map[fileContextKey]*File
-	defineEnvironments map[uint64][]*defineEnvironment
-	lastEnvironment    *defineEnvironment
-	nextEnvironmentID  uint32
-	physical           map[string]*physicalFile
-	references         map[declarationID][]Reference
-	resolved           map[*File]map[fileNodeID]declarationID
-	ambiguous          map[*File]map[fileNodeID]bool
-	declarationsByID   map[declarationID]*Declaration
-	effects            map[declarationID]FunctionEffects
-	functionVariantMap map[functionVariantKey][]Declaration
-	functionVariantsMu sync.RWMutex
-	functionEffects    bool
-	effectsOnce        sync.Once
-	definedNames       map[string]struct{}
-	sourceFiles        map[uint32]*File
-	includeResolver    *includeResolution
-	options            Options
-	rootTokensUsed     bool
-	ctx                context.Context
+	Files                []*File
+	Units                []*Unit
+	Declarations         map[string][]Declaration
+	CallGraph            *CallGraph
+	includeCycles        []IncludeCycle
+	duplicateFunctions   []DuplicateFunction
+	duplicateGlobals     []DuplicateGlobal
+	includeDirectives    []IncludeIssue
+	missingIncludes      []IncludeIssue
+	ambiguousIncludes    []IncludeIssue
+	duplicateIncludes    []IncludeIssue
+	unusedIncludes       []IncludeIssue
+	symbolConflicts      []SymbolConflict
+	byCanonical          map[string]*File
+	byContext            map[fileContextKey]*File
+	defineEnvironments   map[uint64][]*defineEnvironment
+	lastEnvironment      *defineEnvironment
+	nextEnvironmentID    uint32
+	physical             map[string]*physicalFile
+	references           map[declarationID][]Reference
+	resolved             map[*File]map[fileNodeID]declarationID
+	ambiguous            map[*File]map[fileNodeID]bool
+	declarationsByID     map[declarationID]*Declaration
+	effects              map[declarationID]FunctionEffects
+	functionVariantMap   map[functionVariantKey][]Declaration
+	functionVariantsMu   sync.RWMutex
+	functionParameters   map[declarationID][]FunctionParameter
+	functionParametersMu sync.RWMutex
+	functionEffects      bool
+	effectsOnce          sync.Once
+	definedNames         map[string]struct{}
+	sourceFiles          map[uint32]*File
+	includeResolver      *includeResolution
+	options              Options
+	rootTokensUsed       bool
+	ctx                  context.Context
 }
 
 type physicalFile struct {

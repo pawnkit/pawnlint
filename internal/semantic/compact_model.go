@@ -57,6 +57,7 @@ type CompactModel struct {
 	unresolved  []CompactUnresolvedReference
 	declSymbols map[syntax.NodeID]*CompactSymbol
 	constants   map[*CompactSymbol]int64
+	parameters  map[syntax.NodeID][]*CompactSymbol
 }
 
 func BuildCompact(file *parser.CompactFile, tree *walk.CompactModel) *CompactModel {
@@ -70,6 +71,7 @@ func BuildCompact(file *parser.CompactFile, tree *walk.CompactModel) *CompactMod
 		references:  make(map[*CompactSymbol][]CompactReference),
 		declSymbols: make(map[syntax.NodeID]*CompactSymbol),
 		constants:   make(map[*CompactSymbol]int64),
+		parameters:  make(map[syntax.NodeID][]*CompactSymbol),
 	}
 	model.Root = &CompactScope{Node: tree.Root(), id: 1}
 	model.scopes = append(model.scopes, model.Root)
@@ -90,6 +92,13 @@ func BuildCompact(file *parser.CompactFile, tree *walk.CompactModel) *CompactMod
 	}
 	model.evaluateCompactEnums()
 	return model
+}
+
+func (m *CompactModel) ParameterSymbols(function syntax.NodeID) []*CompactSymbol {
+	if m == nil {
+		return nil
+	}
+	return m.parameters[function]
 }
 
 func (m *CompactModel) collectCompact(node syntax.NodeID, scope *CompactScope, function syntax.NodeID, functionScope *CompactScope) {

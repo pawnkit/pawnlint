@@ -38,6 +38,9 @@ func (m *Model) declare(decl, nameNode *parser.Node, kind SymbolKind, scope *Sco
 		symbol.Ambiguous = true
 	}
 	m.Symbols = append(m.Symbols, symbol)
+	if kind == SymbolParameter && function != nil {
+		m.parameters[function] = append(m.parameters[function], symbol)
+	}
 	if kind == SymbolEnumRoot || kind == SymbolEnumEntry {
 		m.declSymbols[decl] = symbol
 	}

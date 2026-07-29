@@ -188,9 +188,7 @@ func (ctx *Context) Constant(node *parser.Node) (int64, bool) {
 		return 0, false
 	}
 	if ctx.Project != nil && ctx.ProjectFile != nil {
-		if value, ok := ctx.Project.Eval(ctx.ProjectFile, node); ok {
-			return value, true
-		}
+		return ctx.Project.Eval(ctx.ProjectFile, node)
 	}
 	if ctx.Semantic != nil {
 		return ctx.Semantic.Eval(node)
@@ -203,9 +201,7 @@ func (ctx *Context) ExpressionTags(node *parser.Node) []string {
 		return nil
 	}
 	if ctx.Project != nil && ctx.ProjectFile != nil {
-		if tags := ctx.Project.ExpressionTags(ctx.ProjectFile, node); len(tags) != 0 {
-			return tags
-		}
+		return ctx.Project.ExpressionTags(ctx.ProjectFile, node)
 	}
 	if ctx.Semantic != nil {
 		return ctx.Semantic.ExpressionTags(node)
