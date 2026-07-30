@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.1 - 2026-07-30
+
+### Performance
+
+- Reuse transitive function effects from pawn-analysis across included files.
+
 ## 1.8.0 - 2026-07-30
 
 ### Performance

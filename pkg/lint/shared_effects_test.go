@@ -27,12 +27,14 @@ func TestSharedLeafFunctionEffects(t *testing.T) {
 	}
 
 	leaf := model.Declarations["Leaf"][0]
-	effects, ok := sharedLeafFunctionEffects(shared, leaf)
+	effects, ok := sharedFunctionEffects(shared, leaf)
 	if !ok || !effects.Complete || len(effects.MutatedParameters) != 1 || effects.MutatedParameters[0] != 0 {
 		t.Fatalf("leaf effects = %#v, found = %v", effects, ok)
 	}
 	wrapper := model.Declarations["Wrapper"][0]
-	if _, ok := sharedLeafFunctionEffects(shared, wrapper); ok {
-		t.Fatal("transitive function used direct shared effects")
+	effects, ok = sharedFunctionEffects(shared, wrapper)
+	if !ok || !effects.Complete || len(effects.MutatedParameters) != 1 ||
+		effects.MutatedParameters[0] != 0 {
+		t.Fatalf("wrapper effects = %#v, found = %v", effects, ok)
 	}
 }

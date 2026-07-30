@@ -38,7 +38,7 @@ func (e *Engine) resolveCallEffects(file *project.File, tree *walk.Model, call *
 					continue
 				}
 				projectFunction = true
-				effects, known := sharedLeafFunctionEffects(e.SharedAnalysis, variant)
+				effects, known := sharedFunctionEffects(e.SharedAnalysis, variant)
 				if !known {
 					effects, known = e.Project.FunctionEffects(variant)
 				}

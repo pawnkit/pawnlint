@@ -134,7 +134,7 @@ type evalFact struct {
 }
 
 func (ctx *Context) FunctionEffects(declaration project.Declaration) (project.FunctionEffects, bool) {
-	if effects, ok := sharedLeafFunctionEffects(ctx.SharedAnalysis, declaration); ok {
+	if effects, ok := sharedFunctionEffects(ctx.SharedAnalysis, declaration); ok {
 		return effects, true
 	}
 	if ctx.Project == nil {
