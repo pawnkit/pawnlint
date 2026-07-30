@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.7 - 2026-07-30
+
+### Fixed
+
+- Keep project effect analysis when an editor result has no shared function facts.
+
 ## 1.8.6 - 2026-07-30
 
 ### Performance

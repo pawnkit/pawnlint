@@ -9,6 +9,10 @@ import (
 	"github.com/pawnkit/pawnlint/pkg/project"
 )
 
+func hasSharedFunctionFacts(shared *analysis.Result) bool {
+	return shared != nil && len(shared.FunctionFacts) != 0
+}
+
 func sharedFunctionEffects(
 	shared *analysis.Result,
 	declaration project.Declaration,
