@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.6 - 2026-07-30
+
+### Performance
+
+- Use shared analysis as the sole function-effect source in editor runs.
+
 ## 1.8.5 - 2026-07-30
 
 ### Performance
