@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.2 - 2026-07-30
+
+### Fixed
+
+- Updated pawn-analysis to handle macro-expanded parameter indexes.
+
 ## 1.8.1 - 2026-07-30
 
 ### Performance
