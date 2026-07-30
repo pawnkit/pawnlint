@@ -42,7 +42,7 @@ func sharedFunctionEffects(
 		}
 		facts, found := shared.FunctionFacts[item.ID]
 		if !found {
-			return project.FunctionEffects{}, false
+			return project.FunctionEffects{}, true
 		}
 		return project.FunctionEffects{
 			Complete: facts.Complete,

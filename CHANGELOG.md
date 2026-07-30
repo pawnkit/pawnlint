@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.4 - 2026-07-30
+
+### Performance
+
+- Avoid rebuilding effects when shared analysis recognizes a function without full facts.
+
 ## 1.8.3 - 2026-07-30
 
 ### Performance

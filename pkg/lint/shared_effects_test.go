@@ -37,6 +37,16 @@ func TestSharedLeafFunctionEffects(t *testing.T) {
 		effects.MutatedParameters[0] != 0 {
 		t.Fatalf("wrapper effects = %#v, found = %v", effects, ok)
 	}
+	for id, facts := range shared.FunctionFacts {
+		if len(facts.CallSites) != 0 {
+			delete(shared.FunctionFacts, id)
+			break
+		}
+	}
+	effects, ok = sharedFunctionEffects(shared, wrapper)
+	if !ok || effects.Complete {
+		t.Fatalf("missing wrapper facts = %#v, found = %v", effects, ok)
+	}
 }
 
 func TestSharedFunctionEffectsKeepsIncompleteFacts(t *testing.T) {
