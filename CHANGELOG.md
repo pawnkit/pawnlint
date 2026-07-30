@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.8 - 2026-07-30
+
+### Fixed
+
+- Use canonical sampctl dependency and resource include roots.
+
 ## 1.8.7 - 2026-07-30
 
 ### Fixed
