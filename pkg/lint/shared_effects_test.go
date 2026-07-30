@@ -47,6 +47,11 @@ func TestSharedLeafFunctionEffects(t *testing.T) {
 	if !ok || effects.Complete {
 		t.Fatalf("missing wrapper facts = %#v, found = %v", effects, ok)
 	}
+	wrapper.Node.Field("name").Start++
+	effects, ok = sharedFunctionEffects(shared, wrapper)
+	if !ok || effects.Complete {
+		t.Fatalf("shifted wrapper = %#v, found = %v", effects, ok)
+	}
 }
 
 func TestSharedFunctionEffectsKeepsIncompleteFacts(t *testing.T) {

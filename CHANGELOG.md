@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.5 - 2026-07-30
+
+### Performance
+
+- Keep conservative effects when expanded and source declaration offsets differ.
+
 ## 1.8.4 - 2026-07-30
 
 ### Performance

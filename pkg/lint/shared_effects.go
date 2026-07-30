@@ -28,8 +28,9 @@ func sharedFunctionEffects(
 	if name == nil {
 		return project.FunctionEffects{}, false
 	}
+	matchedFile := false
 	for _, item := range table.Symbols {
-		if item.Name != declaration.Name || int(item.Span.Start) != name.Start || int(item.Span.End) != name.End {
+		if item.Name != declaration.Name {
 			continue
 		}
 		uri, ok := shared.Registry.URI(item.Span.File)
@@ -38,6 +39,10 @@ func sharedFunctionEffects(
 		}
 		filename, err := uri.Filename()
 		if err != nil || !sameSharedPath(filename, declaration.File.Path) {
+			continue
+		}
+		matchedFile = true
+		if int(item.Span.Start) != name.Start || int(item.Span.End) != name.End {
 			continue
 		}
 		facts, found := shared.FunctionFacts[item.ID]
@@ -51,6 +56,9 @@ func sharedFunctionEffects(
 				len(facts.MutatedParameters) == 0,
 			MutatedParameters: append([]int(nil), facts.MutatedParameters...),
 		}, true
+	}
+	if matchedFile {
+		return project.FunctionEffects{}, true
 	}
 	return project.FunctionEffects{}, false
 }
