@@ -197,7 +197,7 @@ func callArgumentEffect(ctx *lint.Context, node *parser.Node) (argumentEffect, b
 					continue
 				}
 				projectFunction = true
-				effects, known := ctx.Project.FunctionEffects(variant)
+				effects, known := ctx.FunctionEffects(variant)
 				if !known || !effects.Complete {
 					return argumentEffectUnknown, true
 				}

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.0 - 2026-07-30
+
+### Performance
+
+- Reuse direct effects from pawn-analysis for leaf functions in editor runs.
+
 ## 1.7.40 - 2026-07-30
 
 ### Performance

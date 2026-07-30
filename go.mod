@@ -5,13 +5,13 @@ go 1.26.5
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/alecthomas/kong v1.16.0
-	github.com/pawnkit/pawn-parser v1.5.5
+	github.com/pawnkit/pawn-parser v1.5.6
 )
 
 require golang.org/x/sync v0.22.0
 
 require (
-	github.com/pawnkit/pawn-analysis v0.26.0
+	github.com/pawnkit/pawn-analysis v0.28.0
 	github.com/pawnkit/pawn-project v0.3.2
 	github.com/pawnkit/pawnkit-core v0.5.0
 	github.com/posener/complete v1.2.3

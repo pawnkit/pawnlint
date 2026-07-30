@@ -1,6 +1,7 @@
 package lint
 
 import (
+	analysis "github.com/pawnkit/pawn-analysis"
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
 	"github.com/pawnkit/pawnlint/internal/api"
@@ -96,21 +97,22 @@ type File struct {
 }
 
 type Context struct {
-	File        *File
-	Report      func(diagnostic.Diagnostic)
-	Level       AnalysisLevel
-	Walk        *walk.Model
-	Tokens      func(k token.Kind) []*token.Token
-	Supp        []suppress.Directive
-	Known       map[string]struct{}
-	PerRule     map[string]map[string]any
-	Semantic    *semantic.Model
-	Flow        *controlflow.Model
-	Project     *project.Model
-	ProjectFile *project.File
-	Target      string
-	API         *api.Metadata
-	facts       *fileFacts
+	File           *File
+	Report         func(diagnostic.Diagnostic)
+	Level          AnalysisLevel
+	Walk           *walk.Model
+	Tokens         func(k token.Kind) []*token.Token
+	Supp           []suppress.Directive
+	Known          map[string]struct{}
+	PerRule        map[string]map[string]any
+	Semantic       *semantic.Model
+	Flow           *controlflow.Model
+	Project        *project.Model
+	ProjectFile    *project.File
+	Target         string
+	API            *api.Metadata
+	SharedAnalysis *analysis.Result
+	facts          *fileFacts
 }
 
 type fileFacts struct {
@@ -129,6 +131,16 @@ type pureCallFact struct {
 type evalFact struct {
 	value int64
 	known bool
+}
+
+func (ctx *Context) FunctionEffects(declaration project.Declaration) (project.FunctionEffects, bool) {
+	if effects, ok := sharedLeafFunctionEffects(ctx.SharedAnalysis, declaration); ok {
+		return effects, true
+	}
+	if ctx.Project == nil {
+		return project.FunctionEffects{}, false
+	}
+	return ctx.Project.FunctionEffects(declaration)
 }
 
 func newFileFacts(tree *walk.Model, model *semantic.Model) *fileFacts {
@@ -335,7 +347,7 @@ func (ctx *Context) pureCall(call *parser.Node) (string, bool) {
 					continue
 				}
 				projectFunction = true
-				effects, known := ctx.Project.FunctionEffects(declaration)
+				effects, known := ctx.FunctionEffects(declaration)
 				if !known || !effects.Complete || !effects.Pure {
 					return "", false
 				}
