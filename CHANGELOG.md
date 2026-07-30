@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.3 - 2026-07-30
+
+### Performance
+
+- Keep conservative shared effects instead of rebuilding incomplete function facts.
+
 ## 1.8.2 - 2026-07-30
 
 ### Fixed

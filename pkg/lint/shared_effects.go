@@ -41,12 +41,14 @@ func sharedFunctionEffects(
 			continue
 		}
 		facts, found := shared.FunctionFacts[item.ID]
-		if !found || !facts.Complete {
+		if !found {
 			return project.FunctionEffects{}, false
 		}
 		return project.FunctionEffects{
-			Complete:          true,
-			Pure:              !facts.IntrinsicImpure && len(facts.ReadsGlobals) == 0 && len(facts.WritesGlobals) == 0 && len(facts.MutatedParameters) == 0,
+			Complete: facts.Complete,
+			Pure: facts.Complete && !facts.IntrinsicImpure &&
+				len(facts.ReadsGlobals) == 0 && len(facts.WritesGlobals) == 0 &&
+				len(facts.MutatedParameters) == 0,
 			MutatedParameters: append([]int(nil), facts.MutatedParameters...),
 		}, true
 	}

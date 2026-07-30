@@ -38,3 +38,26 @@ func TestSharedLeafFunctionEffects(t *testing.T) {
 		t.Fatalf("wrapper effects = %#v, found = %v", effects, ok)
 	}
 }
+
+func TestSharedFunctionEffectsKeepsIncompleteFacts(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	text := []byte("stock Work(&value) { Missing(value); }\n")
+	model, err := project.Build(
+		[]project.Source{{Path: path, Content: text}},
+		project.Options{WorkingDir: dir, DefinesComplete: true},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	declaration := model.Declarations["Work"][0]
+	shared := analysis.Analyze(text, analysis.Options{
+		URI: coresource.FileURI(path), CollectFunctionFacts: true,
+	})
+	effects, ok := sharedFunctionEffects(shared, declaration)
+	if !ok || effects.Complete || effects.Pure {
+		t.Fatalf("effects = %#v, ok = %v", effects, ok)
+	}
+}
