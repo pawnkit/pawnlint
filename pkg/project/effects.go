@@ -133,7 +133,7 @@ func (m *Model) directPointerFunctionEffects(function Declaration, referenceKind
 		state.pure = false
 		return state
 	}
-	m.indexPointerEffectParameters(file, node, state)
+	m.indexPointerEffectParameters(file, node, symbols, state)
 	for _, symbol := range symbols {
 		if symbol.Kind != semantic.SymbolLocal || !walk.HasChildToken(file.Walk.Parent(symbol.Decl), token.KwStatic) {
 			continue
@@ -206,7 +206,12 @@ func (m *Model) applyDirectPointerReferenceEffect(state *functionEffectState, fi
 	}
 }
 
-func (m *Model) indexPointerEffectParameters(file *File, function *parser.Node, state *functionEffectState) {
+func (m *Model) indexPointerEffectParameters(
+	file *File,
+	function *parser.Node,
+	symbols []*semantic.Symbol,
+	state *functionEffectState,
+) {
 	list := function.Field("parameters")
 	if list == nil {
 		return
@@ -216,7 +221,7 @@ func (m *Model) indexPointerEffectParameters(file *File, function *parser.Node, 
 		if parameter.Kind != parser.KindParameter {
 			continue
 		}
-		for _, symbol := range file.Semantic.Symbols {
+		for _, symbol := range symbols {
 			if symbol.Kind != semantic.SymbolParameter || symbol.Decl != parameter || symbol.Ambiguous {
 				continue
 			}
@@ -254,7 +259,7 @@ func (m *Model) directCompactFunctionEffects(function Declaration, referenceKind
 		state.pure = false
 		return state
 	}
-	m.indexCompactEffectParameters(file, node, state)
+	m.indexCompactEffectParameters(file, node, symbols, state)
 	for _, symbol := range symbols {
 		if symbol.Kind != semantic.SymbolLocal || !compactHasChildToken(tree, tree.Parent(symbol.Decl), token.KwStatic) {
 			continue
@@ -327,7 +332,12 @@ func (m *Model) applyDirectCompactReferenceEffect(state *functionEffectState, fi
 	}
 }
 
-func (m *Model) indexCompactEffectParameters(file *File, function syntax.NodeID, state *functionEffectState) {
+func (m *Model) indexCompactEffectParameters(
+	file *File,
+	function syntax.NodeID,
+	symbols []*semantic.CompactSymbol,
+	state *functionEffectState,
+) {
 	tree := file.CompactWalk.Tree
 	list := tree.Field(function, "parameters")
 	if !tree.Valid(list) {
@@ -339,7 +349,7 @@ func (m *Model) indexCompactEffectParameters(file *File, function syntax.NodeID,
 		if tree.Kind(parameter) != parser.KindParameter {
 			continue
 		}
-		for _, symbol := range file.CompactSemantic.Symbols {
+		for _, symbol := range symbols {
 			if symbol.Kind != semantic.SymbolParameter || symbol.Decl != parameter || symbol.Ambiguous {
 				continue
 			}

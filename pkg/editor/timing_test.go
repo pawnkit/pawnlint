@@ -22,35 +22,45 @@ func TestRealProjectEditorStageLatency(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	totals := make(map[project.TimingStage]time.Duration)
-	rules := make(map[string]time.Duration)
-	_, err = diagnoseContextWithTimings(
-		context.Background(), path, content, root, project.NewParseCache(), nil,
-		func(event project.TimingEvent) {
-			totals[event.Stage] += event.Duration
-		},
-		func(event lint.TimingEvent) {
-			if event.Stage == lint.TimingRule {
-				rules[event.RuleID] += event.Duration
-			}
-		},
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, stage := range []project.TimingStage{project.TimingParse, project.TimingPreprocess, project.TimingSemantic} {
-		t.Logf("%s took %s", stage, totals[stage])
-	}
-	type ruleTiming struct {
-		id       string
-		duration time.Duration
-	}
-	ordered := make([]ruleTiming, 0, len(rules))
-	for id, duration := range rules {
-		ordered = append(ordered, ruleTiming{id: id, duration: duration})
-	}
-	sort.Slice(ordered, func(i, j int) bool { return ordered[i].duration > ordered[j].duration })
-	for _, item := range ordered[:min(10, len(ordered))] {
-		t.Logf("rule %s took %s", item.id, item.duration)
+	cache := project.NewParseCache()
+	for _, run := range []string{"cold", "warm"} {
+		totals := make(map[project.TimingStage]time.Duration)
+		lintTotals := make(map[lint.TimingStage]time.Duration)
+		rules := make(map[string]time.Duration)
+		started := time.Now()
+		_, err = diagnoseContextWithTimings(
+			context.Background(), path, content, root, cache, nil,
+			func(event project.TimingEvent) {
+				totals[event.Stage] += event.Duration
+			},
+			func(event lint.TimingEvent) {
+				lintTotals[event.Stage] += event.Duration
+				if event.Stage == lint.TimingRule {
+					rules[event.RuleID] += event.Duration
+				}
+			},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("%s total took %s", run, time.Since(started))
+		for _, stage := range []project.TimingStage{project.TimingParse, project.TimingPreprocess, project.TimingSemantic} {
+			t.Logf("%s %s took %s", run, stage, totals[stage])
+		}
+		for _, stage := range []lint.TimingStage{lint.TimingParse, lint.TimingSemantic, lint.TimingControlFlow} {
+			t.Logf("%s lint %s took %s", run, stage, lintTotals[stage])
+		}
+		type ruleTiming struct {
+			id       string
+			duration time.Duration
+		}
+		ordered := make([]ruleTiming, 0, len(rules))
+		for id, duration := range rules {
+			ordered = append(ordered, ruleTiming{id: id, duration: duration})
+		}
+		sort.Slice(ordered, func(i, j int) bool { return ordered[i].duration > ordered[j].duration })
+		for _, item := range ordered[:min(10, len(ordered))] {
+			t.Logf("%s rule %s took %s", run, item.id, item.duration)
+		}
 	}
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.40 - 2026-07-30
+
+### Performance
+
+- Limit function parameter indexing to the function being analysed.
+- Use the latest incremental analysis results in editor runs.
+- Report cold and warm stages in the real-project timing test.
+
 ## 1.7.39 - 2026-07-29
 
 ### Fixed
