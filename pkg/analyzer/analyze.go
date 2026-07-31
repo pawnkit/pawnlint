@@ -177,10 +177,16 @@ func analyzerConfig(request Request, reg *lint.Registrar) (*config.Resolved, str
 		}
 		projectDir = filepath.Dir(configPath)
 	}
-	if request.ConfigPath == "" && request.WorkingDirectory != "" {
-		projectDir, err = filepath.Abs(request.WorkingDirectory)
+	if request.ConfigPath == "" {
+		if request.WorkingDirectory != "" {
+			projectDir, err = filepath.Abs(request.WorkingDirectory)
+			if err != nil {
+				return nil, "", fmt.Errorf("analyzer: working directory: %w", err)
+			}
+		}
+		configPath, file, err = config.Discover(projectDir)
 		if err != nil {
-			return nil, "", fmt.Errorf("analyzer: working directory: %w", err)
+			return nil, "", err
 		}
 	}
 	resolved, err := config.Resolve(file, configPath, reg)

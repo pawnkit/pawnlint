@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.9 - 2026-07-31
+
+### Fixed
+
+- Discover project configuration through the embedded analyzer API.
+
 ## 1.8.8 - 2026-07-30
 
 ### Fixed

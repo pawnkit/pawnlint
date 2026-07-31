@@ -38,6 +38,30 @@ func TestAnalyzeReturnsDiagnosticsAndSafeEdits(t *testing.T) {
 	}
 }
 
+func TestAnalyzeDiscoversConfigFromWorkingDirectory(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(
+		filepath.Join(dir, "pawnlint.toml"),
+		[]byte("[rules]\ninfinite-loop = \"off\"\n"),
+		0o644,
+	); err != nil {
+		t.Fatal(err)
+	}
+	result, err := analyzer.Analyze(context.Background(), analyzer.Request{
+		WorkingDirectory: dir,
+		Sources: []analyzer.Source{{
+			Path:    "main.pwn",
+			Content: []byte("main() { while (true) {} }\n"),
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diagnosticIndex(result.Diagnostics, "infinite-loop") >= 0 {
+		t.Fatalf("diagnostics = %+v", result.Diagnostics)
+	}
+}
+
 func TestAnalyzeReturnsSuggestions(t *testing.T) {
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "pawnlint.toml")
