@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"path/filepath"
+	"sync"
 
 	analysis "github.com/pawnkit/pawn-analysis"
 	"github.com/pawnkit/pawn-parser"
@@ -17,6 +18,16 @@ import (
 	"github.com/pawnkit/pawnlint/pkg/project"
 	"github.com/pawnkit/pawnlint/pkg/rules"
 )
+
+var (
+	defaultRegistryOnce sync.Once
+	defaultRegistry     *lint.Registrar
+)
+
+func defaultRules() *lint.Registrar {
+	defaultRegistryOnce.Do(func() { defaultRegistry = rules.Default() })
+	return defaultRegistry
+}
 
 // Diagnose lints content as path using configuration found from workingDir.
 func Diagnose(path string, content []byte, workingDir string) ([]diagnostic.Diagnostic, error) {
@@ -67,7 +78,7 @@ func diagnoseContextWithTimings(
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	reg := rules.Default()
+	reg := defaultRules()
 
 	configPath, file, err := config.Discover(workingDir)
 	if err != nil {

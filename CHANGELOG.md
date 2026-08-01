@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.15 - 2026-08-01
+
+### Performance
+
+- Reuse the built-in rule registry across editor diagnostics.
+
 ## 1.8.14 - 2026-08-01
 
 ### Performance
