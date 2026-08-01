@@ -33,6 +33,11 @@ type Symbol struct {
 	Value     *parser.Node
 }
 
+// IsTestFunction reports a YSI test entry point.
+func IsTestFunction(symbol *Symbol) bool {
+	return symbol != nil && symbol.Kind == SymbolFunction && len(symbol.Tags) == 1 && symbol.Tags[0] == "Test"
+}
+
 type ReferenceKind uint8
 
 const (

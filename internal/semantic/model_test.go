@@ -71,6 +71,31 @@ func TestBuildLeavesDuplicateDeclarationsUnresolved(t *testing.T) {
 	}
 }
 
+func TestBuildKeepsYSITestNamesOutOfProductionScope(t *testing.T) {
+	src := []byte("Test:DefineItemType() { DefineItemType(1, 2, 3, 4); } stock ItemType:DefineItemType(a, b, c, d) { return 1; }\n")
+	file := parser.Parse(src)
+	tree := walk.New("x.pwn", file)
+	model := semantic.Build(file, tree)
+	var production, test *semantic.Symbol
+	for _, symbol := range model.Symbols {
+		if symbol.Name != "DefineItemType" {
+			continue
+		}
+		if semantic.IsTestFunction(symbol) {
+			test = symbol
+		} else {
+			production = symbol
+		}
+	}
+	if production == nil || test == nil || production.Ambiguous || test.Ambiguous {
+		t.Fatalf("symbols = production %#v, test %#v", production, test)
+	}
+	call := tree.OfKind(parser.KindCallExpression)[0]
+	if got := model.Resolve(call.Field("function")); got != production {
+		t.Fatalf("call resolved to %#v, want %#v", got, production)
+	}
+}
+
 func TestBuildCapturesSingleAndUnionTags(t *testing.T) {
 	src := []byte("main(bool:flag, {Float,_}:value) { new Float:result; result = value; }\n")
 	file := parser.Parse(src)

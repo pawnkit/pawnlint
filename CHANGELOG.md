@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.10 - 2026-08-01
+
+### Fixed
+
+- Ignore YSI `Test:` entry points when checking project declarations.
+- Use pawn-analysis 0.30.2 for tagged test functions that share production names.
+
 ## 1.8.9 - 2026-07-31
 
 ### Fixed

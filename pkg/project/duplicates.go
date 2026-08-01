@@ -41,6 +41,9 @@ func (m *Model) buildDuplicateFunctions() []DuplicateFunction {
 					continue
 				}
 				tag := strings.TrimSuffix(node.Field("tag").Text(), ":")
+				if tag == "Test" {
+					continue
+				}
 				if _, exists := macroQualifiers[tag]; exists {
 					continue
 				}

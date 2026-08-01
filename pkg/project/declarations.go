@@ -195,6 +195,9 @@ func (m *Model) buildDeclarations() {
 	for _, file := range m.Files {
 		if file.Semantic != nil {
 			for _, symbol := range file.Semantic.Symbols {
+				if semantic.IsTestFunction(symbol) {
+					continue
+				}
 				if symbol.Function != nil && symbol.Kind != semantic.SymbolFunction {
 					continue
 				}
@@ -204,6 +207,9 @@ func (m *Model) buildDeclarations() {
 			continue
 		}
 		for _, symbol := range file.CompactSemantic.Symbols {
+			if semantic.IsCompactTestFunction(symbol) {
+				continue
+			}
 			if symbol.Function != syntax.NoNode && symbol.Kind != semantic.SymbolFunction {
 				continue
 			}

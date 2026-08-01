@@ -1,6 +1,8 @@
 package correctness
 
 import (
+	"strings"
+
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawnlint/internal/controlflow"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
@@ -34,6 +36,9 @@ func (MissingReturnValue) Run(ctx *lint.Context) {
 		returns[function] = append(returns[function], statement)
 	}
 	for _, function := range ctx.Flow.Functions {
+		if strings.TrimSuffix(ctx.Walk.Text(function.Node.Field("tag")), ":") == "Test" {
+			continue
+		}
 		statements := returns[function.Node]
 		if function.Uncertain || !hasReachableValueReturn(function, statements) {
 			continue

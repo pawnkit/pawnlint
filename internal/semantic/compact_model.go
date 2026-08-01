@@ -23,6 +23,11 @@ type CompactSymbol struct {
 	id        uint32
 }
 
+// IsCompactTestFunction reports a YSI test entry point.
+func IsCompactTestFunction(symbol *CompactSymbol) bool {
+	return symbol != nil && symbol.Kind == SymbolFunction && len(symbol.Tags) == 1 && symbol.Tags[0] == "Test"
+}
+
 type CompactReference struct {
 	Node syntax.NodeID
 	Kind ReferenceKind

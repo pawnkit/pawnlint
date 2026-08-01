@@ -30,6 +30,13 @@ func (m *Model) declare(decl, nameNode *parser.Node, kind SymbolKind, scope *Sco
 			symbol.Value = decl.Field("initializer")
 		}
 	}
+	if kind == SymbolFunction && len(tags) == 1 && tags[0] == "Test" {
+		m.Symbols = append(m.Symbols, symbol)
+		if kind == SymbolParameter && function != nil {
+			m.parameters[function] = append(m.parameters[function], symbol)
+		}
+		return
+	}
 	for _, existing := range scope.symbols[name] {
 		if stateVariantsCoexist(existing, symbol) {
 			continue

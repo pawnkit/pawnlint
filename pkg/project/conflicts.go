@@ -87,6 +87,9 @@ func conflictEligible(declaration Declaration, qualifiers map[string]struct{}) b
 			return false
 		}
 		tag := strings.TrimSuffix(node.Field("tag").Text(), ":")
+		if tag == "Test" {
+			return false
+		}
 		_, macroQualified := qualifiers[tag]
 		return !macroQualified
 	case semantic.SymbolGlobal:

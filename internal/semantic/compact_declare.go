@@ -31,6 +31,14 @@ func (m *CompactModel) declareCompact(decl, nameNode syntax.NodeID, kind SymbolK
 			symbol.Value = m.Walk.Tree.Field(decl, "initializer")
 		}
 	}
+	if kind == SymbolFunction && len(tags) == 1 && tags[0] == "Test" {
+		m.Symbols = append(m.Symbols, symbol)
+		symbol.id = uint32(len(m.Symbols))
+		if kind == SymbolParameter && function != syntax.NoNode {
+			m.parameters[function] = append(m.parameters[function], symbol)
+		}
+		return
+	}
 	for _, existing := range scope.symbols[name] {
 		if compactStateVariantsCoexist(m, existing, symbol) {
 			continue
