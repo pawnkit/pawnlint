@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.23 - 2026-08-01
+
+### Fixed
+
+- Resolve PawnPlus tag aliases through pawn-analysis.
+
 ## 1.8.22 - 2026-08-01
 
 ### Performance
