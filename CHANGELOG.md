@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.12 - 2026-08-01
+
+### Performance
+
+- Skip control-flow evaluation for non-zero integer division operands.
+
 ## 1.8.11 - 2026-08-01
 
 ### Performance

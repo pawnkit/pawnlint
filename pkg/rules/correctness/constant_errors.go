@@ -31,6 +31,9 @@ func (DivisionByZero) Run(ctx *lint.Context) {
 		return
 	}
 	check := func(right *parser.Node) {
+		if definitelyNonZeroLiteral(ctx, right) {
+			return
+		}
 		if value, ok := ctx.Eval(right); !ok || value != 0 {
 			return
 		}
@@ -52,6 +55,18 @@ func (DivisionByZero) Run(ctx *lint.Context) {
 		}
 		check(node.Field("right"))
 	})
+}
+
+func definitelyNonZeroLiteral(ctx *lint.Context, node *parser.Node) bool {
+	for node != nil && (node.Kind == parser.KindParenthesizedExpression || node.Kind == parser.KindTaggedExpression) {
+		node = node.Field("expression")
+	}
+	if node == nil || node.Kind != parser.KindLiteral || node.Tok.Kind != token.IntLiteral ||
+		node.HasError || ctx.Walk.Inactive(node) || ctx.Walk.Uncertain(node) {
+		return false
+	}
+	value, ok := constantLiteralCellValue(ctx.Walk.Text(node))
+	return ok && value != 0
 }
 
 type InvalidShiftCount struct{}

@@ -232,6 +232,18 @@ func TestEngineUsesConfiguredDefines(t *testing.T) {
 	}
 }
 
+func TestEngineDivisionByZeroKeepsOnlyZeroOperands(t *testing.T) {
+	reg := rules.Default()
+	engine := lint.NewEngine(reg)
+	src := []byte("main() {\nnew a = 1 / 2;\nnew b = 1 / (2);\nnew c = 1 / 0;\n}\n")
+	diags := engine.LintFile("x.pwn", src, lint.ControlFlowAnalysis, map[string]diagnostic.Severity{
+		"division-by-zero": diagnostic.SeverityError,
+	}, nil, nil)
+	if len(diags) != 1 || diags[0].RuleID != "division-by-zero" {
+		t.Fatalf("diagnostics = %+v", diags)
+	}
+}
+
 func TestEngineUsesCustomAPIMetadata(t *testing.T) {
 	reg := rules.Default()
 	engine := lint.NewEngine(reg)
