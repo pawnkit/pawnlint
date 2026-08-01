@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.11 - 2026-08-01
+
+### Performance
+
+- Use pawn-analysis 0.30.3 so trivia-only editor edits reuse stable analysis.
+
 ## 1.8.10 - 2026-08-01
 
 ### Fixed
