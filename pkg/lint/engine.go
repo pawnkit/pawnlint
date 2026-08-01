@@ -184,13 +184,18 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 		}
 	}
 
+	tokenIndex := make(map[token.Kind][]*token.Token)
 	tokensByKind := func(k token.Kind) []*token.Token {
+		if out, ok := tokenIndex[k]; ok {
+			return out
+		}
 		var out []*token.Token
 		for i := range pf.Tokens {
 			if pf.Tokens[i].Kind == k {
 				out = append(out, &pf.Tokens[i])
 			}
 		}
+		tokenIndex[k] = out
 		return out
 	}
 	facts := newFileFacts(m, semantics)

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.13 - 2026-08-01
+
+### Performance
+
+- Reuse token indexes across rules during a lint pass.
+
 ## 1.8.12 - 2026-08-01
 
 ### Performance
