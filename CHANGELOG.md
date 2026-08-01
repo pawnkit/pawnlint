@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.16 - 2026-08-01
+
+### Performance
+
+- Use pawn-analysis 0.30.4 to reuse the token stream for safe local edits.
+
 ## 1.8.15 - 2026-08-01
 
 ### Performance
