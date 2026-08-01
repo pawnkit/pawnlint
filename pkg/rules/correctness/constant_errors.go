@@ -33,6 +33,9 @@ func (DivisionByZero) Run(ctx *lint.Context) {
 		return
 	}
 	check := func(right *parser.Node) {
+		if !canEvaluateConstant(right) {
+			return
+		}
 		if definitelyNonZeroLiteral(ctx, right) {
 			return
 		}
@@ -57,6 +60,26 @@ func (DivisionByZero) Run(ctx *lint.Context) {
 		}
 		check(node.Field("right"))
 	})
+}
+
+func canEvaluateConstant(node *parser.Node) bool {
+	if node == nil || node.HasError {
+		return false
+	}
+	switch node.Kind {
+	case parser.KindIdentifier, parser.KindLiteral:
+		return true
+	case parser.KindParenthesizedExpression, parser.KindTaggedExpression, parser.KindUnaryExpression:
+		return canEvaluateConstant(node.Field("expression"))
+	case parser.KindBinaryExpression:
+		return canEvaluateConstant(node.Field("left")) && canEvaluateConstant(node.Field("right"))
+	case parser.KindTernaryExpression:
+		return canEvaluateConstant(node.Field("condition")) &&
+			canEvaluateConstant(node.Field("consequence")) &&
+			canEvaluateConstant(node.Field("alternative"))
+	default:
+		return false
+	}
 }
 
 func definitelyNonZeroLiteral(ctx *lint.Context, node *parser.Node) bool {

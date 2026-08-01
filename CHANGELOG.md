@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.18 - 2026-08-01
+
+### Performance
+
+- Skip constant evaluation for operands that cannot be constant expressions.
+
 ## 1.8.17 - 2026-08-01
 
 ### Performance
