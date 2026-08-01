@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.19 - 2026-08-01
+
+### Performance
+
+- Reuse the open document's parsed syntax tree during editor linting.
+
 ## 1.8.18 - 2026-08-01
 
 ### Performance

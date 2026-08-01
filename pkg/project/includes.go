@@ -45,7 +45,11 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 	if physical == nil {
 		sourceHash := sha256.Sum256(source)
 		retainTrivia := m.options.Features == nil || m.options.Features.Has(FeatureTrivia) || bytes.Contains(source, []byte("pawnlint-"))
-		if m.options.ReleaseIncludes && (!provided || len(source) >= compactTargetThreshold) {
+		if provided && m.options.RootParsed != nil && bytes.Equal(m.options.RootParsed.Source, source) {
+			parsed := m.options.RootParsed
+			physical = &physicalFile{source: source, hash: sourceHash, parsed: parsed, lineTable: sourceinfo.NewLineTable(source), syntaxIndex: walk.NewIndex(parsed)}
+			m.physical[canonical] = physical
+		} else if m.options.ReleaseIncludes && (!provided || len(source) >= compactTargetThreshold) {
 			started := time.Now()
 			var compact *parser.CompactFile
 			switch {

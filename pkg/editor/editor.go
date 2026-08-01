@@ -112,6 +112,7 @@ func diagnoseContextWithTimings(
 	}
 
 	var rootTokens []token.Token
+	var rootParsed *parser.File
 	if shared != nil && shared.Preprocess != nil {
 		rootTokens = shared.Preprocess.OriginalTokens
 	}
@@ -124,6 +125,9 @@ func diagnoseContextWithTimings(
 		}
 	}
 	features := resolved.ProjectFeaturesExcluding(delegated)
+	if shared != nil && shared.Parse != nil && bytes.Equal(shared.Parse.Source, content) {
+		rootParsed = shared.Parse.ExpandTokensWithOptions(rootTokens, parser.ParseOptions{})
+	}
 	var sharedSources []project.Source
 	if shared != nil && shared.Preprocess != nil {
 		prepared := make([]project.PreparedSource, 0, len(shared.Preprocess.Files))
@@ -162,7 +166,7 @@ func diagnoseContextWithTimings(
 		[]project.Source{{Path: path, Content: content}},
 		project.Options{
 			WorkingDir: workingDir, IncludePaths: includePaths, Defines: resolved.Source.Defines,
-			ParseCache: cache, Features: &features, RootTokens: rootTokens, ObserveTiming: observeProject,
+			ParseCache: cache, Features: &features, RootTokens: rootTokens, RootParsed: rootParsed, ObserveTiming: observeProject,
 			IncludeSources: sharedSources,
 		},
 	)

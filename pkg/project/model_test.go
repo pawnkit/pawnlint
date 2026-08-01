@@ -59,6 +59,25 @@ func TestBuildResolvesIncludesAndIndexesDeclarations(t *testing.T) {
 	}
 }
 
+func TestBuildReusesProvidedRootSyntax(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	source := []byte("main() {}\n")
+	parsed := parser.Parse(source)
+
+	model, err := Build([]Source{{Path: path, Content: source}}, Options{
+		WorkingDir: dir,
+		RootParsed: parsed,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := model.File(path)
+	if root == nil || root.Parsed != parsed {
+		t.Fatal("provided root syntax was not reused")
+	}
+}
+
 func TestQuotedIncludeUsesEntryDirectory(t *testing.T) {
 	dir := t.TempDir()
 	gamemodes := filepath.Join(dir, "gamemodes")
