@@ -147,7 +147,8 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	file := &File{Path: path, Source: src, Parsed: pf, LineTable: lt}
 	var flow *controlflow.Model
 	var requirements Requirements
-	for _, id := range e.Reg.IDs() {
+	ruleIDs := e.Reg.IDs()
+	for _, id := range ruleIDs {
 		if e.cancelled() {
 			return nil
 		}
@@ -200,7 +201,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	}
 	facts := newFileFacts(m, semantics)
 
-	for _, id := range e.Reg.IDs() {
+	for _, id := range ruleIDs {
 		if e.cancelled() {
 			return nil
 		}
