@@ -1,6 +1,8 @@
 package correctness
 
 import (
+	"slices"
+
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawnlint/internal/controlflow"
 	"github.com/pawnkit/pawnlint/internal/semantic"
@@ -166,12 +168,7 @@ func infiniteMacroCall(ctx *lint.Context, call *parser.Node) bool {
 		return false
 	}
 	name := ctx.Walk.Text(callee)
-	for _, define := range ctx.Walk.KnownDefinesAt(call.Start) {
-		if define == name {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(ctx.Walk.KnownDefinesViewAt(call.Start), name)
 }
 
 func infiniteBreakTargets(ctx *lint.Context, statement, loop *parser.Node) bool {

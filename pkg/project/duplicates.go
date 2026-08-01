@@ -52,7 +52,7 @@ func (m *Model) buildDuplicateFunctions() []DuplicateFunction {
 				if name == "" || strings.HasPrefix(name, "operator") {
 					continue
 				}
-				if slices.Contains(defines.KnownDefinesAt(node.Start()), name) {
+				if slices.Contains(defines.KnownDefinesViewAt(node.Start()), name) {
 					continue
 				}
 				key := name

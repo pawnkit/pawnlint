@@ -385,6 +385,10 @@ func (m *Model) KnownDefinesAt(offset int) []string {
 	return m.NewDefineCursor().KnownDefinesAt(offset)
 }
 
+func (m *Model) KnownDefinesViewAt(offset int) []string {
+	return m.NewDefineCursor().KnownDefinesViewAt(offset)
+}
+
 func (c *DefineCursor) KnownDefinesAt(offset int) []string {
 	c.advance(offset)
 	return append([]string(nil), c.values.view()...)

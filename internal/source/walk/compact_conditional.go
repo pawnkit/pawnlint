@@ -228,6 +228,10 @@ func (m *CompactModel) KnownDefinesAt(offset int) []string {
 	return m.NewCompactDefineCursor().KnownDefinesAt(offset)
 }
 
+func (m *CompactModel) KnownDefinesViewAt(offset int) []string {
+	return m.NewCompactDefineCursor().KnownDefinesViewAt(offset)
+}
+
 func (c *CompactDefineCursor) KnownDefinesAt(offset int) []string {
 	c.advance(offset)
 	return append([]string(nil), c.values.view()...)

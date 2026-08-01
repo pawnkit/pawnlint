@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.22 - 2026-08-01
+
+### Performance
+
+- Avoid copying active preprocessor defines for read-only checks.
+
 ## 1.8.21 - 2026-08-01
 
 ### Performance
