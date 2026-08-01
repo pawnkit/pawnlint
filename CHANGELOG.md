@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.20 - 2026-08-01
+
+### Performance
+
+- Skip preparing the open document again when its parsed syntax is already
+  shared with editor linting.
+
 ## 1.8.19 - 2026-08-01
 
 ### Performance

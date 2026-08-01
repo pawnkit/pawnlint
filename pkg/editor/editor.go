@@ -149,6 +149,9 @@ func diagnoseContextWithTimings(
 			discardTrivia := compactSyntax == nil && !features.Has(project.FeatureTrivia) &&
 				!bytes.Contains(file.Content, []byte("pawnlint-"))
 			sharedSources = append(sharedSources, project.Source{Path: path, Content: file.Content})
+			if compactSyntax != nil && rootParsed != nil {
+				continue
+			}
 			prepared = append(prepared, project.PreparedSource{
 				Path: path, Content: file.Content, Tokens: file.Tokens,
 				CompactSyntax: compactSyntax,
