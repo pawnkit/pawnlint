@@ -21,6 +21,8 @@ func (LegacyInclude) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryOpenMP,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.SyntaxAnalysis,
+		Requirements:    lint.NeedSyntax,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  false,
 		Fixable:         false,
 		Tags:            []string{"include", "migration", "compatibility", "api"},

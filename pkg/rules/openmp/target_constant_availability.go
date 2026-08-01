@@ -20,6 +20,8 @@ func (TargetConstantAvailability) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryOpenMP,
 		DefaultSeverity: diagnostic.SeverityError,
 		AnalysisLevel:   lint.SemanticAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedLocalSymbols | lint.NeedNames | lint.NeedTags,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  false,
 		Fixable:         false,
 		Tags:            []string{"constant", "target", "migration", "api"},

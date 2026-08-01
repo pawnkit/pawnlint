@@ -21,6 +21,8 @@ func (OverwrittenResourceHandle) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryCorrectness,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.ControlFlowAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedLocalSymbols | lint.NeedNames | lint.NeedTags | lint.NeedConstants | lint.NeedControlFlow,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  false,
 		Fixable:         false,
 		Tags:            []string{"resource", "handle", "database", "file", "control-flow"},

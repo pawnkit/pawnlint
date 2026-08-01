@@ -23,6 +23,8 @@ func (DeclarationOrder) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryStyle,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.SyntaxAnalysis,
+		Requirements:    lint.NeedSyntax,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  false,
 		Fixable:         false,
 		Tags:            []string{"declarations", "order", "style"},

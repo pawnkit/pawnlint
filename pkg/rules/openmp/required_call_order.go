@@ -22,6 +22,8 @@ func (RequiredCallOrder) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryCorrectness,
 		DefaultSeverity: diagnostic.SeverityError,
 		AnalysisLevel:   lint.ControlFlowAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedLocalSymbols | lint.NeedNames | lint.NeedTags | lint.NeedConstants | lint.NeedControlFlow,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  false,
 		Fixable:         false,
 		Tags:            []string{"calls", "order", "api", "contracts", "control-flow"},

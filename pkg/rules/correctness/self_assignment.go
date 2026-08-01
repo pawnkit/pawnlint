@@ -19,6 +19,8 @@ func (SelfAssignment) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryCorrectness,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.SemanticAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedLocalSymbols | lint.NeedNames | lint.NeedTags,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  true,
 		Fixable:         true,
 		Tags:            []string{"assignment", "semantic"},

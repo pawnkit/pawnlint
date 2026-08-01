@@ -22,6 +22,8 @@ func (DeadWrite) Metadata() lint.Metadata {
 		Category:        diagnostic.CategorySuspicious,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.ControlFlowAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedLocalSymbols | lint.NeedNames | lint.NeedTags | lint.NeedConstants | lint.NeedControlFlow,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  false,
 		Fixable:         false,
 		Tags:            []string{"control-flow", "assignments", "data-flow"},

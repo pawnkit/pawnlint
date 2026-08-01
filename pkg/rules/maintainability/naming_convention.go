@@ -24,6 +24,8 @@ func (NamingConvention) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryStyle,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.SemanticAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedLocalSymbols | lint.NeedNames | lint.NeedTags,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  false,
 		Fixable:         false,
 		Tags:            []string{"naming", "style", "policy", "identifiers"},

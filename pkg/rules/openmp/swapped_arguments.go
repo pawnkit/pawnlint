@@ -19,6 +19,8 @@ func (SwappedArguments) Metadata() lint.Metadata {
 		Category:        diagnostic.CategorySuspicious,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.SemanticAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedLocalSymbols | lint.NeedNames | lint.NeedTags,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  false,
 		Fixable:         false,
 		Tags:            []string{"calls", "arguments", "api", "tags"},

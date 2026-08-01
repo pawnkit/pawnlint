@@ -17,6 +17,8 @@ func (SuspiciousCommaExpression) Metadata() lint.Metadata {
 		Category:        diagnostic.CategorySuspicious,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.SyntaxAnalysis,
+		Requirements:    lint.NeedSyntax,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  true,
 		Fixable:         false,
 		Tags:            []string{"comma", "readability"},

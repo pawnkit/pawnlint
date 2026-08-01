@@ -19,6 +19,8 @@ func (UnknownSuppression) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryMaintainability,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.SyntaxAnalysis,
+		Requirements:    lint.NeedSyntax,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  true,
 		Fixable:         false,
 		Tags:            []string{"suppression", "tooling"},

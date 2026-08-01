@@ -23,6 +23,8 @@ func (InvariantLoopCondition) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryCorrectness,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.SemanticAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedLocalSymbols | lint.NeedNames | lint.NeedTags,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  true,
 		Fixable:         false,
 		Tags:            []string{"loops", "conditions", "data-flow", "semantic"},

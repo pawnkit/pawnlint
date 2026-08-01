@@ -18,6 +18,8 @@ func (RedundantParentheses) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryStyle,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.SyntaxAnalysis,
+		Requirements:    lint.NeedSyntax,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  false,
 		Fixable:         true,
 		Tags:            []string{"expressions", "parentheses", "style"},

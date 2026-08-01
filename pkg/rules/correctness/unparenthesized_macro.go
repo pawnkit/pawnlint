@@ -20,6 +20,8 @@ func (UnparenthesizedMacro) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryCorrectness,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.SyntaxAnalysis,
+		Requirements:    lint.NeedSyntax,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  true,
 		Fixable:         true,
 		Tags:            []string{"macros", "preprocessor"},

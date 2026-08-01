@@ -93,6 +93,8 @@ func (TaintedDataToSink) Metadata() lint.Metadata {
 		Category:        diagnostic.CategorySecurity,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.ProjectAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedPreprocessor | lint.NeedWorkspace,
+		Scope:           lint.ScopeWorkspace,
 		Stability:       lint.StabilityPreview,
 		DefaultEnabled:  false,
 		Fixable:         false,

@@ -20,6 +20,8 @@ func (BooleanComplexity) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryMaintainability,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.SyntaxAnalysis,
+		Requirements:    lint.NeedSyntax,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  false,
 		Fixable:         false,
 		Tags:            []string{"complexity", "boolean", "maintainability"},

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.17 - 2026-08-01
+
+### Performance
+
+- Declare each built-in rule's analysis requirements and execution scope
+  explicitly.
+
 ## 1.8.16 - 2026-08-01
 
 ### Performance

@@ -19,6 +19,8 @@ func (InfiniteLoop) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryCorrectness,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.ControlFlowAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedLocalSymbols | lint.NeedNames | lint.NeedTags | lint.NeedConstants | lint.NeedControlFlow,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  true,
 		Fixable:         false,
 		Tags:            []string{"loops", "control-flow", "conditions", "termination"},

@@ -26,6 +26,8 @@ func (RestrictedSyntax) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryRestriction,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.ProjectAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedPreprocessor | lint.NeedWorkspace,
+		Scope:           lint.ScopeWorkspace,
 		DefaultEnabled:  false,
 		Fixable:         false,
 		Tags:            []string{"restriction", "policy", "project", "syntax"},

@@ -20,6 +20,8 @@ func (RecursiveCall) Metadata() lint.Metadata {
 		Category:        diagnostic.CategorySuspicious,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.ProjectAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedPreprocessor | lint.NeedWorkspace,
+		Scope:           lint.ScopeWorkspace,
 		DefaultEnabled:  false,
 		Fixable:         false,
 		Tags:            []string{"calls", "recursion", "project"},

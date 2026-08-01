@@ -31,6 +31,8 @@ func (OverwrittenCopy) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryPerformance,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.SemanticAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedLocalSymbols | lint.NeedNames | lint.NeedTags,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  false,
 		Fixable:         false,
 		Tags:            []string{"copies", "buffers", "memcpy", "performance"},

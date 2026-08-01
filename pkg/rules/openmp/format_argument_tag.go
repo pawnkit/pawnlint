@@ -20,6 +20,8 @@ func (FormatArgumentTag) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryCorrectness,
 		DefaultSeverity: diagnostic.SeverityError,
 		AnalysisLevel:   lint.SemanticAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedLocalSymbols | lint.NeedNames | lint.NeedTags,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  true,
 		Fixable:         false,
 		Tags:            []string{"format", "arguments", "native", "api", "tags"},

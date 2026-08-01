@@ -17,6 +17,8 @@ func (EmptyConditionBody) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryCorrectness,
 		DefaultSeverity: diagnostic.SeverityError,
 		AnalysisLevel:   lint.SyntaxAnalysis,
+		Requirements:    lint.NeedSyntax,
+		Scope:           lint.ScopeFile,
 		DefaultEnabled:  true,
 		Fixable:         true,
 		Tags:            []string{"if", "while", "for"},

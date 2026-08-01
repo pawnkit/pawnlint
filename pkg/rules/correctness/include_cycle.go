@@ -20,6 +20,8 @@ func (IncludeCycle) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryCorrectness,
 		DefaultSeverity: diagnostic.SeverityError,
 		AnalysisLevel:   lint.ProjectAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedPreprocessor | lint.NeedWorkspace,
+		Scope:           lint.ScopeWorkspace,
 		DefaultEnabled:  true,
 		Fixable:         false,
 		Tags:            []string{"includes", "project", "dependencies"},

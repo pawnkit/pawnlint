@@ -31,6 +31,8 @@ func (ArgumentTagMismatch) Metadata() lint.Metadata {
 		Category:        diagnostic.CategoryCorrectness,
 		DefaultSeverity: diagnostic.SeverityWarning,
 		AnalysisLevel:   lint.ProjectAnalysis,
+		Requirements:    lint.NeedSyntax | lint.NeedPreprocessor | lint.NeedWorkspace,
+		Scope:           lint.ScopeWorkspace,
 		DefaultEnabled:  true,
 		Fixable:         false,
 		Tags:            []string{"arguments", "tags", "calls", "project", "api"},
