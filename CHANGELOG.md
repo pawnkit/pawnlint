@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.29 - 2026-08-02
+
+### Changed
+
+- Use pawn-analysis 0.30.10 for faster function-effect collection.
+
 ## 1.8.28 - 2026-08-02
 
 ### Changed
