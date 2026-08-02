@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.32 - 2026-08-02
+
+### Performance
+
+- Reuse shared function-effect indexes across files in one lint run.
+
 ## 1.8.31 - 2026-08-02
 
 ### Performance

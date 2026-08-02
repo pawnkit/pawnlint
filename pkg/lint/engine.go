@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	analysis "github.com/pawnkit/pawn-analysis"
@@ -28,6 +29,10 @@ type Engine struct {
 	SharedAnalysis *analysis.Result
 	ObserveTiming  func(TimingEvent)
 	Context        context.Context
+
+	sharedIndexMu     sync.Mutex
+	sharedIndexSource *analysis.Result
+	sharedIndex       *sharedFunctionIndex
 }
 
 type TimingStage string
@@ -145,7 +150,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	parseErrors := parseErrorDiagnostics(path, pf, lt)
 	var internalErrors []diagnostic.Diagnostic
 	file := &File{Path: path, Source: src, Parsed: pf, LineTable: lt}
-	sharedIndex := newSharedFunctionIndex(e.SharedAnalysis)
+	sharedIndex := e.sharedFunctionIndex()
 	var flow *controlflow.Model
 	var requirements Requirements
 	ruleIDs := e.Reg.IDs()
@@ -339,6 +344,19 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 
 	diagnostic.Sort(out)
 	return out
+}
+
+func (e *Engine) sharedFunctionIndex() *sharedFunctionIndex {
+	if e == nil || e.SharedAnalysis == nil {
+		return nil
+	}
+	e.sharedIndexMu.Lock()
+	defer e.sharedIndexMu.Unlock()
+	if e.sharedIndexSource != e.SharedAnalysis {
+		e.sharedIndexSource = e.SharedAnalysis
+		e.sharedIndex = newSharedFunctionIndex(e.SharedAnalysis)
+	}
+	return e.sharedIndex
 }
 
 func (e *Engine) cancelled() bool {
