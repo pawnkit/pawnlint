@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.27 - 2026-08-02
+
+### Changed
+
+- Use pawn-analysis 0.30.9 and pawn-parser 1.5.8.
+
 ## 1.8.26 - 2026-08-02
 
 ### Performance
