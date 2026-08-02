@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.28 - 2026-08-02
+
+### Changed
+
+- Use pawn-project 0.34.2 for current project discovery and configuration.
+
 ## 1.8.27 - 2026-08-02
 
 ### Changed

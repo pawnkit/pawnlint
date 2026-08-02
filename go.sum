@@ -26,8 +26,8 @@ github.com/pawnkit/pawn-analysis v0.30.9 h1:ngDpbxxGdRt5ZE2qnIRS1LEnVBrZ3xzqU5KG
 github.com/pawnkit/pawn-analysis v0.30.9/go.mod h1:t5NdYjnb7E3h8BztTs2xEUM/rVUb07Aoqmr6AIZ1jqk=
 github.com/pawnkit/pawn-parser v1.5.8 h1:PqUv8Z8P/d32hFcS3Gjd6M4NErwGdMJ+wx+5p1vYgEY=
 github.com/pawnkit/pawn-parser v1.5.8/go.mod h1:6iG1RfoTtroAadrF5A60QZc/zwalxBwn2gbgCQ/QO8Y=
-github.com/pawnkit/pawn-project v0.3.3 h1:XplAg9Qz1eo3GNVbT5j6gZwx8lAHN176Ydi4pU78xMo=
-github.com/pawnkit/pawn-project v0.3.3/go.mod h1:hMeRnvAYqu5TeWkJKT7EVqw6z62wTiuGBuIvcWNZuYY=
+github.com/pawnkit/pawn-project v0.34.2 h1:0U3bSKSJJqEHjxdAcOyQuXrfF512rHrpDIqBrPuxEmo=
+github.com/pawnkit/pawn-project v0.34.2/go.mod h1:caXLtXl6HEpoo+7Uom0vdNo68X9i+z30xTMZ0ZVGkv4=
 github.com/pawnkit/pawnkit-core v0.5.0 h1:faEI2LGaP9czSDaKxtw4qvGUNuft88qeR/MdW0jLmlg=
 github.com/pawnkit/pawnkit-core v0.5.0/go.mod h1:jGhXHEEzr8juezaRhh/AkGzX6S4eGQnprB83vrI1peU=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
