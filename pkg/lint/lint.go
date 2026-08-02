@@ -113,6 +113,7 @@ type Context struct {
 	API            *api.Metadata
 	SharedAnalysis *analysis.Result
 	facts          *fileFacts
+	sharedIndex    *sharedFunctionIndex
 }
 
 type fileFacts struct {
@@ -135,7 +136,7 @@ type evalFact struct {
 
 func (ctx *Context) FunctionEffects(declaration project.Declaration) (project.FunctionEffects, bool) {
 	if hasSharedFunctionFacts(ctx.SharedAnalysis) {
-		return sharedFunctionEffects(ctx.SharedAnalysis, declaration)
+		return sharedFunctionEffectsIndexed(ctx.SharedAnalysis, declaration, ctx.sharedIndex)
 	}
 	if ctx.Project == nil {
 		return project.FunctionEffects{}, false

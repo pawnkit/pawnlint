@@ -12,13 +12,13 @@ import (
 	"github.com/pawnkit/pawnlint/pkg/project"
 )
 
-func (e *Engine) controlFlowOptions(file *project.File, tree *walk.Model) controlflow.Options {
+func (e *Engine) controlFlowOptions(file *project.File, tree *walk.Model, sharedIndex *sharedFunctionIndex) controlflow.Options {
 	return controlflow.Options{ResolveCallEffects: func(call *parser.Node) (controlflow.CallEffects, bool) {
-		return e.resolveCallEffects(file, tree, call)
+		return e.resolveCallEffects(file, tree, call, sharedIndex)
 	}}
 }
 
-func (e *Engine) resolveCallEffects(file *project.File, tree *walk.Model, call *parser.Node) (controlflow.CallEffects, bool) {
+func (e *Engine) resolveCallEffects(file *project.File, tree *walk.Model, call *parser.Node, sharedIndex *sharedFunctionIndex) (controlflow.CallEffects, bool) {
 	callee := call.Field("function")
 	if callee == nil || callee.Kind != parser.KindIdentifier {
 		return controlflow.CallEffects{}, false
@@ -38,7 +38,7 @@ func (e *Engine) resolveCallEffects(file *project.File, tree *walk.Model, call *
 					continue
 				}
 				projectFunction = true
-				effects, known := sharedFunctionEffects(e.SharedAnalysis, variant)
+				effects, known := sharedFunctionEffectsIndexed(e.SharedAnalysis, variant, sharedIndex)
 				if !known && !hasSharedFunctionFacts(e.SharedAnalysis) {
 					effects, known = e.Project.FunctionEffects(variant)
 				}

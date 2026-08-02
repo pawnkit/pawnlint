@@ -145,6 +145,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	parseErrors := parseErrorDiagnostics(path, pf, lt)
 	var internalErrors []diagnostic.Diagnostic
 	file := &File{Path: path, Source: src, Parsed: pf, LineTable: lt}
+	sharedIndex := newSharedFunctionIndex(e.SharedAnalysis)
 	var flow *controlflow.Model
 	var requirements Requirements
 	ruleIDs := e.Reg.IDs()
@@ -177,10 +178,10 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	}
 	if needFlow {
 		if e.ObserveTiming == nil {
-			flow = controlflow.BuildWithOptions(m, semantics, e.controlFlowOptions(contextFile, m))
+			flow = controlflow.BuildWithOptions(m, semantics, e.controlFlowOptions(contextFile, m, sharedIndex))
 		} else {
 			started := time.Now()
-			flow = controlflow.BuildWithOptions(m, semantics, e.controlFlowOptions(contextFile, m))
+			flow = controlflow.BuildWithOptions(m, semantics, e.controlFlowOptions(contextFile, m, sharedIndex))
 			e.observe(TimingEvent{Stage: TimingControlFlow, Duration: time.Since(started)})
 		}
 	}
@@ -235,6 +236,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 			Target:         e.Target,
 			API:            e.API,
 			SharedAnalysis: e.SharedAnalysis,
+			sharedIndex:    sharedIndex,
 			facts:          facts,
 		}
 		collected := make([]diagnostic.Diagnostic, 0, 8)

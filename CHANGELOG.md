@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.31 - 2026-08-02
+
+### Performance
+
+- Index shared function-effect lookups once per lint pass.
+
 ## 1.8.30 - 2026-08-02
 
 ### Changed

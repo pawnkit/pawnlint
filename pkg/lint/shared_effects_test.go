@@ -31,11 +31,20 @@ func TestSharedLeafFunctionEffects(t *testing.T) {
 	if !ok || !effects.Complete || len(effects.MutatedParameters) != 1 || effects.MutatedParameters[0] != 0 {
 		t.Fatalf("leaf effects = %#v, found = %v", effects, ok)
 	}
+	index := newSharedFunctionIndex(shared)
+	effects, ok = sharedFunctionEffectsIndexed(shared, leaf, index)
+	if !ok || !effects.Complete || len(effects.MutatedParameters) != 1 || effects.MutatedParameters[0] != 0 {
+		t.Fatalf("indexed leaf effects = %#v, found = %v", effects, ok)
+	}
 	wrapper := model.Declarations["Wrapper"][0]
 	effects, ok = sharedFunctionEffects(shared, wrapper)
 	if !ok || !effects.Complete || len(effects.MutatedParameters) != 1 ||
 		effects.MutatedParameters[0] != 0 {
 		t.Fatalf("wrapper effects = %#v, found = %v", effects, ok)
+	}
+	effects, ok = sharedFunctionEffectsIndexed(shared, wrapper, index)
+	if !ok || !effects.Complete || len(effects.MutatedParameters) != 1 || effects.MutatedParameters[0] != 0 {
+		t.Fatalf("indexed wrapper effects = %#v, found = %v", effects, ok)
 	}
 	for id, facts := range shared.FunctionFacts {
 		if len(facts.CallSites) != 0 {
