@@ -2,6 +2,7 @@ package correctness
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	parser "github.com/pawnkit/pawn-parser"
@@ -170,9 +171,15 @@ func unconditionalCall(file *project.File, call *parser.Node) bool {
 	if callee == nil || callee.Tok.Origin != nil {
 		return false
 	}
-	for index := range file.Parsed.Tokens {
-		current := &file.Parsed.Tokens[index]
-		if current.Start.Offset >= callee.Start && current.End.Offset <= call.End && current.Origin != nil {
+	tokens := file.Parsed.Tokens
+	start := sort.Search(len(tokens), func(index int) bool {
+		return tokens[index].Start.Offset >= callee.Start
+	})
+	for _, current := range tokens[start:] {
+		if current.Start.Offset > call.End {
+			break
+		}
+		if current.End.Offset <= call.End && current.Origin != nil {
 			return false
 		}
 	}

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.26 - 2026-08-02
+
+### Performance
+
+- Avoid rescanning the full token stream for recursive calls.
+
 ## 1.8.25 - 2026-08-02
 
 ### Performance
