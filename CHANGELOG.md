@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.30 - 2026-08-02
+
+### Changed
+
+- Use pawn-analysis 0.30.11 and its incremental function-fact cache.
+
 ## 1.8.29 - 2026-08-02
 
 ### Changed
