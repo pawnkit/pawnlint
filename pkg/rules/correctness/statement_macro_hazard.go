@@ -2,6 +2,7 @@ package correctness
 
 import (
 	"fmt"
+	"sort"
 
 	parser "github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
@@ -125,9 +126,16 @@ func statementMacroTokens(ctx *lint.Context, value *parser.Node) []token.Token {
 	if ctx.File == nil || ctx.File.Parsed == nil {
 		return nil
 	}
+	all := ctx.File.Parsed.Tokens
+	start := sort.Search(len(all), func(index int) bool {
+		return all[index].Start.Offset >= value.Start
+	})
 	var result []token.Token
-	for _, tok := range ctx.File.Parsed.Tokens {
-		if tok.Start.Offset < value.Start || tok.End.Offset > value.End || tok.Kind == token.EOF || tok.Kind.IsTrivia() {
+	for _, tok := range all[start:] {
+		if tok.End.Offset > value.End {
+			break
+		}
+		if tok.Kind == token.EOF || tok.Kind.IsTrivia() {
 			continue
 		}
 		result = append(result, tok)

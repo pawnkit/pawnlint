@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Performance
+
+- Avoid rescanning the full token stream for each statement macro.
+
 ## 1.8.24 - 2026-08-01
 
 ### Changed
