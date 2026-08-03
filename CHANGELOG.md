@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.37 - 2026-08-03
+
+### Changed
+
+- Use pawn-analysis v0.30.15.
+- Reuse active rule metadata during each lint run.
+
 ## 1.8.36 - 2026-08-03
 
 ### Changed

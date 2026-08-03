@@ -50,6 +50,13 @@ type TimingEvent struct {
 	Duration time.Duration
 }
 
+type activeRule struct {
+	id       string
+	rule     Rule
+	meta     Metadata
+	severity diagnostic.Severity
+}
+
 func NewEngine(reg *Registrar) *Engine {
 	return &Engine{Reg: reg}
 }
@@ -154,6 +161,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	var flow *controlflow.Model
 	var requirements Requirements
 	ruleIDs := e.Reg.IDs()
+	active := make([]activeRule, 0, len(ruleIDs))
 	for _, id := range ruleIDs {
 		if e.cancelled() {
 			return nil
@@ -161,13 +169,19 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 		if e.SharedAnalysis != nil && DelegatesToShared(id) {
 			continue
 		}
-		if _, enabled := ruleSet[id]; !enabled {
+		sev, enabled := ruleSet[id]
+		if !enabled || sev == diagnostic.SeverityOff {
 			continue
 		}
 		meta, ok := e.Reg.Lookup(id)
 		if !ok || !levelAllowed(meta.AnalysisLevel, maxLevel) {
 			continue
 		}
+		rl, ok := e.Reg.Rule(id)
+		if !ok {
+			continue
+		}
+		active = append(active, activeRule{id: id, rule: rl, meta: meta, severity: sev})
 		requirements |= meta.Requirements
 	}
 	needSemantics := requirements.Has(NeedLocalSymbols | NeedNames | NeedTags | NeedConstants | NeedControlFlow)
@@ -207,25 +221,14 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	}
 	facts := newFileFacts(m, semantics)
 
-	for _, id := range ruleIDs {
+	for _, activeRule := range active {
 		if e.cancelled() {
 			return nil
 		}
-		if e.SharedAnalysis != nil && DelegatesToShared(id) {
-			continue
-		}
-		sev, enabled := ruleSet[id]
-		if !enabled || sev == diagnostic.SeverityOff {
-			continue
-		}
-		rl, ok := e.Reg.Rule(id)
-		if !ok {
-			continue
-		}
-		meta, ok := e.Reg.Lookup(id)
-		if !ok || !levelAllowed(meta.AnalysisLevel, maxLevel) {
-			continue
-		}
+		id := activeRule.id
+		rl := activeRule.rule
+		meta := activeRule.meta
+		sev := activeRule.severity
 		ctx := &Context{
 			File:           file,
 			Level:          meta.AnalysisLevel,
