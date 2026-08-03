@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.55 - 2026-08-03
+
+### Performance
+
+- Use pawn-analysis v0.30.22's workspace semantic reuse.
+
 ## 1.8.54 - 2026-08-03
 
 ### Performance
