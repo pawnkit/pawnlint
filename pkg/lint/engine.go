@@ -234,7 +234,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 		tokenIndex[k] = out
 		return out
 	}
-	facts := newFileFacts(m, semantics)
+	facts := newFileFacts()
 
 	for _, activeRule := range active {
 		if e.cancelled() {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.60 - 2026-08-04
+
+### Performance
+
+- Build assignment and symbol indexes only when a rule needs them.
+
 ## 1.8.59 - 2026-08-03
 
 ### Performance

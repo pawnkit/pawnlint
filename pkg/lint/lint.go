@@ -147,28 +147,12 @@ func (ctx *Context) FunctionEffects(declaration project.Declaration) (project.Fu
 	return ctx.Project.FunctionEffects(declaration)
 }
 
-func newFileFacts(tree *walk.Model, model *semantic.Model) *fileFacts {
-	facts := &fileFacts{
-		assignments: make(map[*parser.Node][]*parser.Node),
-		symbols:     make(map[*parser.Node][]*semantic.Symbol),
-		pureCalls:   make(map[*parser.Node]pureCallFact),
-		constants:   make(map[*parser.Node]evalFact),
-		flowValues:  make(map[*parser.Node]evalFact),
+func newFileFacts() *fileFacts {
+	return &fileFacts{
+		pureCalls:  make(map[*parser.Node]pureCallFact),
+		constants:  make(map[*parser.Node]evalFact),
+		flowValues: make(map[*parser.Node]evalFact),
 	}
-	if tree != nil {
-		for _, assignment := range tree.OfKind(parser.KindAssignmentExpression) {
-			function := tree.EnclosingFunction(assignment)
-			facts.assignments[function] = append(facts.assignments[function], assignment)
-		}
-	}
-	if model != nil {
-		for _, symbol := range model.Symbols {
-			if symbol != nil {
-				facts.symbols[symbol.Function] = append(facts.symbols[symbol.Function], symbol)
-			}
-		}
-	}
-	return facts
 }
 
 func (ctx *Context) Assignments(function *parser.Node) []*parser.Node {
@@ -176,6 +160,13 @@ func (ctx *Context) Assignments(function *parser.Node) []*parser.Node {
 		return nil
 	}
 	if ctx.facts != nil {
+		if ctx.facts.assignments == nil {
+			ctx.facts.assignments = make(map[*parser.Node][]*parser.Node)
+			for _, assignment := range ctx.Walk.OfKind(parser.KindAssignmentExpression) {
+				function := ctx.Walk.EnclosingFunction(assignment)
+				ctx.facts.assignments[function] = append(ctx.facts.assignments[function], assignment)
+			}
+		}
 		return ctx.facts.assignments[function]
 	}
 	var result []*parser.Node
@@ -192,6 +183,14 @@ func (ctx *Context) FunctionSymbols(function *parser.Node) []*semantic.Symbol {
 		return nil
 	}
 	if ctx.facts != nil {
+		if ctx.facts.symbols == nil {
+			ctx.facts.symbols = make(map[*parser.Node][]*semantic.Symbol)
+			for _, symbol := range ctx.Semantic.Symbols {
+				if symbol != nil {
+					ctx.facts.symbols[symbol.Function] = append(ctx.facts.symbols[symbol.Function], symbol)
+				}
+			}
+		}
 		return ctx.facts.symbols[function]
 	}
 	var result []*semantic.Symbol
