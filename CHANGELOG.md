@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.54 - 2026-08-03
+
+### Performance
+
+- Use pawn-analysis v0.30.21's cached name checks for incremental analysis.
+
 ## 1.8.53 - 2026-08-03
 
 ### Performance
