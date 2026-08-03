@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.52 - 2026-08-03
+
+### Performance
+
+- Reuse the shared loop call index in loop formatting and concatenation rules.
+
 ## 1.8.51 - 2026-08-03
 
 ### Performance

@@ -36,47 +36,52 @@ func (StringConcatenationLoop) Run(ctx *lint.Context) {
 	}
 	uncertainLoops := loopInvariantUncertainLoops(ctx)
 	seen := make(map[*parser.Node]map[*semantic.Symbol]struct{})
-	for _, call := range ctx.Walk.OfKind(parser.KindCallExpression) {
-		if !stringConcatenationNative(ctx, call) || stringConcatenationSkipped(ctx, call) {
+	for _, group := range loopInvariantCallGroups(ctx) {
+		loop := group.loop
+		if uncertainLoops[loop] {
 			continue
 		}
-		statement := ctx.Walk.Parent(call)
-		loop := loopInvariantNearestLoop(ctx, call)
-		if statement == nil || statement.Kind != parser.KindExpressionStatement || statement.Field("expression") != call || loop == nil || uncertainLoops[loop] {
-			continue
+		for _, call := range group.calls {
+			if !stringConcatenationNative(ctx, call) || stringConcatenationSkipped(ctx, call) {
+				continue
+			}
+			statement := ctx.Walk.Parent(call)
+			if statement == nil || statement.Kind != parser.KindExpressionStatement || statement.Field("expression") != call {
+				continue
+			}
+			body := loop.Field("body")
+			if body == nil || body.Kind != parser.KindBlock || stringConcatenationBlock(ctx, call) != body || stringConcatenationControlBefore(ctx, body, statement) {
+				continue
+			}
+			arguments := call.Field("arguments")
+			if arguments == nil || len(arguments.Children) < 2 || stringConcatenationHasError(arguments) {
+				continue
+			}
+			destination := unwrap(arguments.Children[0])
+			if destination == nil || destination.Kind != parser.KindIdentifier {
+				continue
+			}
+			symbol := ctx.Semantic.Resolve(destination)
+			if symbol == nil || symbol.Ambiguous || symbol.Kind != semantic.SymbolLocal || overwrittenCopyDimensions(symbol.Decl) != 1 || symbol.Decl.Start >= loop.Start || inside(symbol.Decl, loop) {
+				continue
+			}
+			if _, reported := seen[loop][symbol]; reported {
+				continue
+			}
+			if stringConcatenationBufferAccessed(ctx, loop, symbol) || !stringConcatenationUsedAfter(ctx, loop, symbol) {
+				continue
+			}
+			if seen[loop] == nil {
+				seen[loop] = make(map[*semantic.Symbol]struct{})
+			}
+			seen[loop][symbol] = struct{}{}
+			ctx.Report(diagnostic.Diagnostic{
+				Message:     fmt.Sprintf("strcat repeatedly scans the growing string %q inside the loop", symbol.Name),
+				Filename:    ctx.File.Path,
+				Range:       ctx.Walk.Range(call),
+				Suggestions: []diagnostic.Suggestion{{Description: "append with a tracked write position"}},
+			})
 		}
-		body := loop.Field("body")
-		if body == nil || body.Kind != parser.KindBlock || stringConcatenationBlock(ctx, call) != body || stringConcatenationControlBefore(ctx, body, statement) {
-			continue
-		}
-		arguments := call.Field("arguments")
-		if arguments == nil || len(arguments.Children) < 2 || stringConcatenationHasError(arguments) {
-			continue
-		}
-		destination := unwrap(arguments.Children[0])
-		if destination == nil || destination.Kind != parser.KindIdentifier {
-			continue
-		}
-		symbol := ctx.Semantic.Resolve(destination)
-		if symbol == nil || symbol.Ambiguous || symbol.Kind != semantic.SymbolLocal || overwrittenCopyDimensions(symbol.Decl) != 1 || symbol.Decl.Start >= loop.Start || inside(symbol.Decl, loop) {
-			continue
-		}
-		if _, reported := seen[loop][symbol]; reported {
-			continue
-		}
-		if stringConcatenationBufferAccessed(ctx, loop, symbol) || !stringConcatenationUsedAfter(ctx, loop, symbol) {
-			continue
-		}
-		if seen[loop] == nil {
-			seen[loop] = make(map[*semantic.Symbol]struct{})
-		}
-		seen[loop][symbol] = struct{}{}
-		ctx.Report(diagnostic.Diagnostic{
-			Message:     fmt.Sprintf("strcat repeatedly scans the growing string %q inside the loop", symbol.Name),
-			Filename:    ctx.File.Path,
-			Range:       ctx.Walk.Range(call),
-			Suggestions: []diagnostic.Suggestion{{Description: "append with a tracked write position"}},
-		})
 	}
 }
 

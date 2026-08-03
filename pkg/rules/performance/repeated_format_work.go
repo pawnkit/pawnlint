@@ -35,62 +35,67 @@ func (RepeatedFormatWork) Run(ctx *lint.Context) {
 		return
 	}
 	uncertainLoops := loopInvariantUncertainLoops(ctx)
-	for _, call := range ctx.Walk.OfKind(parser.KindCallExpression) {
-		name, ok := repeatedFormatNative(ctx, call)
-		if !ok || repeatedFormatSkipped(ctx, call) {
+	for _, group := range loopInvariantCallGroups(ctx) {
+		loop := group.loop
+		if uncertainLoops[loop] {
 			continue
 		}
-		statement := ctx.Walk.Parent(call)
-		loop := loopInvariantNearestLoop(ctx, call)
-		if statement == nil || statement.Kind != parser.KindExpressionStatement || statement.Field("expression") != call || loop == nil || uncertainLoops[loop] {
-			continue
-		}
-		body := loop.Field("body")
-		if body == nil || body.Kind != parser.KindBlock || repeatedFormatBlock(ctx, call) != body || repeatedFormatControlBefore(ctx, body, statement) {
-			continue
-		}
-		arguments := call.Field("arguments")
-		minimum := 3
-		if name == "strformat" {
-			minimum = 4
-		}
-		if arguments == nil || len(arguments.Children) < minimum || repeatedFormatHasError(arguments) {
-			continue
-		}
-		destination := unwrap(arguments.Children[0])
-		if destination == nil || destination.Kind != parser.KindIdentifier {
-			continue
-		}
-		symbol := ctx.Semantic.Resolve(destination)
-		if symbol == nil || symbol.Ambiguous || symbol.Kind != semantic.SymbolLocal || overwrittenCopyDimensions(symbol.Decl) != 1 || symbol.Decl.Start >= loop.Start || inside(symbol.Decl, loop) {
-			continue
-		}
-		symbols := make(map[*semantic.Symbol]struct{})
-		invariant := true
-		for _, argument := range arguments.Children[1:] {
-			if !loopInvariantExpression(ctx, argument, loop, symbols) {
-				invariant = false
-				break
+		for _, call := range group.calls {
+			name, ok := repeatedFormatNative(ctx, call)
+			if !ok || repeatedFormatSkipped(ctx, call) {
+				continue
 			}
-		}
-		if !invariant {
-			continue
-		}
-		for input := range symbols {
-			if repeatedFormatInputChanges(ctx, call, loop, input) {
-				invariant = false
-				break
+			statement := ctx.Walk.Parent(call)
+			if statement == nil || statement.Kind != parser.KindExpressionStatement || statement.Field("expression") != call {
+				continue
 			}
+			body := loop.Field("body")
+			if body == nil || body.Kind != parser.KindBlock || repeatedFormatBlock(ctx, call) != body || repeatedFormatControlBefore(ctx, body, statement) {
+				continue
+			}
+			arguments := call.Field("arguments")
+			minimum := 3
+			if name == "strformat" {
+				minimum = 4
+			}
+			if arguments == nil || len(arguments.Children) < minimum || repeatedFormatHasError(arguments) {
+				continue
+			}
+			destination := unwrap(arguments.Children[0])
+			if destination == nil || destination.Kind != parser.KindIdentifier {
+				continue
+			}
+			symbol := ctx.Semantic.Resolve(destination)
+			if symbol == nil || symbol.Ambiguous || symbol.Kind != semantic.SymbolLocal || overwrittenCopyDimensions(symbol.Decl) != 1 || symbol.Decl.Start >= loop.Start || inside(symbol.Decl, loop) {
+				continue
+			}
+			symbols := make(map[*semantic.Symbol]struct{})
+			invariant := true
+			for _, argument := range arguments.Children[1:] {
+				if !loopInvariantExpression(ctx, argument, loop, symbols) {
+					invariant = false
+					break
+				}
+			}
+			if !invariant {
+				continue
+			}
+			for input := range symbols {
+				if repeatedFormatInputChanges(ctx, call, loop, input) {
+					invariant = false
+					break
+				}
+			}
+			if !invariant || repeatedFormatBufferAccessed(ctx, call, loop, destination, symbol) || !repeatedFormatUsedAfter(ctx, loop, symbol) {
+				continue
+			}
+			ctx.Report(diagnostic.Diagnostic{
+				Message:     fmt.Sprintf("%s repeatedly formats unchanged values into %q before the buffer is used", name, symbol.Name),
+				Filename:    ctx.File.Path,
+				Range:       ctx.Walk.Range(call),
+				Suggestions: []diagnostic.Suggestion{{Description: "format the buffer once at its point of use"}},
+			})
 		}
-		if !invariant || repeatedFormatBufferAccessed(ctx, call, loop, destination, symbol) || !repeatedFormatUsedAfter(ctx, loop, symbol) {
-			continue
-		}
-		ctx.Report(diagnostic.Diagnostic{
-			Message:     fmt.Sprintf("%s repeatedly formats unchanged values into %q before the buffer is used", name, symbol.Name),
-			Filename:    ctx.File.Path,
-			Range:       ctx.Walk.Range(call),
-			Suggestions: []diagnostic.Suggestion{{Description: "format the buffer once at its point of use"}},
-		})
 	}
 }
 
