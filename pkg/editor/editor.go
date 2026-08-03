@@ -126,7 +126,11 @@ func diagnoseContextWithTimings(
 	}
 	features := resolved.ProjectFeaturesExcluding(delegated)
 	if shared != nil && shared.Parse != nil && bytes.Equal(shared.Parse.Source, content) {
-		rootParsed = shared.Parse.ExpandTokensWithOptions(rootTokens, parser.ParseOptions{})
+		if cache != nil {
+			rootParsed = cache.ExpandRoot(path, shared.Parse, rootTokens)
+		} else {
+			rootParsed = shared.Parse.ExpandTokensWithOptions(rootTokens, parser.ParseOptions{})
+		}
 	}
 	var sharedSources []project.Source
 	if shared != nil && shared.Preprocess != nil {

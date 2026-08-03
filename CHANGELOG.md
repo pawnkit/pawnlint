@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.43 - 2026-08-03
+
+### Performance
+
+- Cache the pointer parse expanded from shared editor syntax.
+
 ## 1.8.42 - 2026-08-03
 
 ### Performance

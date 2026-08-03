@@ -130,6 +130,35 @@ func NewParseCache() *ParseCache {
 	return &ParseCache{entries: make(map[string]parseCacheEntry)}
 }
 
+// ExpandRoot returns a cached pointer parse for compact root syntax.
+func (c *ParseCache) ExpandRoot(path string, compact *parser.CompactFile, tokens []token.Token) *parser.File {
+	if compact == nil {
+		return nil
+	}
+	if c == nil {
+		return compact.ExpandTokensWithOptions(tokens, parser.ParseOptions{})
+	}
+	hash := sha256.Sum256(compact.Source)
+	c.mu.RLock()
+	entry := c.entries[path]
+	c.mu.RUnlock()
+	if entry.matches(hash, false) {
+		return entry.file
+	}
+	parsed := compact.ExpandTokensWithOptions(tokens, parser.ParseOptions{})
+	c.mu.Lock()
+	if c.entries == nil {
+		c.entries = make(map[string]parseCacheEntry)
+	}
+	if existing := c.entries[path]; existing.matches(hash, false) {
+		parsed = existing.file
+	} else {
+		c.entries[path] = parseCacheEntry{hash: hash, file: parsed}
+	}
+	c.mu.Unlock()
+	return parsed
+}
+
 // InvalidateFiles clears cached filesystem probes.
 func (c *ParseCache) InvalidateFiles() {
 	if c == nil {

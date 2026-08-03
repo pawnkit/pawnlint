@@ -40,6 +40,28 @@ func TestParseCachePreparesTokenizedSources(t *testing.T) {
 	}
 }
 
+func TestParseCacheReusesExpandedRoot(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "main.pwn")
+	content := []byte("main() {}\n")
+	compact := parser.ParseCompact(content, parser.ParseOptions{})
+	tokens := lexer.Tokenize(content)
+	cache := project.NewParseCache()
+	first := cache.ExpandRoot(path, compact, tokens)
+	second := cache.ExpandRoot(path, compact, tokens)
+	if first == nil || second == nil || first != second {
+		t.Fatal("expanded root was not reused")
+	}
+
+	edited := []byte("main() { print(1); }\n")
+	editedCompact := parser.ParseCompact(edited, parser.ParseOptions{})
+	editedParsed := cache.ExpandRoot(path, editedCompact, lexer.Tokenize(edited))
+	if editedParsed == nil || editedParsed == first {
+		t.Fatal("changed root reused the previous parse")
+	}
+}
+
 func TestParseCacheCompactEntrySatisfiesDiscardTrivia(t *testing.T) {
 	t.Parallel()
 
