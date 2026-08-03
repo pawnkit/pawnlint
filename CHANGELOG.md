@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.48 - 2026-08-03
+
+### Performance
+
+- Avoid unnecessary value evaluation for unsupported expressions.
+- Skip reference indexing for locals that cannot be initialization candidates.
+
 ## 1.8.47 - 2026-08-03
 
 ### Performance

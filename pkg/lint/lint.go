@@ -204,11 +204,11 @@ func (ctx *Context) Eval(node *parser.Node) (int64, bool) {
 	if ctx == nil {
 		return 0, false
 	}
-	if value, ok := ctx.Constant(node); ok {
-		return value, true
-	}
 	if !ctx.mayEvaluateWithFlow(node) {
 		return 0, false
+	}
+	if value, ok := ctx.Constant(node); ok {
+		return value, true
 	}
 	if ctx.Flow != nil && ctx.Level >= ControlFlowAnalysis {
 		if ctx.facts != nil {

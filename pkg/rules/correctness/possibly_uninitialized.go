@@ -56,10 +56,10 @@ func (PossiblyUninitialized) Run(ctx *lint.Context) {
 			continue
 		}
 		for _, symbol := range ctx.FunctionSymbols(function.Node) {
-			if len(ctx.Semantic.References(symbol)) == 0 {
+			if !initializationCandidate(ctx, function, symbol) {
 				continue
 			}
-			if !initializationCandidate(ctx, function, symbol) {
+			if len(ctx.Semantic.References(symbol)) == 0 {
 				continue
 			}
 			events, ok := initializationEvents(ctx, function, symbol)
