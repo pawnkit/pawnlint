@@ -200,7 +200,7 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 			return controlflow.BuildWithOptions(m, semantics, e.controlFlowOptions(contextFile, m, sharedIndex))
 		}
 		if contextFile != nil {
-			key := fmt.Sprintf("%p/%p/%p", semantics, e.SharedAnalysis, e.API)
+			key := fmt.Sprintf("%p/%p/%p/%s", semantics, e.SharedAnalysis, e.API, e.Target)
 			if e.ObserveTiming == nil {
 				flow, _ = contextFile.CachedFlow(key, build)
 			} else {

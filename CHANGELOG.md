@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.41 - 2026-08-03
+
+### Fixed
+
+- Include the target profile when reusing cached control-flow models.
+
 ## 1.8.40 - 2026-08-03
 
 ### Performance
