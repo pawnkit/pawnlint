@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.53 - 2026-08-03
+
+### Performance
+
+- Cache shared diagnostic file mappings and line indexes during one lint run.
+
 ## 1.8.52 - 2026-08-03
 
 ### Performance

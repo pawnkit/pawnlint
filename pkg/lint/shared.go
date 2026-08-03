@@ -16,13 +16,14 @@ func appendSharedDiagnostics(dst []diagnostic.Diagnostic, path string, content [
 	if result == nil {
 		result = analysis.Analyze(content, analysis.Options{URI: coresource.FileURI(path)})
 	}
+	files := newSharedDiagnosticFiles(result, path, content)
 	for _, item := range result.Diagnostics {
 		if !sharedDiagnostic(item.Code) ||
 			item.Primary.File != result.File && !sharedProjectDiagnostic(item.Code) {
 			continue
 		}
-		filename, itemContent := sharedFile(result, item.Primary.File, path, content)
-		lines := source.NewLineTable(itemContent)
+		file := files.get(item.Primary.File)
+		filename, lines := file.filename, file.lines
 		start, end := int(item.Primary.Start), int(item.Primary.End)
 		if duplicateShared(dst, item.Code, filename, start, end) {
 			continue
@@ -38,6 +39,35 @@ func appendSharedDiagnostics(dst []diagnostic.Diagnostic, path string, content [
 		})
 	}
 	return dst
+}
+
+type sharedDiagnosticFile struct {
+	filename string
+	lines    *source.LineTable
+}
+
+type sharedDiagnosticFiles struct {
+	result  *analysis.Result
+	path    string
+	content []byte
+	files   map[coresource.FileID]sharedDiagnosticFile
+}
+
+func newSharedDiagnosticFiles(result *analysis.Result, path string, content []byte) *sharedDiagnosticFiles {
+	return &sharedDiagnosticFiles{
+		result: result, path: path, content: content,
+		files: make(map[coresource.FileID]sharedDiagnosticFile),
+	}
+}
+
+func (f *sharedDiagnosticFiles) get(id coresource.FileID) sharedDiagnosticFile {
+	if file, ok := f.files[id]; ok {
+		return file
+	}
+	filename, content := sharedFile(f.result, id, f.path, f.content)
+	file := sharedDiagnosticFile{filename: filename, lines: source.NewLineTable(content)}
+	f.files[id] = file
+	return file
 }
 
 func duplicateShared(dst []diagnostic.Diagnostic, code, filename string, start, end int) bool {
