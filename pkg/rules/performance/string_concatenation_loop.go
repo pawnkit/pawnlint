@@ -34,6 +34,7 @@ func (StringConcatenationLoop) Run(ctx *lint.Context) {
 	if ctx.Semantic == nil {
 		return
 	}
+	uncertainLoops := loopInvariantUncertainLoops(ctx)
 	seen := make(map[*parser.Node]map[*semantic.Symbol]struct{})
 	for _, call := range ctx.Walk.OfKind(parser.KindCallExpression) {
 		if !stringConcatenationNative(ctx, call) || stringConcatenationSkipped(ctx, call) {
@@ -41,7 +42,7 @@ func (StringConcatenationLoop) Run(ctx *lint.Context) {
 		}
 		statement := ctx.Walk.Parent(call)
 		loop := loopInvariantNearestLoop(ctx, call)
-		if statement == nil || statement.Kind != parser.KindExpressionStatement || statement.Field("expression") != call || loop == nil || loopInvariantUncertain(ctx, loop) {
+		if statement == nil || statement.Kind != parser.KindExpressionStatement || statement.Field("expression") != call || loop == nil || uncertainLoops[loop] {
 			continue
 		}
 		body := loop.Field("body")

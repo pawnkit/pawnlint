@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.44 - 2026-08-03
+
+### Performance
+
+- Index uncertain loops once per lint pass instead of rescanning them for each call.
+
 ## 1.8.43 - 2026-08-03
 
 ### Performance

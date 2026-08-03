@@ -189,17 +189,6 @@ func loopInvariantSymbolChanges(ctx *lint.Context, loop *parser.Node, symbol *se
 	return false
 }
 
-func loopInvariantUncertain(ctx *lint.Context, loop *parser.Node) bool {
-	for _, kind := range []parser.Kind{parser.KindMacroInvocation, parser.KindMacroInvocationBlock, parser.KindConditionalSplice} {
-		for _, node := range ctx.Walk.OfKind(kind) {
-			if inside(node, loop) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func loopInvariantNearestLoop(ctx *lint.Context, node *parser.Node) *parser.Node {
 	for current := ctx.Walk.Parent(node); current != nil; current = ctx.Walk.Parent(current) {
 		switch current.Kind {
