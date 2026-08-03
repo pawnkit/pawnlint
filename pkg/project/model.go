@@ -259,7 +259,8 @@ func BuildContext(ctx context.Context, sources []Source, options Options) (*Mode
 		}
 		options.IncludePaths[i] = filepath.Clean(path)
 	}
-	modelCacheable := options.ParseCache != nil && len(options.IncludeSources) > 0
+	modelCacheable := options.ParseCache != nil && (len(options.IncludeSources) > 0 ||
+		(len(options.IncludePaths) == 0 && !sourcesMayInclude(sources)))
 	modelKey := modelCacheKey(sources, options)
 	if modelCacheable {
 		if cached := options.ParseCache.getModel(modelKey); cached != nil {
@@ -362,6 +363,15 @@ func BuildContext(ctx context.Context, sources []Source, options Options) (*Mode
 		options.ParseCache.putModel(modelKey, model)
 	}
 	return model, nil
+}
+
+func sourcesMayInclude(sources []Source) bool {
+	for _, source := range sources {
+		if bytes.Contains(source.Content, []byte("#include")) || bytes.Contains(source.Content, []byte("#tryinclude")) {
+			return true
+		}
+	}
+	return false
 }
 
 func modelCacheKey(sources []Source, options Options) [sha256.Size]byte {

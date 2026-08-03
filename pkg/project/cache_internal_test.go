@@ -64,6 +64,59 @@ func TestParseCacheReusesAndInvalidatesProjectModels(t *testing.T) {
 	}
 }
 
+func TestParseCacheReusesProjectModelsWithoutProvidedIncludes(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	cache := NewParseCache()
+	source := []Source{{Path: path, Content: []byte("main() {}\n")}}
+	options := Options{WorkingDir: dir, ParseCache: cache}
+
+	first, err := Build(source, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := Build(source, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second != first {
+		t.Fatal("unchanged project model was not reused without provided includes")
+	}
+
+	cache.InvalidateFiles()
+	third, err := Build(source, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if third == second {
+		t.Fatal("invalidated project model was reused without provided includes")
+	}
+}
+
+func TestParseCacheDoesNotReuseModelsWithFilesystemIncludes(t *testing.T) {
+	dir := t.TempDir()
+	includePath := filepath.Join(dir, "shared.inc")
+	if err := os.WriteFile(includePath, []byte("stock Shared() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "main.pwn")
+	cache := NewParseCache()
+	source := []Source{{Path: path, Content: []byte("#include \"shared.inc\"\nmain() {}\n")}}
+	options := Options{WorkingDir: dir, ParseCache: cache}
+
+	first, err := Build(source, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := Build(source, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second == first {
+		t.Fatal("filesystem include model was reused")
+	}
+}
+
 func TestFileCachesDerivedFlowByContext(t *testing.T) {
 	file := &File{}
 	first, built := file.CachedFlow("first", func() *controlflow.Model {

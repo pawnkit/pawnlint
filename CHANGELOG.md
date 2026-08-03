@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.59 - 2026-08-03
+
+### Performance
+
+- Reuse cached project models for standalone files without external include roots.
+
 ## 1.8.58 - 2026-08-03
 
 ### Performance
