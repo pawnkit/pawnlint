@@ -28,6 +28,41 @@ func TestParseCacheBoundsDefineContexts(t *testing.T) {
 	}
 }
 
+func TestParseCacheReusesAndInvalidatesProjectModels(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	cache := NewParseCache()
+	source := []Source{{Path: path, Content: []byte("main() {}\n")}}
+	options := Options{WorkingDir: dir, ParseCache: cache, IncludeSources: source}
+	first, err := Build(source, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := Build(source, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second != first {
+		t.Fatal("unchanged project model was not reused")
+	}
+	cache.InvalidateFiles()
+	third, err := Build(source, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if third == second {
+		t.Fatal("invalidated project model was reused")
+	}
+	changed := []Source{{Path: path, Content: []byte("main() { return 1; }\n")}}
+	fourth, err := Build(changed, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fourth == third {
+		t.Fatal("changed project model was reused")
+	}
+}
+
 func TestParseCacheBoundsAnalysisVariants(t *testing.T) {
 	cache := NewParseCache()
 	cache.walks = make(map[analysisCacheKey]walkCacheEntry, maxAnalysisCacheEntries)

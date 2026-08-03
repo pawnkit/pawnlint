@@ -19,6 +19,7 @@ import (
 
 const (
 	maxAnalysisCacheEntries = 4096
+	maxModelCacheEntries    = 64
 	maxDefineContexts       = 1024
 	maxFilesystemProbes     = 16384
 	maxIncludeResolutions   = 16384
@@ -32,6 +33,7 @@ type ParseCache struct {
 	indexes     map[string]indexCacheEntry
 	walks       map[analysisCacheKey]walkCacheEntry
 	semantics   map[analysisCacheKey]semanticCacheEntry
+	models      map[[sha256.Size]byte]*Model
 	defines     map[[sha256.Size]byte][]defineContextCacheEntry
 	defineCount int
 
@@ -138,6 +140,9 @@ func (c *ParseCache) InvalidateFiles() {
 	c.statErrors = nil
 	c.includes = nil
 	c.resolutionMu.Unlock()
+	c.analysisMu.Lock()
+	c.models = nil
+	c.analysisMu.Unlock()
 }
 
 func (c *ParseCache) stat(path string) (fs.FileInfo, error) {
@@ -373,6 +378,28 @@ func (c *ParseCache) putSemantic(path string, hash, definesKey [sha256.Size]byte
 	c.analysisMu.Unlock()
 }
 
+func (c *ParseCache) getModel(key [sha256.Size]byte) *Model {
+	if c == nil {
+		return nil
+	}
+	c.analysisMu.RLock()
+	model := c.models[key]
+	c.analysisMu.RUnlock()
+	return model
+}
+
+func (c *ParseCache) putModel(key [sha256.Size]byte, model *Model) {
+	if c == nil || model == nil {
+		return
+	}
+	c.analysisMu.Lock()
+	if c.models == nil || len(c.models) >= maxModelCacheEntries {
+		c.models = make(map[[sha256.Size]byte]*Model)
+	}
+	c.models[key] = model
+	c.analysisMu.Unlock()
+}
+
 func (c *ParseCache) defineContext(names []string, key [sha256.Size]byte) *walk.DefineContext {
 	if c == nil {
 		return walk.NewDefineContext(names)
@@ -411,6 +438,7 @@ func (c *ParseCache) defineContext(names []string, key [sha256.Size]byte) *walk.
 func (c *ParseCache) resetAnalysisLocked() {
 	c.walks = nil
 	c.semantics = nil
+	c.models = nil
 	c.defines = nil
 	c.defineCount = 0
 }

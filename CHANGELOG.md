@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.8.39 - 2026-08-03
+
+### Performance
+
+- Reuse complete project models for editor snapshots.
+
+### Fixed
+
+- Keep disk-backed include changes on the uncached build path when no shared snapshot is available.
+
 ## 1.8.38 - 2026-08-03
 
 ### Changed

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/binary"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -239,6 +240,13 @@ func BuildContext(ctx context.Context, sources []Source, options Options) (*Mode
 		}
 		options.IncludePaths[i] = filepath.Clean(path)
 	}
+	modelCacheable := options.ParseCache != nil && len(options.IncludeSources) > 0
+	modelKey := modelCacheKey(sources, options)
+	if modelCacheable {
+		if cached := options.ParseCache.getModel(modelKey); cached != nil {
+			return cached, nil
+		}
+	}
 	model := &Model{
 		Declarations:       make(map[string][]Declaration),
 		byCanonical:        make(map[string]*File),
@@ -331,7 +339,56 @@ func BuildContext(ctx context.Context, sources []Source, options Options) (*Mode
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	if modelCacheable {
+		options.ParseCache.putModel(modelKey, model)
+	}
 	return model, nil
+}
+
+func modelCacheKey(sources []Source, options Options) [sha256.Size]byte {
+	hash := sha256.New()
+	writeModelKeyString := func(value string) {
+		var size [8]byte
+		binary.LittleEndian.PutUint64(size[:], uint64(len(value)))
+		_, _ = hash.Write(size[:])
+		_, _ = hash.Write([]byte(value))
+	}
+	writeModelKeyBool := func(value bool) {
+		if value {
+			_, _ = hash.Write([]byte{1})
+			return
+		}
+		_, _ = hash.Write([]byte{0})
+	}
+	writeModelKeyString(options.WorkingDir)
+	for _, path := range options.IncludePaths {
+		writeModelKeyString(path)
+	}
+	_, _ = hash.Write([]byte{0})
+	for _, define := range options.Defines {
+		writeModelKeyString(define)
+	}
+	_, _ = hash.Write([]byte{0})
+	features := AllFeatures()
+	if options.Features != nil {
+		features = options.Features.withDependencies()
+	}
+	var featureBits [2]byte
+	binary.LittleEndian.PutUint16(featureBits[:], uint16(features))
+	_, _ = hash.Write(featureBits[:])
+	for _, value := range []bool{
+		options.DefinesComplete, options.ReleaseExpanded, options.ReleaseIncludes,
+	} {
+		writeModelKeyBool(value)
+	}
+	for _, source := range append(append([]Source(nil), sources...), options.IncludeSources...) {
+		writeModelKeyString(source.Path)
+		contentHash := sha256.Sum256(source.Content)
+		_, _ = hash.Write(contentHash[:])
+	}
+	var key [sha256.Size]byte
+	hash.Sum(key[:0])
+	return key
 }
 
 func (m *Model) ReleaseIncludeTokens(files []*File) {
