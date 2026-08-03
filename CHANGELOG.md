@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.58 - 2026-08-03
+
+### Performance
+
+- Use pawn-analysis v0.30.24's snapshot-local workspace resolver reuse.
+
 ## 1.8.57 - 2026-08-03
 
 ### Performance
