@@ -23,6 +23,7 @@ type Model struct {
 
 type Index struct {
 	parents    map[*parser.Node]*parser.Node
+	enclosing  map[*parser.Node]*parser.Node
 	byKind     [parser.KindMacroInvocation + 1][]*parser.Node
 	directives []*parser.Node
 }
@@ -155,7 +156,7 @@ func newWithContext(path string, pf *parser.File, defines *DefineContext, snapsh
 }
 
 func NewIndex(pf *parser.File) *Index {
-	index := &Index{}
+	index := &Index{enclosing: make(map[*parser.Node]*parser.Node)}
 	if pf != nil && pf.Root != nil {
 		var counts [parser.KindMacroInvocation + 1]int
 		directives := countIndexNodes(pf.Root, &counts)

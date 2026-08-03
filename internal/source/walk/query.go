@@ -106,11 +106,20 @@ func (m *Model) TokenText(tok token.Token) string {
 }
 
 func (m *Model) EnclosingFunction(n *parser.Node) *parser.Node {
+	if m == nil || m.index == nil || n == nil {
+		return nil
+	}
+	function, ok := m.index.enclosing[n]
+	if ok {
+		return function
+	}
 	for ancestor := m.Parent(n); ancestor != nil; ancestor = m.Parent(ancestor) {
 		if ancestor.Kind == parser.KindFunctionDefinition {
+			m.index.enclosing[n] = ancestor
 			return ancestor
 		}
 	}
+	m.index.enclosing[n] = nil
 	return nil
 }
 

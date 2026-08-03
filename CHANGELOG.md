@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.50 - 2026-08-03
+
+### Performance
+
+- Cache enclosing-function lookups shared by lint rules.
+
 ## 1.8.49 - 2026-08-03
 
 ### Performance
