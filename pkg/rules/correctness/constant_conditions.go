@@ -32,6 +32,9 @@ func (ConstantCondition) Run(ctx *lint.Context) {
 		return
 	}
 	check := func(node *parser.Node) {
+		if node == nil || node.HasError || ctx.Walk.Inactive(node) || ctx.Walk.Uncertain(node) {
+			return
+		}
 		condition := node.Field("condition")
 		value, ok := ctx.Eval(condition)
 		if !ok {

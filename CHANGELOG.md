@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.45 - 2026-08-03
+
+### Correctness
+
+- Skip constant-condition checks in inactive or uncertain preprocessor branches.
+
 ## 1.8.44 - 2026-08-03
 
 ### Performance
