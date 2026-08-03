@@ -56,6 +56,9 @@ func (PossiblyUninitialized) Run(ctx *lint.Context) {
 			continue
 		}
 		for _, symbol := range ctx.FunctionSymbols(function.Node) {
+			if len(ctx.Semantic.References(symbol)) == 0 {
+				continue
+			}
 			if !initializationCandidate(ctx, function, symbol) {
 				continue
 			}
@@ -296,6 +299,9 @@ func writeCompletion(ctx *lint.Context, node *parser.Node) int {
 }
 
 func definiteAssignment(function *controlflow.Function, events map[*controlflow.Block][]assignmentEvent) map[*controlflow.Block]bool {
+	if len(function.Blocks) == 1 {
+		return map[*controlflow.Block]bool{function.Entry: false}
+	}
 	assignedIn := make(map[*controlflow.Block]bool, len(function.Blocks))
 	assignedOut := make(map[*controlflow.Block]bool, len(function.Blocks))
 	for _, block := range function.Blocks {

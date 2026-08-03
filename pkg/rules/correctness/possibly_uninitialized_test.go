@@ -36,3 +36,21 @@ write_value()
 		t.Fatalf("diagnostics = %+v", diagnostics)
 	}
 }
+
+func TestPossiblyUninitializedIgnoresUnreferencedLocal(t *testing.T) {
+	source := []byte(`unused_local()
+{
+    new value;
+    return 1;
+}
+`)
+	reg := lint.NewRegistrar()
+	reg.MustRegister(PossiblyUninitialized{})
+	engine := lint.NewEngine(reg)
+	diagnostics := engine.LintFile("test.pwn", source, lint.ControlFlowAnalysis, map[string]diagnostic.Severity{
+		"possibly-uninitialized": diagnostic.SeverityWarning,
+	}, map[string]struct{}{"possibly-uninitialized": {}}, nil)
+	if len(diagnostics) != 0 {
+		t.Fatalf("diagnostics = %+v", diagnostics)
+	}
+}

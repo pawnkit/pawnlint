@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.47 - 2026-08-03
+
+### Performance
+
+- Skip initialization analysis for unreferenced locals and simple functions.
+
 ## 1.8.46 - 2026-08-03
 
 ### Performance
