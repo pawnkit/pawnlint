@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Performance
+
+- Add an independent benchmark row for every registered lint rule.
+
 ## 1.8.55 - 2026-08-03
 
 ### Performance

@@ -194,3 +194,23 @@ func BenchmarkEngineLintFileLarge(b *testing.B) {
 		_ = engine.LintFile("x.pwn", large, lint.SyntaxAnalysis, ruleSet, known, nil)
 	}
 }
+
+func BenchmarkRules(b *testing.B) {
+	reg := rules.Default()
+	known := make(map[string]struct{}, len(reg.IDs()))
+	for _, id := range reg.IDs() {
+		known[id] = struct{}{}
+	}
+	source := []byte(benchSrc)
+	for _, id := range reg.IDs() {
+		id := id
+		b.Run(id, func(b *testing.B) {
+			engine := lint.NewEngine(reg)
+			ruleSet := map[string]diagnostic.Severity{id: diagnostic.SeverityWarning}
+			b.ReportAllocs()
+			for range b.N {
+				_ = engine.LintFile("x.pwn", source, lint.ProjectAnalysis, ruleSet, known, nil)
+			}
+		})
+	}
+}
