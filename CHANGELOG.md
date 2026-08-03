@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.40 - 2026-08-03
+
+### Performance
+
+- Reuse control-flow models and cached value evaluations for editor snapshots.
+
 ## 1.8.39 - 2026-08-03
 
 ### Performance

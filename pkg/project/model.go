@@ -13,6 +13,7 @@ import (
 
 	"github.com/pawnkit/pawn-parser"
 	"github.com/pawnkit/pawn-parser/token"
+	"github.com/pawnkit/pawnlint/internal/controlflow"
 	"github.com/pawnkit/pawnlint/internal/preprocess"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	sourceinfo "github.com/pawnkit/pawnlint/internal/source"
@@ -92,6 +93,24 @@ type File struct {
 	pointerNodes      map[nodeLocation]*parser.Node
 	compactNodeMu     sync.Mutex
 	compactNodes      map[parser.Kind]map[nodeLocation]cst.Node
+	flowMu            sync.Mutex
+	flowKey           string
+	flow              *controlflow.Model
+}
+
+// CachedFlow returns the derived flow model for one analysis context.
+func (f *File) CachedFlow(key string, build func() *controlflow.Model) (*controlflow.Model, bool) {
+	if f == nil || build == nil {
+		return nil, false
+	}
+	f.flowMu.Lock()
+	defer f.flowMu.Unlock()
+	if f.flow != nil && f.flowKey == key {
+		return f.flow, false
+	}
+	f.flow = build()
+	f.flowKey = key
+	return f.flow, true
 }
 
 type Include struct {

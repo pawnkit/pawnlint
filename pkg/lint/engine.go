@@ -196,11 +196,26 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 		}
 	}
 	if needFlow {
-		if e.ObserveTiming == nil {
-			flow = controlflow.BuildWithOptions(m, semantics, e.controlFlowOptions(contextFile, m, sharedIndex))
+		build := func() *controlflow.Model {
+			return controlflow.BuildWithOptions(m, semantics, e.controlFlowOptions(contextFile, m, sharedIndex))
+		}
+		if contextFile != nil {
+			key := fmt.Sprintf("%p/%p/%p", semantics, e.SharedAnalysis, e.API)
+			if e.ObserveTiming == nil {
+				flow, _ = contextFile.CachedFlow(key, build)
+			} else {
+				started := time.Now()
+				var built bool
+				flow, built = contextFile.CachedFlow(key, build)
+				if built {
+					e.observe(TimingEvent{Stage: TimingControlFlow, Duration: time.Since(started)})
+				}
+			}
+		} else if e.ObserveTiming == nil {
+			flow = build()
 		} else {
 			started := time.Now()
-			flow = controlflow.BuildWithOptions(m, semantics, e.controlFlowOptions(contextFile, m, sharedIndex))
+			flow = build()
 			e.observe(TimingEvent{Stage: TimingControlFlow, Duration: time.Since(started)})
 		}
 	}

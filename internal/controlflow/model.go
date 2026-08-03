@@ -58,6 +58,13 @@ type Model struct {
 	semantics *semantic.Model
 	tree      *walk.Model
 	options   Options
+	evalMu    sync.RWMutex
+	eval      map[*parser.Node]evalResult
+}
+
+type evalResult struct {
+	value int64
+	known bool
 }
 
 type CallEffects struct {
@@ -80,7 +87,10 @@ func Build(tree *walk.Model, semantics *semantic.Model) *Model {
 }
 
 func BuildWithOptions(tree *walk.Model, semantics *semantic.Model, options Options) *Model {
-	model := &Model{byNode: make(map[*parser.Node]*Function), semantics: semantics, tree: tree, options: options}
+	model := &Model{
+		byNode: make(map[*parser.Node]*Function), semantics: semantics, tree: tree, options: options,
+		eval: make(map[*parser.Node]evalResult),
+	}
 	if tree == nil {
 		return model
 	}
@@ -129,6 +139,25 @@ func (m *Model) Eval(node *parser.Node) (int64, bool) {
 	if m == nil || m.semantics == nil {
 		return 0, false
 	}
+	m.evalMu.RLock()
+	if result, ok := m.eval[node]; ok {
+		m.evalMu.RUnlock()
+		return result.value, result.known
+	}
+	m.evalMu.RUnlock()
+
+	value, known := m.evalUncached(node)
+	m.evalMu.Lock()
+	if result, ok := m.eval[node]; ok {
+		m.evalMu.Unlock()
+		return result.value, result.known
+	}
+	m.eval[node] = evalResult{value: value, known: known}
+	m.evalMu.Unlock()
+	return value, known
+}
+
+func (m *Model) evalUncached(node *parser.Node) (int64, bool) {
 	if value, ok := m.semantics.Eval(node); ok {
 		return value, true
 	}

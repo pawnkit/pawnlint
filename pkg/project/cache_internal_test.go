@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/pawnkit/pawnlint/internal/controlflow"
 	"github.com/pawnkit/pawnlint/internal/semantic"
 	"github.com/pawnkit/pawnlint/internal/source/walk"
 )
@@ -60,6 +61,29 @@ func TestParseCacheReusesAndInvalidatesProjectModels(t *testing.T) {
 	}
 	if fourth == third {
 		t.Fatal("changed project model was reused")
+	}
+}
+
+func TestFileCachesDerivedFlowByContext(t *testing.T) {
+	file := &File{}
+	first, built := file.CachedFlow("first", func() *controlflow.Model {
+		return &controlflow.Model{}
+	})
+	if !built || first == nil {
+		t.Fatal("first flow was not built")
+	}
+	second, built := file.CachedFlow("first", func() *controlflow.Model {
+		t.Fatal("same flow context was rebuilt")
+		return nil
+	})
+	if built || second != first {
+		t.Fatal("same flow context was not reused")
+	}
+	third, built := file.CachedFlow("second", func() *controlflow.Model {
+		return &controlflow.Model{}
+	})
+	if !built || third == first {
+		t.Fatal("changed flow context was not rebuilt")
 	}
 }
 
