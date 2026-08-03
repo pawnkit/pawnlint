@@ -204,6 +204,12 @@ func (ctx *Context) Eval(node *parser.Node) (int64, bool) {
 	if ctx == nil {
 		return 0, false
 	}
+	if value, ok := ctx.Constant(node); ok {
+		return value, true
+	}
+	if !ctx.mayEvaluateWithFlow(node) {
+		return 0, false
+	}
 	if ctx.Flow != nil && ctx.Level >= ControlFlowAnalysis {
 		if ctx.facts != nil {
 			if fact, ok := ctx.facts.flowValues[node]; ok {
@@ -221,7 +227,27 @@ func (ctx *Context) Eval(node *parser.Node) (int64, bool) {
 			return value, true
 		}
 	}
-	return ctx.Constant(node)
+	return 0, false
+}
+
+func (ctx *Context) mayEvaluateWithFlow(node *parser.Node) bool {
+	if ctx == nil || ctx.Semantic == nil || node == nil || node.HasError {
+		return false
+	}
+	switch node.Kind {
+	case parser.KindLiteral, parser.KindIdentifier:
+		return true
+	case parser.KindParenthesizedExpression, parser.KindUnaryExpression, parser.KindTaggedExpression:
+		return ctx.mayEvaluateWithFlow(node.Field("expression"))
+	case parser.KindBinaryExpression:
+		return ctx.mayEvaluateWithFlow(node.Field("left")) || ctx.mayEvaluateWithFlow(node.Field("right"))
+	case parser.KindTernaryExpression:
+		return ctx.mayEvaluateWithFlow(node.Field("condition")) ||
+			ctx.mayEvaluateWithFlow(node.Field("consequence")) ||
+			ctx.mayEvaluateWithFlow(node.Field("alternative"))
+	default:
+		return false
+	}
 }
 
 func (ctx *Context) Constant(node *parser.Node) (int64, bool) {

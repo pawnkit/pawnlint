@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.46 - 2026-08-03
+
+### Performance
+
+- Avoid control-flow evaluation for conditions that cannot use local values.
+
 ## 1.8.45 - 2026-08-03
 
 ### Correctness
