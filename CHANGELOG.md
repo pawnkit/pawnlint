@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.36 - 2026-08-03
+
+### Changed
+
+- Use pawn-analysis v0.30.14.
+
 ## 1.8.35 - 2026-08-03
 
 ### Changed
