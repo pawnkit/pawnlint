@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.42 - 2026-08-03
+
+### Performance
+
+- Reuse the cached syntax index when editor analysis supplies the parsed root.
+
 ## 1.8.41 - 2026-08-03
 
 ### Fixed

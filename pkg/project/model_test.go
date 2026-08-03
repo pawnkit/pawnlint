@@ -78,6 +78,39 @@ func TestBuildReusesProvidedRootSyntax(t *testing.T) {
 	}
 }
 
+func TestBuildReusesProvidedRootIndex(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "main.pwn")
+	source := []byte("main() {}\n")
+	cache := NewParseCache()
+
+	first, err := Build([]Source{{Path: path, Content: source}}, Options{
+		WorkingDir: dir,
+		ParseCache: cache,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstRoot := first.File(path)
+	if firstRoot == nil || firstRoot.syntaxIndex == nil {
+		t.Fatal("first build did not create a syntax index")
+	}
+
+	parsed := parser.Parse(source)
+	second, err := Build([]Source{{Path: path, Content: source}}, Options{
+		WorkingDir: dir,
+		ParseCache: cache,
+		RootParsed: parsed,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondRoot := second.File(path)
+	if secondRoot == nil || secondRoot.syntaxIndex != firstRoot.syntaxIndex {
+		t.Fatal("provided root syntax index was not reused")
+	}
+}
+
 func TestQuotedIncludeUsesEntryDirectory(t *testing.T) {
 	dir := t.TempDir()
 	gamemodes := filepath.Join(dir, "gamemodes")

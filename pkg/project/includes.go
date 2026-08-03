@@ -47,7 +47,12 @@ func (m *Model) addFile(path string, source []byte, provided bool, defines *defi
 		retainTrivia := m.options.Features == nil || m.options.Features.Has(FeatureTrivia) || bytes.Contains(source, []byte("pawnlint-"))
 		if provided && m.options.RootParsed != nil && bytes.Equal(m.options.RootParsed.Source, source) {
 			parsed := m.options.RootParsed
-			physical = &physicalFile{source: source, hash: sourceHash, parsed: parsed, lineTable: sourceinfo.NewLineTable(source), syntaxIndex: walk.NewIndex(parsed)}
+			syntaxIndex := m.options.ParseCache.getIndex(canonical, sourceHash)
+			if syntaxIndex == nil {
+				syntaxIndex = walk.NewIndex(parsed)
+				m.options.ParseCache.putIndex(canonical, sourceHash, syntaxIndex)
+			}
+			physical = &physicalFile{source: source, hash: sourceHash, parsed: parsed, lineTable: sourceinfo.NewLineTable(source), syntaxIndex: syntaxIndex}
 			m.physical[canonical] = physical
 		} else if m.options.ReleaseIncludes && (!provided || len(source) >= compactTargetThreshold) {
 			started := time.Now()
