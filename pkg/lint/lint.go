@@ -122,6 +122,9 @@ type fileFacts struct {
 	pureCalls   map[*parser.Node]pureCallFact
 	constants   map[*parser.Node]evalFact
 	flowValues  map[*parser.Node]evalFact
+	loopCalls   map[*parser.Node][]*parser.Node
+	callLoops   map[*parser.Node]*parser.Node
+	uncertain   map[*parser.Node]bool
 }
 
 type pureCallFact struct {
@@ -198,6 +201,78 @@ func (ctx *Context) FunctionSymbols(function *parser.Node) []*semantic.Symbol {
 		}
 	}
 	return result
+}
+
+// LoopCalls returns calls grouped by their nearest enclosing loop.
+func (ctx *Context) LoopCalls() map[*parser.Node][]*parser.Node {
+	if ctx == nil || ctx.Walk == nil {
+		return nil
+	}
+	if ctx.facts == nil {
+		ctx.facts = &fileFacts{}
+	}
+	if ctx.facts.loopCalls != nil {
+		return ctx.facts.loopCalls
+	}
+	ctx.facts.loopCalls = make(map[*parser.Node][]*parser.Node)
+	for _, call := range ctx.Walk.OfKind(parser.KindCallExpression) {
+		if loop := ctx.EnclosingLoop(call); loop != nil {
+			ctx.facts.loopCalls[loop] = append(ctx.facts.loopCalls[loop], call)
+		}
+	}
+	return ctx.facts.loopCalls
+}
+
+// EnclosingLoop returns the nearest loop containing node.
+func (ctx *Context) EnclosingLoop(node *parser.Node) *parser.Node {
+	if ctx == nil || ctx.Walk == nil || node == nil {
+		return nil
+	}
+	if ctx.facts == nil {
+		ctx.facts = &fileFacts{}
+	}
+	if ctx.facts.callLoops != nil {
+		if loop, ok := ctx.facts.callLoops[node]; ok {
+			return loop
+		}
+	}
+	if ctx.facts.callLoops == nil {
+		ctx.facts.callLoops = make(map[*parser.Node]*parser.Node)
+	}
+	for current := ctx.Walk.Parent(node); current != nil; current = ctx.Walk.Parent(current) {
+		switch current.Kind {
+		case parser.KindWhileStatement, parser.KindDoWhileStatement, parser.KindForStatement:
+			ctx.facts.callLoops[node] = current
+			return current
+		}
+	}
+	ctx.facts.callLoops[node] = nil
+	return nil
+}
+
+// UncertainLoops returns loops containing uncertain or conditional syntax.
+func (ctx *Context) UncertainLoops() map[*parser.Node]bool {
+	if ctx == nil || ctx.Walk == nil {
+		return nil
+	}
+	if ctx.facts == nil {
+		ctx.facts = &fileFacts{}
+	}
+	if ctx.facts.uncertain != nil {
+		return ctx.facts.uncertain
+	}
+	ctx.facts.uncertain = make(map[*parser.Node]bool)
+	for _, kind := range []parser.Kind{parser.KindMacroInvocation, parser.KindMacroInvocationBlock, parser.KindConditionalSplice} {
+		for _, node := range ctx.Walk.OfKind(kind) {
+			for current := ctx.Walk.Parent(node); current != nil; current = ctx.Walk.Parent(current) {
+				switch current.Kind {
+				case parser.KindWhileStatement, parser.KindDoWhileStatement, parser.KindForStatement:
+					ctx.facts.uncertain[current] = true
+				}
+			}
+		}
+	}
+	return ctx.facts.uncertain
 }
 
 func (ctx *Context) Eval(node *parser.Node) (int64, bool) {

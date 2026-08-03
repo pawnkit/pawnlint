@@ -34,13 +34,14 @@ func (RepeatedStrlen) Run(ctx *lint.Context) {
 	if ctx.Semantic == nil {
 		return
 	}
+	calls := ctx.LoopCalls()
 	for _, kind := range []parser.Kind{parser.KindWhileStatement, parser.KindDoWhileStatement, parser.KindForStatement} {
 		ctx.Walk.IterKind(kind, func(loop *parser.Node) {
 			condition := loop.Field("condition")
 			if condition == nil || ctx.Walk.Uncertain(loop) {
 				return
 			}
-			for _, call := range ctx.Walk.OfKind(parser.KindCallExpression) {
+			for _, call := range calls[loop] {
 				if !inside(call, condition) || !isBuiltinStrlen(ctx, call) {
 					continue
 				}

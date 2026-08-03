@@ -33,15 +33,9 @@ func (LoopInvariantCall) Run(ctx *lint.Context) {
 	if ctx.Semantic == nil {
 		return
 	}
-	uncertainLoops := loopInvariantUncertainLoops(ctx)
-	calls := make(map[*parser.Node][]*parser.Node)
+	uncertainLoops := ctx.UncertainLoops()
+	calls := ctx.LoopCalls()
 	changes := make(map[loopInvariantChange]bool)
-	for _, call := range ctx.Walk.OfKind(parser.KindCallExpression) {
-		loop := loopInvariantNearestLoop(ctx, call)
-		if loop != nil {
-			calls[loop] = append(calls[loop], call)
-		}
-	}
 	for _, kind := range []parser.Kind{parser.KindWhileStatement, parser.KindDoWhileStatement, parser.KindForStatement} {
 		for _, loop := range ctx.Walk.OfKind(kind) {
 			if loop.HasError || ctx.Walk.Inactive(loop) || ctx.Walk.Uncertain(loop) || uncertainLoops[loop] {
@@ -88,18 +82,7 @@ func (LoopInvariantCall) Run(ctx *lint.Context) {
 }
 
 func loopInvariantUncertainLoops(ctx *lint.Context) map[*parser.Node]bool {
-	result := make(map[*parser.Node]bool)
-	for _, kind := range []parser.Kind{parser.KindMacroInvocation, parser.KindMacroInvocationBlock, parser.KindConditionalSplice} {
-		for _, node := range ctx.Walk.OfKind(kind) {
-			for current := ctx.Walk.Parent(node); current != nil; current = ctx.Walk.Parent(current) {
-				switch current.Kind {
-				case parser.KindWhileStatement, parser.KindDoWhileStatement, parser.KindForStatement:
-					result[current] = true
-				}
-			}
-		}
-	}
-	return result
+	return ctx.UncertainLoops()
 }
 
 func loopInvariantArguments(ctx *lint.Context, arguments, loop *parser.Node, symbols map[*semantic.Symbol]struct{}) bool {
@@ -190,13 +173,7 @@ func loopInvariantSymbolChanges(ctx *lint.Context, loop *parser.Node, symbol *se
 }
 
 func loopInvariantNearestLoop(ctx *lint.Context, node *parser.Node) *parser.Node {
-	for current := ctx.Walk.Parent(node); current != nil; current = ctx.Walk.Parent(current) {
-		switch current.Kind {
-		case parser.KindWhileStatement, parser.KindDoWhileStatement, parser.KindForStatement:
-			return current
-		}
-	}
-	return nil
+	return ctx.EnclosingLoop(node)
 }
 
 func loopInvariantRepeatedRegion(loop, node *parser.Node) bool {

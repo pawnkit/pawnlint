@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.51 - 2026-08-03
+
+### Performance
+
+- Share loop call and uncertain-branch indexes across performance rules.
+
 ## 1.8.50 - 2026-08-03
 
 ### Performance
