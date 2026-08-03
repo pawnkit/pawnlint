@@ -5,6 +5,7 @@
 ### Performance
 
 - Add an independent benchmark row for every registered lint rule.
+- Use pawn-analysis v0.30.23's constant reuse for safe incremental CFG checks.
 
 ## 1.8.55 - 2026-08-03
 
