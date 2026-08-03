@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.8.57 - 2026-08-03
 
 ### Performance
 
