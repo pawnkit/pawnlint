@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.49 - 2026-08-03
+
+### Performance
+
+- Prefer cached control-flow values before project constant lookup.
+
 ## 1.8.48 - 2026-08-03
 
 ### Performance

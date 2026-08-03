@@ -2,6 +2,7 @@ package lint_test
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/pawnkit/pawnlint/internal/fix"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 	"github.com/pawnkit/pawnlint/pkg/lint"
+	"github.com/pawnkit/pawnlint/pkg/project"
 	"github.com/pawnkit/pawnlint/pkg/rules"
 )
 
@@ -230,6 +232,34 @@ func TestEngineUsesConfiguredDefines(t *testing.T) {
 	if len(diags) != 1 || diags[0].RuleID != "division-by-zero" {
 		t.Fatalf("diagnostics = %+v", diags)
 	}
+}
+
+func TestEngineFallsBackToProjectConstantsAfterFlowEvaluation(t *testing.T) {
+	dir := t.TempDir()
+	mainPath := filepath.Join(dir, "main.pwn")
+	constantsPath := filepath.Join(dir, "constants.inc")
+	model, err := project.Build([]project.Source{
+		{Path: mainPath, Content: []byte("#include <constants>\nmain() { if (PROJECT_FLAG) {} }\n")},
+		{Path: constantsPath, Content: []byte("const PROJECT_FLAG = 1;\n")},
+	}, project.Options{WorkingDir: dir, IncludePaths: []string{dir}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := model.File(mainPath)
+	if file == nil {
+		t.Fatal("project file is missing")
+	}
+	engine := lint.NewEngine(rules.Default())
+	engine.Project = model
+	diagnostics := engine.LintProjectFile(file, lint.ControlFlowAnalysis, map[string]diagnostic.Severity{
+		"constant-condition": diagnostic.SeverityWarning,
+	}, nil, nil)
+	for _, item := range diagnostics {
+		if item.RuleID == "constant-condition" {
+			return
+		}
+	}
+	t.Fatalf("constant condition missing: %+v", diagnostics)
 }
 
 func TestEngineDivisionByZeroKeepsOnlyZeroOperands(t *testing.T) {
