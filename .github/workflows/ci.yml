@@ -69,7 +69,7 @@ jobs:
           go-version-file: go.mod
       - name: Check project model budget
         env:
-        PAWNKIT_PERFORMANCE_BUDGET: "1"
+          PAWNKIT_PERFORMANCE_BUDGET: "1"
         run: go test -count=1 -run '^TestSharedCompactIncludeContextPerformanceBudget$' ./pkg/project
 
   benchmarks:
