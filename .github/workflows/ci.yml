@@ -69,8 +69,42 @@ jobs:
           go-version-file: go.mod
       - name: Check project model budget
         env:
-          PAWNKIT_PERFORMANCE_BUDGET: "1"
+        PAWNKIT_PERFORMANCE_BUDGET: "1"
         run: go test -count=1 -run '^TestSharedCompactIncludeContextPerformanceBudget$' ./pkg/project
+
+  benchmarks:
+    name: benchmark history
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version-file: go.mod
+      - name: Benchmark head
+        run: go test -run '^$' -bench '^BenchmarkRules$' -benchmem -benchtime=1x -count=6 ./internal/bench | tee benchmark-head.txt
+      - name: Benchmark pull request base
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git worktree add "$RUNNER_TEMP/pawnlint-base" "$BASE_SHA"
+          cd "$RUNNER_TEMP/pawnlint-base"
+          go test -run '^$' -bench '^BenchmarkRules$' -benchmem -benchtime=1x -count=6 ./internal/bench | tee benchmark-base.txt
+      - name: Compare pull request benchmark
+        if: github.event_name == 'pull_request'
+        run: |
+          go run golang.org/x/perf/cmd/benchstat@v0.0.0-20260709024250-82a0b07e230d \
+            "$RUNNER_TEMP/pawnlint-base/benchmark-base.txt" benchmark-head.txt | tee benchmark-comparison.txt
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: pawnlint-benchmarks
+          path: benchmark-*.txt
+          if-no-files-found: warn
 
   corpus:
     name: Corpus conformance
