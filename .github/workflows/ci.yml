@@ -21,8 +21,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - run: go build ./...
@@ -49,10 +49,10 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - uses: golangci/golangci-lint-action@v9
@@ -63,8 +63,8 @@ jobs:
     name: Performance budget
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - name: Check project model budget
@@ -76,11 +76,11 @@ jobs:
     name: benchmark history
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
           go-version-file: go.mod
       - name: Benchmark head
@@ -111,16 +111,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out pawnlint
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           path: pawnlint
       - name: Check out pawn-corpus
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           repository: pawnkit/pawn-corpus
           ref: 43cee425a3a528d1b71d4e2a24eb250b7df62d59
           path: pawn-corpus
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: pawnlint/go.mod
       - name: Run corpus-backed tests
@@ -135,16 +135,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out pawnlint
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           path: pawnlint
       - name: Check out pawn-corpus
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           repository: pawnkit/pawn-corpus
           ref: v0.1.15
           path: pawn-corpus
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: pawnlint/go.mod
       - name: Install report tools
@@ -171,7 +171,7 @@ jobs:
         run: scripts/realworld-bench.sh "$RUNNER_TEMP/pawnlint-corpus" "$RUNNER_TEMP/pawnlint-results"
       - name: Upload reports
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: pawnlint-real-project-results
           path: ${{ runner.temp }}/pawnlint-results/*.json
@@ -188,8 +188,8 @@ jobs:
           - goos: windows
             goarch: arm64
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - run: go build ./...
@@ -201,8 +201,8 @@ jobs:
     name: Vulnerability scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
@@ -211,8 +211,8 @@ jobs:
     name: Fuzz smoke tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - run: go test ./internal/source/walk -run=^$ -fuzz=FuzzWalk -fuzztime=30s
@@ -224,10 +224,10 @@ jobs:
     name: Release snapshot
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - uses: anchore/sbom-action/download-syft@v0
@@ -239,7 +239,7 @@ jobs:
   support:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: pawnkit/pawn-actions/support-check@v1.8.83
         with:
           repository: pawnkit/pawnlint
