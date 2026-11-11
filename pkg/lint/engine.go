@@ -154,7 +154,10 @@ func (e *Engine) lintFile(path string, src []byte, contextFile *project.File, ma
 	used := make([]bool, len(supps))
 
 	var raw []diagnostic.Diagnostic
-	parseErrors := parseErrorDiagnostics(path, pf, lt)
+	parseErrors, sharedSyntax := sharedParseErrors(path, src, lt, e.SharedAnalysis)
+	if !sharedSyntax {
+		parseErrors = parseErrorDiagnostics(path, pf, lt)
+	}
 	var internalErrors []diagnostic.Diagnostic
 	file := &File{Path: path, Source: src, Parsed: pf, LineTable: lt}
 	sharedIndex := e.sharedFunctionIndex()
