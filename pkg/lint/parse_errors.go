@@ -1,13 +1,69 @@
 package lint
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
+	"strings"
 
+	"github.com/pawnkit/pawn-analysis"
 	"github.com/pawnkit/pawn-parser"
+	corediagnostic "github.com/pawnkit/pawnkit-core/diagnostic"
+	coresource "github.com/pawnkit/pawnkit-core/source"
 	"github.com/pawnkit/pawnlint/internal/source"
 	"github.com/pawnkit/pawnlint/pkg/diagnostic"
 )
+
+// Shared analysis reconciles raw and expanded syntax, including diagnostics
+// whose original spelling is a valid macro invocation. Use it for the same
+// file and revision while continuing to run ordinary lint rules on the CST.
+func sharedParseErrors(path string, content []byte, lines *source.LineTable, shared *analysis.Result) ([]diagnostic.Diagnostic, bool) {
+	if shared == nil || shared.Parse == nil || shared.Parse.Broken || shared.Registry == nil ||
+		!bytes.Equal(shared.Parse.Source, content) {
+		return nil, false
+	}
+	uri, ok := shared.Registry.URI(shared.File)
+	if !ok || uri != coresource.FileURI(path) {
+		return nil, false
+	}
+	var findings []diagnostic.Diagnostic
+	for _, item := range shared.Diagnostics {
+		if item.Primary.File != shared.File || item.Source != "pawn-parser" {
+			continue
+		}
+		start, end := boundedParserRange(int(item.Primary.Start), int(item.Primary.End), len(content))
+		findings = append(findings, diagnostic.Diagnostic{
+			RuleID: ParseErrorID, Code: strings.TrimPrefix(item.Code, "pawn-parser:"),
+			Severity: sharedSeverity(item.Severity), Category: diagnostic.CategoryCorrectness,
+			Message: item.Message, Filename: path, Range: lines.Range(start, end),
+			Fix: sharedParserFix(item.SafeFixes, shared.File, len(content), lines),
+		})
+	}
+	return findings, true
+}
+
+func sharedParserFix(fixes []corediagnostic.Fix, file coresource.FileID, size int, lines *source.LineTable) *diagnostic.Fix {
+	for _, fix := range fixes {
+		if len(fix.Edit.Documents) != 1 || fix.Edit.Documents[0].File != file {
+			continue
+		}
+		edits := fix.Edit.Documents[0].Edits
+		result := &diagnostic.Fix{Description: fix.Message}
+		for _, edit := range edits {
+			start, end := int(edit.Span.Start), int(edit.Span.End)
+			if edit.Span.File != file || start < 0 || end < start || end > size {
+				break
+			}
+			result.Edits = append(result.Edits, diagnostic.Edit{
+				Range: lines.Range(start, end), NewText: edit.NewText,
+			})
+		}
+		if len(result.Edits) != 0 && len(result.Edits) == len(edits) {
+			return result
+		}
+	}
+	return nil
+}
 
 func parseErrorDiagnostics(path string, pf *parser.File, lt *source.LineTable) []diagnostic.Diagnostic {
 	if pf != nil && len(pf.Diagnostics) != 0 {
